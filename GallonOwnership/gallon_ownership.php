@@ -1,3 +1,15 @@
+<?php
+// require_once '../check_session.php';
+require_once '../Database/db_connection.php';
+
+// if (!isAdmin()) {
+//     header("Location: " . dirname($_SERVER['PHP_SELF']) . "/index.php");
+//     exit();
+// }
+
+$database = new Database();
+$db = $database->getConnect();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,6 +23,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -52,7 +66,7 @@
                     <li>
                         <a href="#" class="flex items-center px-4 py-3 font-medium text-white hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                             <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                                <i class="fas fa-jug"></i>
+                                <i class="fas fa-tint       "></i>
                             </div>
                             <span class="font-medium">Gallon Ownership</span>
                         </a>
@@ -104,7 +118,6 @@
 
         <!-- Main Content -->
         <div class="main-content fixed w-full top-0 right-0 overflow-auto h-full">
-
             <div class="flex-1 ml-64 flex flex-col overflow-hidden">
                 <div class="bg-white border-b border-gray-100 shadow-b shadow-sm p-4">
                     <div class="flex items-center justify-between">
@@ -117,18 +130,25 @@
                 </div>
                 <div class="m-3">
                     <!-- Search and Buttons -->
-                    <div class="flex flex-col md:flex-row gap-4 items-center mb-3">
+                    <div class="flex items-center gap-2 mb-4">
                         <div class="flex-1 relative">
                             <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                            <input type="text" id="searchInput" placeholder="Search by Gallon Owner, Gallon Type, Gallon ID..."
-                                class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            <input
+                                type="text"
+                                id="searchInput"
+                                placeholder="Search by Gallon Owner, Gallon Type, Gallon ID..."
+                                class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-sm"
                                 style="font-style: italic;"
-                                oninput="this.style.fontStyle = this.value ? 'normal' : 'italic';">
+                                oninput="this.style.fontStyle = this.value ? 'normal' : 'italic';"
+                                onkeyup="searchTable()">
                         </div>
-                        <button class="bg-gradient-to-br bg-blue-400 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition">
+                        <button
+                            onclick="searchTable()"
+                            class="bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
                             Search
                         </button>
-                        <button class="bg-gradient-to-br from-blue-400 to-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition flex items-center gap-2">
+
+                        <button class="bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
                             <i class="fas fa-qrcode"></i>
                             Scan QR Code
                         </button>
@@ -137,15 +157,25 @@
                     <!-- Content Area -->
                     <div class="p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 rounded-lg">
                         <!-- Filter Tabs -->
-                        <!--  Converted .tab-button styles to Tailwind classes -->
                         <div class="flex gap-3 mb-6 flex-wrap">
-                            <button class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200 active:bg-blue-600 active:text-white" onclick="filterTab(this)">
+                            <button id="allTab"
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
+                                onclick="filterTab(this)">
+                                <i class="fas fa-list mr-2"></i>All
+                            </button>
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
                                 <i class="fas fa-building mr-2"></i>Station-Owned
                             </button>
-                            <button class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200" onclick="filterTab(this)">
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
                                 <i class="fas fa-user mr-2"></i>Customer-Owned
                             </button>
-                            <button class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200" onclick="filterTab(this)">
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
                                 <i class="fas fa-question-circle mr-2"></i>Untracked
                             </button>
                         </div>
@@ -154,86 +184,70 @@
                         <div class="bg-white rounded-lg shadow-md overflow-hidden">
                             <!-- Scroll wrapper -->
                             <div class="overflow-x-auto max-h-[400px]">
+
                                 <table id="gallonTable" class="min-w-full text-sm text-left text-gray-700">
                                     <thead class="bg-blue-50 border-b border-gray-200 sticky top-0 z-10">
                                         <tr>
-                                            <th class="px-6 py-4 font-semibold cursor-pointer" onclick="sortTable(0)">Gallon ID ⬍</th>
-                                            <th class="px-6 py-4 font-semibold cursor-pointer" onclick="sortTable(1)">Gallon Type ⬍</th>
-                                            <th class="px-6 py-4 font-semibold cursor-pointer" onclick="sortTable(2)">Current Owner ⬍</th>
-                                            <th class="px-6 py-4 font-semibold">Status</th>
-                                            <th class="px-6 py-4 font-semibold">Actions</th>
+                                            <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[80px]" onclick="sortTable(0)" title="Gallon ID">Gallon ID ⬍</th>
+                                            <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[110px]" onclick="sortTable(1)" title="Gallon Type">Gallon Type ⬍</th>
+                                            <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[220px]" onclick="sortTable(2)" title="Owner">Owner ⬍</th>
+                                            <th class="px-6 py-4 font-semibold text-center min-w-[120px]" title="Code Value">Code Value</th>
+                                            <th class="px-6 py-4 font-semibold text-center min-w-[100px]" title="Status">Status</th>
+                                            <th class="px-6 py-4 font-semibold text-center min-w-[120px]" title="Actions">Actions</th>
                                         </tr>
                                     </thead>
 
                                     <tbody>
-                                        <tr class="border-b hover:bg-gray-50">
-                                            <td class="px-6 py-4">GAL-001</td>
-                                            <td class="px-6 py-4">5 Gallon</td>
-                                            <td class="px-6 py-4">John Smith</td>
-                                            <td class="px-6 py-4">
-                                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">Active</span>
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                <i class="fas fa-eye mx-1 text-blue-600 hover:scale-125 transition-transform" title="View"></i>
-                                                <i class="fas fa-edit mx-1 text-orange-500 hover:scale-125 transition-transform" title="Edit"></i>
-                                                <i class="fas fa-trash mx-1 text-red-600 hover:scale-125 transition-transform" title="Delete"></i>
-                                            </td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                            <td class="px-6 py-4 text-sm text-gray-700">GAL-002</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">10 Gallon</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">Sarah Johnson</td>
-                                            <td class="px-6 py-4 text-sm"><span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">In Transit</span></td>
-                                            <td class="px-6 py-4 text-sm">
-                                                <i class="fas fa-eye cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-blue-600" title="View"></i>
-                                                <i class="fas fa-edit cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-orange-500" title="Edit"></i>
-                                                <i class="fas fa-trash cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-red-600" title="Delete"></i>
-                                            </td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                            <td class="px-6 py-4 text-sm text-gray-700">GAL-003</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">5 Gallon</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">Mike Davis</td>
-                                            <td class="px-6 py-4 text-sm"><span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold">Pending</span></td>
-                                            <td class="px-6 py-4 text-sm">
-                                                <i class="fas fa-eye cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-blue-600" title="View"></i>
-                                                <i class="fas fa-edit cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-orange-500" title="Edit"></i>
-                                                <i class="fas fa-trash cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-red-600" title="Delete"></i>
-                                            </td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                            <td class="px-6 py-4 text-sm text-gray-700">GAL-004</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">20 Gallon</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">Emily Wilson</td>
-                                            <td class="px-6 py-4 text-sm"><span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">Active</span></td>
-                                            <td class="px-6 py-4 text-sm">
-                                                <i class="fas fa-eye cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-blue-600" title="View"></i>
-                                                <i class="fas fa-edit cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-orange-500" title="Edit"></i>
-                                                <i class="fas fa-trash cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-red-600" title="Delete"></i>
-                                            </td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                            <td class="px-6 py-4 text-sm text-gray-700">GAL-005</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">5 Gallon</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">Robert Brown</td>
-                                            <td class="px-6 py-4 text-sm"><span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold">Inactive</span></td>
-                                            <td class="px-6 py-4 text-sm">
-                                                <i class="fas fa-eye cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-blue-600" title="View"></i>
-                                                <i class="fas fa-edit cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-orange-500" title="Edit"></i>
-                                                <i class="fas fa-trash cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-red-600" title="Delete"></i>
-                                            </td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200 hover:bg-gray-50">
-                                            <td class="px-6 py-4 text-sm text-gray-700">GAL-006</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">10 Gallon</td>
-                                            <td class="px-6 py-4 text-sm text-gray-700">Lisa Anderson</td>
-                                            <td class="px-6 py-4 text-sm"><span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">Active</span></td>
-                                            <td class="px-6 py-4 text-sm">
-                                                <i class="fas fa-eye cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-blue-600" title="View"></i>
-                                                <i class="fas fa-edit cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-orange-500" title="Edit"></i>
-                                                <i class="fas fa-trash cursor-pointer transition-transform duration-200 hover:scale-125 mx-1 text-red-600" title="Delete"></i>
-                                            </td>
-                                        </tr>
+                                        <?php
+                                        $query = "SELECT 
+                                            go.ownership_id AS `Gallon ID`,
+                                            go.gallon_type AS `Gallon Type`,
+                                            u.name AS `Owner`,
+                                            go.code_value AS `Code Value`,
+                                            go.status AS `Status`,
+                                            go.qr_image AS `QR Image`
+                                        FROM gallon_ownership AS go
+                                        LEFT JOIN users AS u ON go.owner_id = u.user_id";
+
+                                        $stmt = $db->prepare($query);
+                                        $stmt->execute();
+
+                                        $num = $stmt->rowCount();
+
+
+                                        if ($num > 0) {
+                                            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                                echo "<tr class='border-b divide-x divide-gray-200 hover:bg-gray-50'>";
+                                                echo "<td class='px-6 py-4'>" . htmlspecialchars($row['Gallon ID']) . "</td>";
+                                                echo "<td class='px-6 py-4'>" . htmlspecialchars($row['Gallon Type']) . "</td>";
+                                                echo "<td class='px-6 py-4 owner-cell'>" . htmlspecialchars($row['Owner']) . "</td>";
+                                                echo "<td class='px-6 py-4 text-center code-cell'>";
+                                                if (empty($row['Code Value'])) {
+                                                    echo '<button onclick="generateQR(' . htmlspecialchars($row['Gallon ID']) . ')" class="bg-blue-100 font-semibold text-blue-500 px-3 py-1 rounded-md text-xs hover:scale-105 transition">Generate QR</button>';
+                                                } else {
+                                                    echo htmlspecialchars($row['Code Value']);
+                                                }
+                                                echo '</td>';
+                                                echo "<td class='px-6 py-4 text-sm text-center status-cell'>
+                                                <span class='status-text'>" . htmlspecialchars($row['Status']) . "</span>
+                                            </td>";
+
+                                                // Store qr_image and code_value for JS use
+                                                $qrImage = htmlspecialchars($row['QR Image'] ?? '');
+                                                $codeValue = htmlspecialchars($row['Code Value'] ?? '');
+                                                $gallonID = htmlspecialchars($row['Gallon ID']);
+                                                $ownerName = htmlspecialchars($row['Owner'] ?? 'N/A');
+
+    echo '<td class="px-6 py-4 text-center">';
+    echo "<i class=\"fas fa-eye mx-1 text-blue-600 hover:scale-125 transition-transform\" title=\"View\" style=\"cursor:pointer;\" onclick=\"viewQR('{$ownerName}', '{$codeValue}', '{$qrImage}')\"></i>";
+    echo "<i class=\"fas fa-edit mx-1 text-orange-500 hover:scale-125 transition-transform\" title=\"Edit\" style=\"cursor:pointer;\" onclick=\"editGallon({$gallonID})\"></i>";
+    echo "<i class=\"fas fa-trash mx-1 text-red-600 hover:scale-125 transition-transform cursor-pointer\" title=\"Delete\" onclick=\"deleteGallon({$gallonID})\"></i>";
+    echo '</td>';
+
+                                                echo "</tr>";
+                                            }
+                                        }
+                                        ?>
                                     </tbody>
                                 </table>
                             </div>
@@ -262,21 +276,286 @@
                     rows.forEach(row => tbody.appendChild(row));
                     table.dataset.sortOrder = isAscending ? "asc" : "desc";
                 }
-
-                // Filter function
+                // Filter Function
                 function filterTab(button) {
-                    // Update active tab
                     document.querySelectorAll('button[onclick="filterTab(this)"]').forEach(btn => {
-                        btn.classList.remove('bg-blue-600', 'text-white');
-                        btn.classList.add('bg-gray-100', 'text-gray-600');
+                        btn.classList.remove('bg-blue-600', 'text-white', 'no-hover');
+                        btn.classList.add('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
                     });
-                    button.classList.remove('bg-gray-100', 'text-gray-600');
-                    button.classList.add('bg-blue-600', 'text-white');
 
-                    // Filter logic would go here
-                    console.log('Filtering by:', button.textContent.trim());
+                    // Set active tab
+                    button.classList.remove('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
+                    button.classList.add('bg-blue-600', 'text-white', 'no-hover');
+
+                    // Get filter type
+                    const filter = button.textContent.trim();
+                    const rows = document.querySelectorAll('#gallonTable tbody tr');
+
+                    rows.forEach(row => {
+                        const owner = row.querySelector('.owner-cell')?.textContent.trim();
+                        const codeValue = row.querySelector('.code-cell')?.textContent.trim();
+                        let show = false;
+
+                        if (filter === "All") {
+                            show = true;
+                        } else if (filter === "Station-Owned" && owner === "RCH Water") {
+                            show = true;
+                        } else if (filter === "Customer-Owned" && owner !== "RCH Water") {
+                            show = true;
+                        } else if (filter === "Untracked" && (codeValue === "Generate QR")) {
+                            show = true;
+                        }
+
+                        row.style.display = show ? "" : "none";
+                    });
+                }
+
+                // Automatically trigger "All" on load
+                window.addEventListener("DOMContentLoaded", () => {
+                    document.getElementById("allTab").click();
+                });
+
+
+                // Status styling
+                document.addEventListener("DOMContentLoaded", function() {
+                    const statusCells = document.querySelectorAll(".status-text");
+
+                    statusCells.forEach(cell => {
+                        const text = cell.textContent.trim().toLowerCase();
+
+                        if (text === "available") {
+                            cell.className = "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold";
+                        } else if (text === "in-use") {
+                            cell.className = "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold";
+                        } else if (text === "damaged") {
+                            cell.className = "bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold";
+                        } else {
+                            cell.className = "bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold"; // fallback for unknown statuses
+                        }
+                    });
+                });
+                // Search Function
+                function searchTable() {
+                    const input = document.getElementById("searchInput");
+                    const filter = input.value.toLowerCase();
+                    const table = document.getElementById("gallonTable");
+                    const rows = table.getElementsByTagName("tr");
+
+                    for (let i = 1; i < rows.length; i++) { // skip header
+                        const cells = rows[i].getElementsByTagName("td");
+                        let match = false;
+
+                        // If search is empty, show all rows
+                        if (filter === "") {
+                            rows[i].style.display = "";
+                            continue;
+                        }
+
+                        // Otherwise, search the first 3 columns
+                        for (let j = 0; j < 3; j++) {
+                            if (cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
+                                match = true;
+                                break;
+                            }
+                        }
+
+                        rows[i].style.display = match ? "" : "none";
+                    }
+                }
+                // Generate QR
+                function generateQR(gallonID) {
+                    Swal.fire({
+                        title: 'Generate QR Code?',
+                        text: "Are you sure you want to generate a QR code for this gallon?",
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#2563eb',
+                        cancelButtonColor: '#9ca3af',
+                        confirmButtonText: 'Yes, generate it'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch('generate_qr.php', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        'gallonID': gallonID
+                                    })
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        Swal.fire({
+                                            title: 'QR Code Generated!',
+                                            html: `
+                                                <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                                                    <p style="margin:0;"><strong>Code Value:</strong> ${data.code_value}</p>
+                                                    <img src="${data.image}"
+                                                        alt="QR Code"
+                                                        style="width:200px; height:200px; border-radius:8px;">
+                                                </div>
+                                            `,
+                                            icon: 'success',
+                                            confirmButtonText: 'OK'
+                                        }).then(() => {
+                                            location.reload();
+                                        });
+
+
+                                    } else {
+                                        Swal.fire('Error', data.message || 'Unknown error', 'error');
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error(err);
+                                    Swal.fire('Error', 'Request failed. Check your connection or console.', 'error');
+                                });
+                        }
+                    });
+                }
+                // ✅ VIEW FUNCTION
+                function viewQR(ownerName, codeValue, qrImage) {
+                    if (!qrImage || qrImage === 'null') {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'No QR Code',
+                            html: `
+                <p><strong>Owner:</strong> ${ownerName}</p>
+                <p>No QR code has been generated yet for this gallon.</p>
+            `,
+                            confirmButtonColor: '#2563eb'
+                        });
+                    } else {
+                        const fileName = qrImage.split('/').pop();
+                        Swal.fire({
+                            title: 'QR Code Details',
+                            html: `
+                <div style="text-align:center;">
+                    <p><strong>Owner:</strong> ${ownerName}</p>
+                    <p><strong>Code Value:</strong> ${codeValue}</p>
+                    <p><strong>File Name:</strong> ${fileName}</p>
+                    <img src="${qrImage}" 
+                         alt="QR Code" 
+                         style="display:block; margin:10px auto; width:200px; height:200px; border-radius:8px;">
+                </div>
+            `,
+                            icon: 'success',
+                            confirmButtonColor: '#2563eb'
+                        });
+                    }
+                }
+
+
+                function editGallon(id) {
+                    Swal.fire({
+                        title: 'Edit Gallon Owner',
+                        html: `
+            <input type="text" id="ownerName" class="swal2-input" placeholder="Enter new owner name">
+        `,
+                        confirmButtonText: 'Save Changes',
+                        showCancelButton: true,
+                        confirmButtonColor: '#2563eb',
+                        cancelButtonColor: '#9ca3af',
+                        preConfirm: () => {
+                            const ownerName = document.getElementById('ownerName').value.trim();
+                            if (!ownerName) {
+                                Swal.showValidationMessage('Owner name cannot be empty');
+                                return false;
+                            }
+                            return {
+                                id,
+                                ownerName
+                            };
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const {
+                                id,
+                                ownerName
+                            } = result.value;
+
+                            // Send update request to backend
+                            fetch('update_owner.php', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        id,
+                                        ownerName
+                                    })
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Updated!',
+                                            text: 'Owner name has been updated successfully.',
+                                            confirmButtonColor: '#2563eb'
+                                        }).then(() => location.reload());
+                                    } else {
+                                        Swal.fire('Error', data.message || 'Failed to update owner name.', 'error');
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error(err);
+                                    Swal.fire('Error', 'Request failed. Please check your connection.', 'error');
+                                });
+                        }
+                    });
+                }
+
+
+
+                // ✅ DELETE FUNCTION (with password confirmation)
+                function deleteGallon(id) {
+                    Swal.fire({
+                        title: 'Confirm Deletion',
+                        html: `
+            <p>Please enter admin password to confirm:</p>
+            <input type="password" id="adminPass" class="swal2-input" placeholder="Enter password">
+        `,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#9ca3af',
+                        confirmButtonText: 'Delete',
+                        preConfirm: () => {
+                            const pass = document.getElementById('adminPass').value;
+                            if (!pass) {
+                                Swal.showValidationMessage('Password is required');
+                                return false;
+                            }
+                            return {
+                                id,
+                                pass
+                            };
+                        }
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            fetch('delete_gallon.php', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(result.value)
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        Swal.fire('Deleted!', 'Gallon record has been removed.', 'success')
+                                            .then(() => location.reload());
+                                    } else {
+                                        Swal.fire('Error', data.message || 'Failed to delete record.', 'error');
+                                    }
+                                })
+                                .catch(() => Swal.fire('Error', 'Request failed.', 'error'));
+                        }
+                    });
                 }
             </script>
-
 </body>
-wwwe
+
+</html>

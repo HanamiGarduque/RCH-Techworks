@@ -1,0 +1,6 @@
+# 🧱 Composer dependencies
+/vendor/
+
+# ⚙️ Composer lock file (optional to ignore)
+composer.lock
+composer.json

@@ -1,0 +1,6 @@
+{
+    "require": {
+        "chillerlan/php-qrcode": "v5.0.x-dev#f15b0afe9d4128bf734c3bf1bcffae72bf7b3e53",
+        "endroid/qr-code": "^6.0"
+    }
+}
