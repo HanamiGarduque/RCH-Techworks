@@ -48,7 +48,7 @@ $db = $database->getConnect();
             <nav class="mt-6 flex-1">
                 <ul class="space-y-1 px-4">
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 text-blue-600 bg-blue-50 rounded-lg font-medium">
+                        <a href="#" class="flex items-center px-4 py-3 text-white rounded-lg font-medium">
                             <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
                                 <i class="fas fa-chart-line"></i>
                             </div>
@@ -56,15 +56,16 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 font-medium text-white hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
+                        <a href="#" class="flex items-center px-4 py-3 text-white rounded-lg font-medium">
+
+                        <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
                                 <i class="fas fa-shopping-cart"></i>
                             </div>
                             <span class="font-medium">Orders</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 font-medium text-white hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <a href="#" class="flex items-center px-4 py-3 bg-blue-50 text-blue-600 rounded-lg font-medium">
                             <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
                                 <i class="fas fa-tint       "></i>
                             </div>
@@ -148,10 +149,16 @@ $db = $database->getConnect();
                             Search
                         </button>
 
-                        <button class="bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
-                            <i class="fas fa-qrcode"></i>
+                        <a href="qr_scanner.php" id="scanBtn"
+                            class="inline-flex items-center bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
+                            <i class="fas fa-qrcode mr-2"></i>
                             Scan QR Code
-                        </button>
+                        </a>
+
+
+                        <!-- QR Reader -->
+                        <div id="reader"></div>
+                        <div id="result"></div>
                     </div>
 
                     <!-- Content Area -->
@@ -238,11 +245,11 @@ $db = $database->getConnect();
                                                 $gallonID = htmlspecialchars($row['Gallon ID']);
                                                 $ownerName = htmlspecialchars($row['Owner'] ?? 'N/A');
 
-    echo '<td class="px-6 py-4 text-center">';
-    echo "<i class=\"fas fa-eye mx-1 text-blue-600 hover:scale-125 transition-transform\" title=\"View\" style=\"cursor:pointer;\" onclick=\"viewQR('{$ownerName}', '{$codeValue}', '{$qrImage}')\"></i>";
-    echo "<i class=\"fas fa-edit mx-1 text-orange-500 hover:scale-125 transition-transform\" title=\"Edit\" style=\"cursor:pointer;\" onclick=\"editGallon({$gallonID})\"></i>";
-    echo "<i class=\"fas fa-trash mx-1 text-red-600 hover:scale-125 transition-transform cursor-pointer\" title=\"Delete\" onclick=\"deleteGallon({$gallonID})\"></i>";
-    echo '</td>';
+                                                echo '<td class="px-6 py-4 text-center">';
+                                                echo "<i class=\"fas fa-eye mx-1 text-blue-600 hover:scale-125 transition-transform\" title=\"View\" style=\"cursor:pointer;\" onclick=\"viewQR('{$ownerName}', '{$codeValue}', '{$qrImage}')\"></i>";
+                                                echo "<i class=\"fas fa-edit mx-1 text-orange-500 hover:scale-125 transition-transform\" title=\"Edit\" style=\"cursor:pointer;\" onclick=\"editGallon({$gallonID})\"></i>";
+                                                echo "<i class=\"fas fa-trash mx-1 text-red-600 hover:scale-125 transition-transform cursor-pointer\" title=\"Delete\" onclick=\"deleteGallon({$gallonID})\"></i>";
+                                                echo '</td>';
 
                                                 echo "</tr>";
                                             }
@@ -260,6 +267,70 @@ $db = $database->getConnect();
                 </div>
             </div>
             <script>
+                let scannerActive = false;
+                let html5QrcodeScanner;
+
+                document.getElementById("scanBtn").addEventListener("click", function() {
+                    const readerElem = document.getElementById("reader");
+
+                    // Toggle scanner visibility
+                    if (!scannerActive) {
+                        readerElem.style.display = "block";
+                        startScanner();
+                        scannerActive = true;
+                    } else {
+                        stopScanner();
+                        readerElem.style.display = "none";
+                        scannerActive = false;
+                    }
+                });
+
+                function startScanner() {
+                    html5QrcodeScanner = new Html5Qrcode("reader");
+                    html5QrcodeScanner.start({
+                            facingMode: "environment"
+                        }, // rear camera on mobile
+                        {
+                            fps: 10,
+                            qrbox: 250
+                        },
+                        qrCodeMessage => {
+                            document.getElementById("result").innerHTML = `Scanned Code: ${qrCodeMessage}`;
+
+                            // Send to PHP for lookup
+                            fetch("fetch_qr.php", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/x-www-form-urlencoded"
+                                    },
+                                    body: "code=" + encodeURIComponent(qrCodeMessage)
+                                })
+                                .then(res => res.text())
+                                .then(data => {
+                                    document.getElementById("result").innerHTML = `<strong>Details:</strong><br>${data}`;
+                                });
+
+                            // Auto-stop after successful scan
+                            stopScanner();
+                            document.getElementById("reader").style.display = "none";
+                            scannerActive = false;
+                        },
+                        errorMessage => {
+                            // optional: console.log(`QR Error: ${errorMessage}`);
+                        }
+                    );
+                }
+
+                function stopScanner() {
+                    if (html5QrcodeScanner) {
+                        html5QrcodeScanner.stop().then(() => {
+                            console.log("Scanner stopped");
+                        }).catch(err => {
+                            console.error("Stop error:", err);
+                        });
+                    }
+                }
+
                 function sortTable(columnIndex) {
                     const table = document.getElementById("gallonTable");
                     const tbody = table.querySelector("tbody");
@@ -414,7 +485,7 @@ $db = $database->getConnect();
                         }
                     });
                 }
-                // ✅ VIEW FUNCTION
+                // VIEW FUNCTION
                 function viewQR(ownerName, codeValue, qrImage) {
                     if (!qrImage || qrImage === 'null') {
                         Swal.fire({
@@ -509,7 +580,7 @@ $db = $database->getConnect();
 
 
 
-                // ✅ DELETE FUNCTION (with password confirmation)
+                // DELETE FUNCTION (with password confirmation)
                 function deleteGallon(id) {
                     Swal.fire({
                         title: 'Confirm Deletion',
