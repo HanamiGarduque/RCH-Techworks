@@ -290,7 +290,7 @@ $db = $database->getConnect();
             </div>
         </div>
         <script>
-            //for smooth page transitio
+            //for smooth page transition
             document.querySelectorAll('.sidebar-link').forEach(link => {
                 link.addEventListener('click', e => {
                     e.preventDefault();
@@ -310,6 +310,7 @@ $db = $database->getConnect();
             content.classList.add('opacity-0');
             setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
 
+            // for sorting table
             function sortTable(columnIndex) {
                 const table = document.getElementById("gallonTable");
                 const tbody = table.querySelector("tbody");
