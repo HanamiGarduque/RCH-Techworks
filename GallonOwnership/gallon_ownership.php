@@ -36,99 +36,125 @@ $db = $database->getConnect();
 <body class="bg-gray-50">
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="w-64 bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg border-r border-gray-200 flex-shrink-0 fixed top-0 left-0 h-full overflow-y-auto flex flex-col text-white">
+        <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg border-r border-gray-200 
+        flex-shrink-0 fixed top-0 left-0 h-full overflow-hidden flex flex-col text-white 
+        transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
+
             <!-- Logo -->
-            <div class="p-6 border-b border-blue-400">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-droplet text-2xl"></i>
-                    <span class="text-2xl font-semibold">RCH Water</span>
+            <div class="p-7 border-b border-blue-400 flex items-center gap-2">
+                <i class="fas fa-droplet text-3xl"></i>
+                <div class="overflow-hidden">
+                    <span class="text-2xl font-semibold block whitespace-nowrap transition-all duration-500 ease-in-out 
+                 opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">
+                        RCH Water
+                    </span>
                 </div>
             </div>
 
             <nav class="mt-6 flex-1">
                 <ul class="space-y-1 px-4">
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 text-white rounded-lg font-medium">
-                            <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                                <i class="fas fa-chart-line"></i>
+                        <a href="../Admin/dashboard.php" class="flex items-center px-4 py-3 font-medium  hover:bg-blue-500 rounded-lg">
+                            <i class="fas fa-chart-line text-lg"></i>
+                            <div class="overflow-hidden ml-3">
+                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
+                                     opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                    Dashboard
+                                </span>
                             </div>
-                            <span class="font-medium">Dashboard</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 text-white rounded-lg font-medium">
-
-                        <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                                <i class="fas fa-shopping-cart"></i>
+                        <a href="../Order/orders_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                            <i class="fas fa-shopping-cart text-lg"></i>
+                            <div class="overflow-hidden ml-3">
+                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
+                                     opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                    Orders
+                                </span>
                             </div>
-                            <span class="font-medium">Orders</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 bg-blue-50 text-blue-600 rounded-lg font-medium">
-                            <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                                <i class="fas fa-tint       "></i>
+                        <a href="../GallonOwnership/gallon_ownership.php" class="flex items-center px-4 py-3 bg-blue-50 text-blue-600 rounded-lg font-medium">
+                            <i class="fas fa-tint text-lg"></i>
+                            <div class="overflow-hidden ml-3">
+                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
+                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                    Gallon Ownership
+                                </span>
                             </div>
-                            <span class="font-medium">Gallon Ownership</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 font-medium text-white hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                                <i class="fas fa-boxes"></i>
+                        <a href="../Inventory/inventory_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                            <i class="fas fa-boxes text-lg"></i>
+                            <div class="overflow-hidden ml-3">
+                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
+                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                    Inventory
+                                </span>
                             </div>
-                            <span class="font-medium">Inventory</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 font-medium text-white hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                                <i class="fas fa-users"></i>
+                        <a href="../Customer/customers_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                            <i class="fas fa-users text-lg"></i>
+                            <div class="overflow-hidden ml-3">
+                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
+                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                    Customers
+                                </span>
                             </div>
-                            <span class="font-medium">Users</span>
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center px-4 py-3 font-medium text-white hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                                <i class="fas fa-truck"></i>
+                        <a href="../Delivery/deliveries_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                            <i class="fas fa-truck text-lg"></i>
+                            <div class="overflow-hidden ml-3">
+                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
+                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                    Deliveries
+                                </span>
                             </div>
-                            <span class="font-medium">Deliveries</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center px-4 py-3 font-medium text-white hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                                <i class="fas fa-bell"></i>
-                            </div>
-                            <span class="font-medium">Notifications</span>
                         </a>
                     </li>
                 </ul>
             </nav>
 
             <div class="border-t border-blue-400 p-4">
-                <a href="#" class="flex items-center px-4 py-3 font-medium text-white hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                    <div class="w-5 h-5 mr-3 rounded-full bg-opacity-20 flex items-center justify-center text-lg">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </div>
-                    <span class="font-medium">Logout</span>
+                <a href="../logout.php" class="flex items-center px-4 py-3 font-medium text-white hover:bg-blue-500 rounded-lg transition-colors">
+                    <i class="fas fa-sign-out-alt text-lg"></i>
+                    <span class="ml-3 hidden group-hover:inline">Logout</span>
                 </a>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <div class="main-content fixed w-full top-0 right-0 overflow-auto h-full">
-            <div class="flex-1 ml-64 flex flex-col overflow-hidden">
-                <div class="bg-white border-b border-gray-100 shadow-b shadow-sm p-4">
+
+        <div id="page-content"
+            class="main-content fixed w-full top-0 right-0 overflow-auto h-full transition-all duration-300 ease-in-out">
+            <div
+                class="flex-1 transition-all duration-300 ease-in-out group-hover:ml-64 ml-20 flex flex-col overflow-hidden">
+                <div class="bg-white border-b border-gray-100 shadow-sm p-4 transition-all duration-300 ease-in-out">
                     <div class="flex items-center justify-between">
-                        <h1 class="text-2xl font-semibold text-blue-400">Gallon Ownership</h1>
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white cursor-pointer">
-                            <i class="fas fa-user"></i>
+                        <h1 class="text-2xl font-semibold text-blue-500">Gallon Ownership</h1>
+
+                        <div class="flex items-center space-x-4">
+                            <a href="../Notification/notifications.php" title="Notifications" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
+                                <i class="fas fa-bell text-blue-500 text-xl"></i>
+                            </a>
+                            <a href="../Messaging/messages.php" title="Messages" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
+                                <i class="fas fa-envelope text-blue-500 text-xl"></i>
+                            </a>
+                            <a href="../Admin/profile.php" title="Profile" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
+                                <i class="fas fa-user text-blue-500 text-xl"></i>
+                            </a>
                         </div>
                     </div>
-
                 </div>
+
+
                 <div class="m-3">
                     <!-- Search and Buttons -->
                     <div class="flex items-center gap-2 mb-4">
@@ -261,205 +287,158 @@ $db = $database->getConnect();
                         </div>
                     </div>
                 </div>
-                <!-- Floating Inbox Button -->
-                <div class="fixed bottom-7 right-7 w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center cursor-pointer shadow-lg z-50 transition-transform duration-300 hover:scale-110" title="Inbox">
-                    <i class="fas fa-envelope text-2xl"></i>
-                </div>
             </div>
-            <script>
-                let scannerActive = false;
-                let html5QrcodeScanner;
+        </div>
+        <script>
+            //for smooth page transitio
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    const target = e.currentTarget.getAttribute('href');
+                    const content = document.getElementById('page-content');
 
-                document.getElementById("scanBtn").addEventListener("click", function() {
-                    const readerElem = document.getElementById("reader");
+                    // Fade out
+                    content.classList.add('opacity-0', 'translate-x-2');
 
-                    // Toggle scanner visibility
-                    if (!scannerActive) {
-                        readerElem.style.display = "block";
-                        startScanner();
-                        scannerActive = true;
+                    setTimeout(() => {
+                        window.location.href = target;
+                    }, 300); // same as duration-300
+                });
+            });
+
+            const content = document.getElementById('page-content');
+            content.classList.add('opacity-0');
+            setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
+
+            function sortTable(columnIndex) {
+                const table = document.getElementById("gallonTable");
+                const tbody = table.querySelector("tbody");
+                const rows = Array.from(tbody.querySelectorAll("tr"));
+                const isAscending = table.dataset.sortOrder !== "asc";
+
+                rows.sort((a, b) => {
+                    const aText = a.children[columnIndex].innerText.toLowerCase();
+                    const bText = b.children[columnIndex].innerText.toLowerCase();
+                    return isAscending ? aText.localeCompare(bText) : bText.localeCompare(aText);
+                });
+
+                tbody.innerHTML = "";
+                rows.forEach(row => tbody.appendChild(row));
+                table.dataset.sortOrder = isAscending ? "asc" : "desc";
+            }
+            // Filter Function
+            function filterTab(button) {
+                document.querySelectorAll('button[onclick="filterTab(this)"]').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'no-hover');
+                    btn.classList.add('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
+                });
+
+                // Set active tab
+                button.classList.remove('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
+                button.classList.add('bg-blue-600', 'text-white', 'no-hover');
+
+                // Get filter type
+                const filter = button.textContent.trim();
+                const rows = document.querySelectorAll('#gallonTable tbody tr');
+
+                rows.forEach(row => {
+                    const owner = row.querySelector('.owner-cell')?.textContent.trim();
+                    const codeValue = row.querySelector('.code-cell')?.textContent.trim();
+                    let show = false;
+
+                    if (filter === "All") {
+                        show = true;
+                    } else if (filter === "Station-Owned" && owner === "RCH Water") {
+                        show = true;
+                    } else if (filter === "Customer-Owned" && owner !== "RCH Water") {
+                        show = true;
+                    } else if (filter === "Untracked" && (codeValue === "Generate QR")) {
+                        show = true;
+                    }
+
+                    row.style.display = show ? "" : "none";
+                });
+            }
+
+            // Automatically trigger "All" on load
+            window.addEventListener("DOMContentLoaded", () => {
+                document.getElementById("allTab").click();
+            });
+
+
+            // Status styling
+            document.addEventListener("DOMContentLoaded", function() {
+                const statusCells = document.querySelectorAll(".status-text");
+
+                statusCells.forEach(cell => {
+                    const text = cell.textContent.trim().toLowerCase();
+
+                    if (text === "available") {
+                        cell.className = "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold";
+                    } else if (text === "in-use") {
+                        cell.className = "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold";
+                    } else if (text === "damaged") {
+                        cell.className = "bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold";
                     } else {
-                        stopScanner();
-                        readerElem.style.display = "none";
-                        scannerActive = false;
+                        cell.className = "bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold"; // fallback for unknown statuses
                     }
                 });
+            });
+            // Search Function
+            function searchTable() {
+                const input = document.getElementById("searchInput");
+                const filter = input.value.toLowerCase();
+                const table = document.getElementById("gallonTable");
+                const rows = table.getElementsByTagName("tr");
 
-                function startScanner() {
-                    html5QrcodeScanner = new Html5Qrcode("reader");
-                    html5QrcodeScanner.start({
-                            facingMode: "environment"
-                        }, // rear camera on mobile
-                        {
-                            fps: 10,
-                            qrbox: 250
-                        },
-                        qrCodeMessage => {
-                            document.getElementById("result").innerHTML = `Scanned Code: ${qrCodeMessage}`;
+                for (let i = 1; i < rows.length; i++) { // skip header
+                    const cells = rows[i].getElementsByTagName("td");
+                    let match = false;
 
-                            // Send to PHP for lookup
-                            fetch("fetch_qr.php", {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/x-www-form-urlencoded"
-                                    },
-                                    body: "code=" + encodeURIComponent(qrCodeMessage)
+                    // If search is empty, show all rows
+                    if (filter === "") {
+                        rows[i].style.display = "";
+                        continue;
+                    }
+
+                    // Otherwise, search the first 3 columns
+                    for (let j = 0; j < 3; j++) {
+                        if (cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
+                            match = true;
+                            break;
+                        }
+                    }
+
+                    rows[i].style.display = match ? "" : "none";
+                }
+            }
+            // Generate QR
+            function generateQR(gallonID) {
+                Swal.fire({
+                    title: 'Generate QR Code?',
+                    text: "Are you sure you want to generate a QR code for this gallon?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#9ca3af',
+                    confirmButtonText: 'Yes, generate it'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch('generate_qr.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    'gallonID': gallonID
                                 })
-                                .then(res => res.text())
-                                .then(data => {
-                                    document.getElementById("result").innerHTML = `<strong>Details:</strong><br>${data}`;
-                                });
-
-                            // Auto-stop after successful scan
-                            stopScanner();
-                            document.getElementById("reader").style.display = "none";
-                            scannerActive = false;
-                        },
-                        errorMessage => {
-                            // optional: console.log(`QR Error: ${errorMessage}`);
-                        }
-                    );
-                }
-
-                function stopScanner() {
-                    if (html5QrcodeScanner) {
-                        html5QrcodeScanner.stop().then(() => {
-                            console.log("Scanner stopped");
-                        }).catch(err => {
-                            console.error("Stop error:", err);
-                        });
-                    }
-                }
-
-                function sortTable(columnIndex) {
-                    const table = document.getElementById("gallonTable");
-                    const tbody = table.querySelector("tbody");
-                    const rows = Array.from(tbody.querySelectorAll("tr"));
-                    const isAscending = table.dataset.sortOrder !== "asc";
-
-                    rows.sort((a, b) => {
-                        const aText = a.children[columnIndex].innerText.toLowerCase();
-                        const bText = b.children[columnIndex].innerText.toLowerCase();
-                        return isAscending ? aText.localeCompare(bText) : bText.localeCompare(aText);
-                    });
-
-                    tbody.innerHTML = "";
-                    rows.forEach(row => tbody.appendChild(row));
-                    table.dataset.sortOrder = isAscending ? "asc" : "desc";
-                }
-                // Filter Function
-                function filterTab(button) {
-                    document.querySelectorAll('button[onclick="filterTab(this)"]').forEach(btn => {
-                        btn.classList.remove('bg-blue-600', 'text-white', 'no-hover');
-                        btn.classList.add('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
-                    });
-
-                    // Set active tab
-                    button.classList.remove('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
-                    button.classList.add('bg-blue-600', 'text-white', 'no-hover');
-
-                    // Get filter type
-                    const filter = button.textContent.trim();
-                    const rows = document.querySelectorAll('#gallonTable tbody tr');
-
-                    rows.forEach(row => {
-                        const owner = row.querySelector('.owner-cell')?.textContent.trim();
-                        const codeValue = row.querySelector('.code-cell')?.textContent.trim();
-                        let show = false;
-
-                        if (filter === "All") {
-                            show = true;
-                        } else if (filter === "Station-Owned" && owner === "RCH Water") {
-                            show = true;
-                        } else if (filter === "Customer-Owned" && owner !== "RCH Water") {
-                            show = true;
-                        } else if (filter === "Untracked" && (codeValue === "Generate QR")) {
-                            show = true;
-                        }
-
-                        row.style.display = show ? "" : "none";
-                    });
-                }
-
-                // Automatically trigger "All" on load
-                window.addEventListener("DOMContentLoaded", () => {
-                    document.getElementById("allTab").click();
-                });
-
-
-                // Status styling
-                document.addEventListener("DOMContentLoaded", function() {
-                    const statusCells = document.querySelectorAll(".status-text");
-
-                    statusCells.forEach(cell => {
-                        const text = cell.textContent.trim().toLowerCase();
-
-                        if (text === "available") {
-                            cell.className = "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold";
-                        } else if (text === "in-use") {
-                            cell.className = "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold";
-                        } else if (text === "damaged") {
-                            cell.className = "bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold";
-                        } else {
-                            cell.className = "bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold"; // fallback for unknown statuses
-                        }
-                    });
-                });
-                // Search Function
-                function searchTable() {
-                    const input = document.getElementById("searchInput");
-                    const filter = input.value.toLowerCase();
-                    const table = document.getElementById("gallonTable");
-                    const rows = table.getElementsByTagName("tr");
-
-                    for (let i = 1; i < rows.length; i++) { // skip header
-                        const cells = rows[i].getElementsByTagName("td");
-                        let match = false;
-
-                        // If search is empty, show all rows
-                        if (filter === "") {
-                            rows[i].style.display = "";
-                            continue;
-                        }
-
-                        // Otherwise, search the first 3 columns
-                        for (let j = 0; j < 3; j++) {
-                            if (cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
-                                match = true;
-                                break;
-                            }
-                        }
-
-                        rows[i].style.display = match ? "" : "none";
-                    }
-                }
-                // Generate QR
-                function generateQR(gallonID) {
-                    Swal.fire({
-                        title: 'Generate QR Code?',
-                        text: "Are you sure you want to generate a QR code for this gallon?",
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonColor: '#2563eb',
-                        cancelButtonColor: '#9ca3af',
-                        confirmButtonText: 'Yes, generate it'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            fetch('generate_qr.php', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        'gallonID': gallonID
-                                    })
-                                })
-                                .then(res => res.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        Swal.fire({
-                                            title: 'QR Code Generated!',
-                                            html: `
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire({
+                                        title: 'QR Code Generated!',
+                                        html: `
                                                 <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
                                                     <p style="margin:0;"><strong>Code Value:</strong> ${data.code_value}</p>
                                                     <img src="${data.image}"
@@ -467,41 +446,41 @@ $db = $database->getConnect();
                                                         style="width:200px; height:200px; border-radius:8px;">
                                                 </div>
                                             `,
-                                            icon: 'success',
-                                            confirmButtonText: 'OK'
-                                        }).then(() => {
-                                            location.reload();
-                                        });
+                                        icon: 'success',
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        location.reload();
+                                    });
 
 
-                                    } else {
-                                        Swal.fire('Error', data.message || 'Unknown error', 'error');
-                                    }
-                                })
-                                .catch(err => {
-                                    console.error(err);
-                                    Swal.fire('Error', 'Request failed. Check your connection or console.', 'error');
-                                });
-                        }
-                    });
-                }
-                // VIEW FUNCTION
-                function viewQR(ownerName, codeValue, qrImage) {
-                    if (!qrImage || qrImage === 'null') {
-                        Swal.fire({
-                            icon: 'info',
-                            title: 'No QR Code',
-                            html: `
+                                } else {
+                                    Swal.fire('Error', data.message || 'Unknown error', 'error');
+                                }
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                Swal.fire('Error', 'Request failed. Check your connection or console.', 'error');
+                            });
+                    }
+                });
+            }
+            // VIEW FUNCTION
+            function viewQR(ownerName, codeValue, qrImage) {
+                if (!qrImage || qrImage === 'null') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'No QR Code',
+                        html: `
                 <p><strong>Owner:</strong> ${ownerName}</p>
                 <p>No QR code has been generated yet for this gallon.</p>
             `,
-                            confirmButtonColor: '#2563eb'
-                        });
-                    } else {
-                        const fileName = qrImage.split('/').pop();
-                        Swal.fire({
-                            title: 'QR Code Details',
-                            html: `
+                        confirmButtonColor: '#2563eb'
+                    });
+                } else {
+                    const fileName = qrImage.split('/').pop();
+                    Swal.fire({
+                        title: 'QR Code Details',
+                        html: `
                 <div style="text-align:center;">
                     <p><strong>Owner:</strong> ${ownerName}</p>
                     <p><strong>Code Value:</strong> ${codeValue}</p>
@@ -511,122 +490,122 @@ $db = $database->getConnect();
                          style="display:block; margin:10px auto; width:200px; height:200px; border-radius:8px;">
                 </div>
             `,
-                            icon: 'success',
-                            confirmButtonColor: '#2563eb'
-                        });
-                    }
-                }
-
-
-                function editGallon(id) {
-                    Swal.fire({
-                        title: 'Edit Gallon Owner',
-                        html: `
-            <input type="text" id="ownerName" class="swal2-input" placeholder="Enter new owner name">
-        `,
-                        confirmButtonText: 'Save Changes',
-                        showCancelButton: true,
-                        confirmButtonColor: '#2563eb',
-                        cancelButtonColor: '#9ca3af',
-                        preConfirm: () => {
-                            const ownerName = document.getElementById('ownerName').value.trim();
-                            if (!ownerName) {
-                                Swal.showValidationMessage('Owner name cannot be empty');
-                                return false;
-                            }
-                            return {
-                                id,
-                                ownerName
-                            };
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            const {
-                                id,
-                                ownerName
-                            } = result.value;
-
-                            // Send update request to backend
-                            fetch('update_owner.php', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        id,
-                                        ownerName
-                                    })
-                                })
-                                .then(res => res.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        Swal.fire({
-                                            icon: 'success',
-                                            title: 'Updated!',
-                                            text: 'Owner name has been updated successfully.',
-                                            confirmButtonColor: '#2563eb'
-                                        }).then(() => location.reload());
-                                    } else {
-                                        Swal.fire('Error', data.message || 'Failed to update owner name.', 'error');
-                                    }
-                                })
-                                .catch(err => {
-                                    console.error(err);
-                                    Swal.fire('Error', 'Request failed. Please check your connection.', 'error');
-                                });
-                        }
+                        icon: 'success',
+                        confirmButtonColor: '#2563eb'
                     });
                 }
+            }
+
+
+            function editGallon(id) {
+                Swal.fire({
+                    title: 'Edit Gallon Owner',
+                    html: `
+            <input type="text" id="ownerName" class="swal2-input" placeholder="Enter new owner name">
+        `,
+                    confirmButtonText: 'Save Changes',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#9ca3af',
+                    preConfirm: () => {
+                        const ownerName = document.getElementById('ownerName').value.trim();
+                        if (!ownerName) {
+                            Swal.showValidationMessage('Owner name cannot be empty');
+                            return false;
+                        }
+                        return {
+                            id,
+                            ownerName
+                        };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const {
+                            id,
+                            ownerName
+                        } = result.value;
+
+                        // Send update request to backend
+                        fetch('update_owner.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    id,
+                                    ownerName
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Updated!',
+                                        text: 'Owner name has been updated successfully.',
+                                        confirmButtonColor: '#2563eb'
+                                    }).then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', data.message || 'Failed to update owner name.', 'error');
+                                }
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                Swal.fire('Error', 'Request failed. Please check your connection.', 'error');
+                            });
+                    }
+                });
+            }
 
 
 
-                // DELETE FUNCTION (with password confirmation)
-                function deleteGallon(id) {
-                    Swal.fire({
-                        title: 'Confirm Deletion',
-                        html: `
+            // DELETE FUNCTION (with password confirmation)
+            function deleteGallon(id) {
+                Swal.fire({
+                    title: 'Confirm Deletion',
+                    html: `
             <p>Please enter admin password to confirm:</p>
             <input type="password" id="adminPass" class="swal2-input" placeholder="Enter password">
         `,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#9ca3af',
-                        confirmButtonText: 'Delete',
-                        preConfirm: () => {
-                            const pass = document.getElementById('adminPass').value;
-                            if (!pass) {
-                                Swal.showValidationMessage('Password is required');
-                                return false;
-                            }
-                            return {
-                                id,
-                                pass
-                            };
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#9ca3af',
+                    confirmButtonText: 'Delete',
+                    preConfirm: () => {
+                        const pass = document.getElementById('adminPass').value;
+                        if (!pass) {
+                            Swal.showValidationMessage('Password is required');
+                            return false;
                         }
-                    }).then(result => {
-                        if (result.isConfirmed) {
-                            fetch('delete_gallon.php', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(result.value)
-                                })
-                                .then(res => res.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        Swal.fire('Deleted!', 'Gallon record has been removed.', 'success')
-                                            .then(() => location.reload());
-                                    } else {
-                                        Swal.fire('Error', data.message || 'Failed to delete record.', 'error');
-                                    }
-                                })
-                                .catch(() => Swal.fire('Error', 'Request failed.', 'error'));
-                        }
-                    });
-                }
-            </script>
+                        return {
+                            id,
+                            pass
+                        };
+                    }
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        fetch('delete_gallon.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(result.value)
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire('Deleted!', 'Gallon record has been removed.', 'success')
+                                        .then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', data.message || 'Failed to delete record.', 'error');
+                                }
+                            })
+                            .catch(() => Swal.fire('Error', 'Request failed.', 'error'));
+                    }
+                });
+            }
+        </script>
 </body>
 
 </html>
