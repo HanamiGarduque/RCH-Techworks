@@ -41,7 +41,7 @@ $db = $database->getConnect();
         transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
 
             <!-- Logo -->
-            <div class="p-7 border-b border-blue-400 flex items-center gap-2">
+            <div class="px-7 py-7 border-b border-blue-400 flex items-center gap-2">
                 <i class="fas fa-droplet text-3xl"></i>
                 <div class="overflow-hidden">
                     <span class="text-2xl font-semibold block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -54,7 +54,7 @@ $db = $database->getConnect();
             <nav class="mt-6 flex-1">
                 <ul class="space-y-1 px-4">
                     <li>
-                        <a href="../Admin/dashboard.php" class="flex items-center px-4 py-3 font-medium  hover:bg-blue-500 rounded-lg">
+                        <a href="../Admin/dashboard.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-chart-line text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -65,7 +65,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../Order/orders_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                        <a href="../Order/orders_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-shopping-cart text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -76,7 +76,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../GallonOwnership/gallon_ownership.php" class="flex items-center px-4 py-3 bg-blue-50 text-blue-600 rounded-lg font-medium">
+                        <a href="../GallonOwnership/gallon_ownership.php" class="flex items-center px-4 py-3 bg-white/20 text-white rounded-lg font-medium">
                             <i class="fas fa-tint text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -87,7 +87,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../Inventory/inventory_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                        <a href="../Inventory/inventory_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-boxes text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -98,7 +98,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../Customer/customers_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                        <a href="../Customer/customers_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-users text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -109,7 +109,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../Delivery/deliveries_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                        <a href="../Delivery/deliveries_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-truck text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -122,10 +122,15 @@ $db = $database->getConnect();
                 </ul>
             </nav>
 
-            <div class="border-t border-blue-400 p-4">
-                <a href="../logout.php" class="flex items-center px-4 py-3 font-medium text-white hover:bg-blue-500 rounded-lg transition-colors">
+            <div class="border-t border-blue-400 px-4 py-5">
+                <a href="../logout.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                     <i class="fas fa-sign-out-alt text-lg"></i>
-                    <span class="ml-3 hidden group-hover:inline">Logout</span>
+                    <div class="overflow-hidden ml-3">
+                        <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
+                             opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                            Logout
+                        </span>
+                    </div>
                 </a>
             </div>
         </aside>
@@ -138,7 +143,10 @@ $db = $database->getConnect();
                 class="flex-1 transition-all duration-300 ease-in-out group-hover:ml-64 ml-20 flex flex-col overflow-hidden">
                 <div class="bg-white border-b border-gray-100 shadow-sm p-4 transition-all duration-300 ease-in-out">
                     <div class="flex items-center justify-between">
-                        <h1 class="text-2xl font-semibold text-blue-500">Gallon Ownership</h1>
+                        <div class="flex flex-col">
+                            <h1 class="text-3xl font-semibold text-blue-500">Gallon Ownership</h1>
+                            <p class="text-sm text-gray-700 mt-1">Manage and track ownership of gallons between customers and the station.</p>
+                        </div>
 
                         <div class="flex items-center space-x-4">
                             <a href="../Notification/notifications.php" title="Notifications" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
@@ -170,21 +178,16 @@ $db = $database->getConnect();
                                 onkeyup="searchTable()">
                         </div>
                         <button
-                            onclick="searchTable()"
                             class="bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
-                            Search
+                            Add Gallon
                         </button>
 
                         <a href="qr_scanner.php" id="scanBtn"
                             class="inline-flex items-center bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
                             <i class="fas fa-qrcode mr-2"></i>
-                            Scan QR Code
+                            View QR Codes
                         </a>
 
-
-                        <!-- QR Reader -->
-                        <div id="reader"></div>
-                        <div id="result"></div>
                     </div>
 
                     <!-- Content Area -->
@@ -216,7 +219,7 @@ $db = $database->getConnect();
                         <!-- Table -->
                         <div class="bg-white rounded-lg shadow-md overflow-hidden">
                             <!-- Scroll wrapper -->
-                            <div class="overflow-x-auto max-h-[400px]">
+                            <div class="overflow-x-auto max-h-[500px]">
 
                                 <table id="gallonTable" class="min-w-full text-sm text-left text-gray-700">
                                     <thead class="bg-blue-50 border-b border-gray-200 sticky top-0 z-10">
@@ -389,7 +392,7 @@ $db = $database->getConnect();
             function searchTable() {
                 const input = document.getElementById("searchInput");
                 const filter = input.value.toLowerCase();
-                const table = document.getElementById("gallonTable");
+                const    table = document.getElementById("gallonTable");
                 const rows = table.getElementsByTagName("tr");
 
                 for (let i = 1; i < rows.length; i++) { // skip header

@@ -54,7 +54,7 @@ $db = $database->getConnect();
             <nav class="mt-6 flex-1">
                 <ul class="space-y-1 px-4">
                     <li>
-                        <a href="../Admin/dashboard.php" class="flex items-center px-4 py-3 font-medium  hover:bg-blue-500 rounded-lg">
+                        <a href="../Admin/dashboard.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-chart-line text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -65,7 +65,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../Order/orders_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                        <a href="../Order/orders_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-shopping-cart text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -76,7 +76,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../GallonOwnership/gallon_ownership.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                        <a href="../GallonOwnership/gallon_ownership.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-tint text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -87,7 +87,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../Inventory/inventory_list.php" class="flex items-center px-4 py-3 bg-blue-50 text-blue-600 rounded-lg font-medium">
+                        <a href="../Inventory/inventory_list.php" class="flex items-center px-4 py-3 bg-white/20 text-white rounded-lg font-medium">
                             <i class="fas fa-boxes text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -98,7 +98,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../Customer/customers_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                        <a href="../Customer/customers_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-users text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -109,7 +109,7 @@ $db = $database->getConnect();
                         </a>
                     </li>
                     <li>
-                        <a href="../Delivery/deliveries_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-blue-500">
+                        <a href="../Delivery/deliveries_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
                             <i class="fas fa-truck text-lg"></i>
                             <div class="overflow-hidden ml-3">
                                 <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
