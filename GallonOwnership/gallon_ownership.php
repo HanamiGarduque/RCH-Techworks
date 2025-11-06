@@ -171,7 +171,7 @@ $db = $database->getConnect();
                             <input
                                 type="text"
                                 id="searchInput"
-                                placeholder="Search by Gallon Owner, Gallon Type, Gallon ID..."
+                                placeholder="Search by Gallon Owner, Gallon Type, Gallon ID, Status..."
                                 class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-sm"
                                 style="font-style: italic;"
                                 oninput="this.style.fontStyle = this.value ? 'normal' : 'italic';"
@@ -318,17 +318,33 @@ $db = $database->getConnect();
                 const table = document.getElementById("gallonTable");
                 const tbody = table.querySelector("tbody");
                 const rows = Array.from(tbody.querySelectorAll("tr"));
-                const isAscending = table.dataset.sortOrder !== "asc";
+
+                // Determine sort direction: toggle if same column, otherwise default to ascending
+                const prevCol = table.dataset.sortedColumn;
+                const isAscending = (prevCol === String(columnIndex)) ? table.dataset.sortOrder !== "asc" : true;
 
                 rows.sort((a, b) => {
-                    const aText = a.children[columnIndex].innerText.toLowerCase();
-                    const bText = b.children[columnIndex].innerText.toLowerCase();
+                    const aText = a.children[columnIndex].innerText.trim();
+                    const bText = b.children[columnIndex].innerText.trim();
+
+                    // Numeric sort for Gallon ID (column 0)
+                    if (columnIndex === 0) {
+                        const aNum = parseFloat(aText.replace(/[^0-9\.\-]/g, ''));
+                        const bNum = parseFloat(bText.replace(/[^0-9\.\-]/g, ''));
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                            return isAscending ? aNum - bNum : bNum - aNum;
+                        }
+                    }
+
+                    // Fallback to string comparison
                     return isAscending ? aText.localeCompare(bText) : bText.localeCompare(aText);
                 });
 
                 tbody.innerHTML = "";
                 rows.forEach(row => tbody.appendChild(row));
+
                 table.dataset.sortOrder = isAscending ? "asc" : "desc";
+                table.dataset.sortedColumn = String(columnIndex);
             }
             // Filter Function
             function filterTab(button) {
@@ -381,18 +397,88 @@ $db = $database->getConnect();
                         cell.className = "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold";
                     } else if (text === "in-use") {
                         cell.className = "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold";
-                    } else if (text === "damaged") {
+                    } else if (text === "lost/damaged") {
                         cell.className = "bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold";
                     } else {
                         cell.className = "bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold"; // fallback for unknown statuses
                     }
                 });
             });
+            // Add Gallon button
+            document.querySelector('button').addEventListener('click', addGallon);
+
+            function addGallon() {
+                Swal.fire({
+                    title: 'Add New Gallon',
+                    html: `
+            <label style="font-size: 14px; margin-bottom: 8px; display:block;">Select Gallon Type:</label>
+            <select id="gallonTypeDropdown" class="swal2-select"
+                style="width: 300px; padding:8px 10px; border-radius:6px; border:1px solid #e5e7eb; box-shadow: 0 0 0 4px rgba(156,163,175,0.25); transition: box-shadow .15s ease, border-color .15s ease; outline: none;"
+                onfocus="this.style.boxShadow='0 0 0 4px rgba(59,130,246,0.25)'; this.style.borderColor='#2563eb';"
+                onblur="this.style.boxShadow='0 0 0 4px rgba(156,163,175,0.25)'; this.style.borderColor='#e5e7eb';">
+                <option value="1" data-type="18.9L Round Gallon">18.9L Round Gallon</option>
+                <option value="2" data-type="20L Slim Gallon">20L Slim Gallon</option>
+                <option value="11" data-type="10L Slim Gallon">10L Slim Gallon</option>
+            </select>
+        `,
+                    confirmButtonText: 'Add Gallon',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#9ca3af',
+                    preConfirm: () => {
+                        const dropdown = document.getElementById('gallonTypeDropdown');
+                        const item_id = dropdown.value;
+                        const gallon_type = dropdown.options[dropdown.selectedIndex].dataset.type;
+
+                        return {
+                            item_id,
+                            gallon_type
+                        };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const {
+                            item_id,
+                            gallon_type
+                        } = result.value;
+
+                        fetch('add_gallon.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    item_id,
+                                    gallon_type
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Added!',
+                                        text: 'New gallon added successfully.',
+                                        confirmButtonColor: '#2563eb'
+                                    }).then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', data.message || 'Failed to add gallon.', 'error');
+                                }
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                Swal.fire('Error', 'Request failed. Please check your connection.', 'error');
+                            });
+                    }
+                });
+            }
+
+
             // Search Function
             function searchTable() {
                 const input = document.getElementById("searchInput");
                 const filter = input.value.toLowerCase();
-                const    table = document.getElementById("gallonTable");
+                const table = document.getElementById("gallonTable");
                 const rows = table.getElementsByTagName("tr");
 
                 for (let i = 1; i < rows.length; i++) { // skip header
@@ -405,13 +491,13 @@ $db = $database->getConnect();
                         continue;
                     }
 
-                    // Otherwise, search the first 3 columns
-                    for (let j = 0; j < 3; j++) {
+                    for (let j = 0; j < cells.length - 1; j++) {
                         if (cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
                             match = true;
                             break;
                         }
                     }
+
 
                     rows[i].style.display = match ? "" : "none";
                 }
@@ -503,9 +589,15 @@ $db = $database->getConnect();
 
             function editGallon(id) {
                 Swal.fire({
-                    title: 'Edit Gallon Owner',
+                    title: 'Edit Gallon Owner / Status',
                     html: `
             <input type="text" id="ownerName" class="swal2-input" placeholder="Enter new owner name">
+            <div style="margin-top: 10px; text-align: left;">
+                <label style="font-size: 14px;">
+                    <input type="checkbox" id="markDamaged" style="margin-right: 6px;">
+                    Mark as Damaged
+                </label>
+            </div>
         `,
                     confirmButtonText: 'Save Changes',
                     showCancelButton: true,
@@ -513,32 +605,41 @@ $db = $database->getConnect();
                     cancelButtonColor: '#9ca3af',
                     preConfirm: () => {
                         const ownerName = document.getElementById('ownerName').value.trim();
-                        if (!ownerName) {
-                            Swal.showValidationMessage('Owner name cannot be empty');
+                        const isDamaged = document.getElementById('markDamaged').checked;
+
+                        // Require at least one change (either owner name or damaged status)
+                        if (!ownerName && !isDamaged) {
+                            Swal.showValidationMessage('Please enter an owner name or mark as damaged.');
                             return false;
                         }
+
                         return {
                             id,
-                            ownerName
+                            ownerName,
+                            isDamaged
                         };
                     }
                 }).then((result) => {
                     if (result.isConfirmed) {
                         const {
                             id,
-                            ownerName
+                            ownerName,
+                            isDamaged
                         } = result.value;
 
-                        // Send update request to backend
-                        fetch('update_owner.php', {
+                        // Build request body dynamically (only send what's needed)
+                        const payload = {
+                            id
+                        };
+                        if (ownerName) payload.ownerName = ownerName;
+                        if (isDamaged) payload.status = 'Lost/Damaged';
+
+                        fetch('update_changes.php', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
                                 },
-                                body: JSON.stringify({
-                                    id,
-                                    ownerName
-                                })
+                                body: JSON.stringify(payload)
                             })
                             .then(res => res.json())
                             .then(data => {
@@ -546,11 +647,12 @@ $db = $database->getConnect();
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'Updated!',
-                                        text: 'Owner name has been updated successfully.',
+                                        text: isDamaged ?
+                                            'Gallon marked as damaged successfully.' : 'Owner updated successfully.',
                                         confirmButtonColor: '#2563eb'
                                     }).then(() => location.reload());
                                 } else {
-                                    Swal.fire('Error', data.message || 'Failed to update owner name.', 'error');
+                                    Swal.fire('Error', data.message || 'Failed to update gallon.', 'error');
                                 }
                             })
                             .catch(err => {
@@ -560,8 +662,6 @@ $db = $database->getConnect();
                     }
                 });
             }
-
-
 
             // DELETE FUNCTION (with password confirmation)
             function deleteGallon(id) {
