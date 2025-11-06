@@ -16,7 +16,7 @@ $db = $database->getConnect();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCH Water - Customer Orders</title>
+    <title>RCH Water - Product Inventory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
@@ -139,8 +139,10 @@ $db = $database->getConnect();
                 <!-- Header -->
                 <div class="bg-white border-b border-gray-100 shadow-sm p-4 transition-all duration-300 ease-in-out">
                     <div class="flex items-center justify-between">
-                        <h1 class="text-2xl font-semibold text-blue-500">Manage Inventory</h1>
-
+                        <div class="flex flex-col">
+                            <h1 class="text-3xl font-semibold text-blue-500">Inventory</h1>
+                            <p class="text-sm text-gray-700 mt-1">View and manage inventory levels and product details.</p>
+                        </div>
                         <div class="flex items-center space-x-4">
                             <a href="../Notification/notifications.php" title="Notifications" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
                                 <i class="fas fa-bell text-blue-500 text-xl"></i>
@@ -156,7 +158,144 @@ $db = $database->getConnect();
                 </div>
 
                 <div class="m-3">
-                    <!-- insert main content here -->
+                    <!-- Search and Buttons -->
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="flex-1 relative">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            <input
+                                type="text"
+                                id="searchInput"
+                                placeholder="Search by Gallon Owner, Gallon Type, Gallon ID, Status..."
+                                class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-sm"
+                                style="font-style: italic;"
+                                oninput="this.style.fontStyle = this.value ? 'normal' : 'italic';"
+                                onkeyup="searchTable()">
+                        </div>
+                        <button
+                            class="bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
+                            Add Item
+                        </button>
+
+                        <!-- <a href="qr_scanner.php" id="scanBtn"
+                                class="inline-flex items-center bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
+                                <i class="fas fa-qrcode mr-2"></i>
+                                View QR Codes
+                            </a> -->
+
+                    </div>
+
+                    <!-- Content Area -->
+                    <div class="p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 rounded-lg">
+                        <!-- Filter Tabs -->
+                        <div class="flex gap-3 mb-6 flex-wrap">
+                            <button id="allTab"
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
+                                onclick="filterTab(this)">
+                                <i class="fas fa-list mr-2"></i>All
+                            </button>
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
+                                <i class="fas fa-building mr-2"></i>Gallons
+                            </button>
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
+                                <i class="fas fa-user mr-2"></i>Accessories
+                            </button>
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
+                                <i class="fas fa-question-circle mr-2"></i>Others
+                            </button>
+                        </div>
+
+                        <!-- Table -->
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                            <!-- Scroll wrapper -->
+                            <div class="overflow-x-auto max-h-[500px]">
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                    <?php
+                                    require_once '../Database/db_connection.php';
+                                    $database = new Database();
+                                    $db = $database->getConnect();
+
+                                    // ✅ Combined logic:
+                                    // - Skip refill items
+                                    // - Gallon types get quantity from gallon_ownership
+                                    // - Others use inventory.quantity
+                                    $query = "
+                                        SELECT 
+                                            i.item_id,
+                                            i.item_name,
+                                            i.item_image,
+                                            i.price,
+                                            CASE 
+                                                WHEN i.item_name IN ('18.9L Round Gallon', '20L Slim Gallon', '10L Slim Gallon')
+                                                THEN (
+                                                    SELECT COUNT(*)
+                                                    FROM gallon_ownership go
+                                                    WHERE go.gallon_type = i.item_name
+                                                    AND go.status NOT IN ('Damaged', 'Lost')
+                                                )
+                                                ELSE i.total_quantity
+                                            END AS quantity
+                                        FROM inventory i
+                                        WHERE i.item_name NOT IN ('Refill (18.9L RG)', 'Refill (20L SG)', 'Refill (10L SG)');
+                                    ";
+
+                                    $stmt = $db->prepare($query);
+                                    $stmt->execute();
+
+                                    if ($stmt->rowCount() > 0) {
+                                        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                            $item_id = htmlspecialchars($row['item_id']);
+                                            $item_name = htmlspecialchars($row['item_name']);
+                                            $quantity = (int)$row['quantity'];
+                                            $price = number_format((float)$row['price'], 2);
+                                            $item_image = htmlspecialchars($row['item_image']);
+
+                                            // ✅ Stock status logic
+                                            if ($quantity > 20) {
+                                                $status = "In Stock";
+                                                $statusColor = "text-green-600 bg-green-100";
+                                            } elseif ($quantity > 0) {
+                                                $status = "Low Stock";
+                                                $statusColor = "text-yellow-600 bg-yellow-100";
+                                            } else {
+                                                $status = "Out of Stock";
+                                                $statusColor = "text-red-600 bg-red-100";
+                                            }
+
+                                            echo '
+                                            <div class="bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg transition p-4 flex flex-col items-center">
+                                                <img src="../Assets/' . $item_image . '" alt="' . $item_name . '" class="w-24 h-24 object-cover rounded-lg mb-3">
+                                                <h2 class="text-lg font-semibold text-gray-800 text-center mb-1">' . $item_name . '</h2>
+                                                <p class="text-sm text-gray-600 mb-1">Quantity: <span class="font-medium">' . $quantity . '</span></p>
+                                                <p class="text-sm text-gray-600 mb-1">Price: <span class="font-medium text-blue-600">₱' . $price . '</span></p>
+                                                <p class="text-sm font-semibold ' . $statusColor . ' px-3 py-1 rounded-full mb-3">' . $status . '</p>
+                                                <div class="flex gap-3">
+                                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded-md text-sm font-medium shadow" onclick="editItem(' . $item_id . ')">
+                                                        <i class="fas fa-edit mr-1"></i>Edit
+                                                    </button>
+                                                    <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-md text-sm font-medium shadow" onclick="deleteItem(' . $item_id . ')">
+                                                        <i class="fas fa-trash mr-1"></i>Delete
+                                                    </button>
+                                                </div>
+                                            </div>';
+                                        }
+                                    } else {
+                                        echo '<p class="text-gray-500 text-center col-span-full">No items found in inventory.</p>';
+                                    }
+                                    ?>
+                                </div>
+
+
+
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
             </div>
@@ -185,5 +324,39 @@ $db = $database->getConnect();
         const content = document.getElementById('page-content');
         content.classList.add('opacity-0');
         setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
+
+        // Filter Function
+        function filterTab(button) {
+            document.querySelectorAll('button[onclick="filterTab(this)"]').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'no-hover');
+                btn.classList.add('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
+            });
+
+            // Set active tab
+            button.classList.remove('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
+            button.classList.add('bg-blue-600', 'text-white', 'no-hover');
+
+            // Get filter type
+            const filter = button.textContent.trim();
+            const rows = document.querySelectorAll('#gallonTable tbody tr');
+
+            rows.forEach(row => {
+                const owner = row.querySelector('.owner-cell')?.textContent.trim();
+                const codeValue = row.querySelector('.code-cell')?.textContent.trim();
+                let show = false;
+
+                if (filter === "All") {
+                    show = true;
+                } else if (filter === "Gallons" && category === "gallons") {
+                    show = true;
+                } else if (filter === "Accessories" && category === "accessories") {
+                    show = true;
+                } else if (filter === "Others" && category === "others") {
+                    show = true;
+                }
+
+                row.style.display = show ? "" : "none";
+            });
+        }
     </script>
 </body>
