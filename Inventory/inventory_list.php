@@ -325,6 +325,33 @@ $db = $database->getConnect();
         content.classList.add('opacity-0');
         setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
 
+        // Search Function (works with the card grid)
+        function searchTable() {
+            const input = document.getElementById("searchInput");
+            const filter = input.value.trim().toLowerCase();
+            // Select the grid that contains the cards (matches: grid grid-cols-1 sm:... )
+            const grid = document.querySelector('.grid.grid-cols-1');
+            if (!grid) return;
+
+            const cards = Array.from(grid.children);
+
+            cards.forEach(card => {
+            // Gather searchable text from key elements in the card
+            const name = card.querySelector('h2')?.textContent || '';
+            const qtyText = Array.from(card.querySelectorAll('p')).map(p => p.textContent).join(' ');
+            const status = card.querySelector('p.font-semibold')?.textContent || '';
+            const fullText = (name + ' ' + qtyText + ' ' + status + ' ' + card.textContent).toLowerCase();
+
+            // If input empty show all
+            if (filter === '') {
+                card.style.display = '';
+                return;
+            }
+
+            // Show card if any searchable content includes the filter
+            card.style.display = fullText.includes(filter) ? '' : 'none';
+            });
+        }
         // Filter Function
         function filterTab(button) {
             document.querySelectorAll('button[onclick="filterTab(this)"]').forEach(btn => {

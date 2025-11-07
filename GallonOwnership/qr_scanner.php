@@ -270,8 +270,29 @@ $db = $database->getConnect();
           <!-- RIGHT SECTION (1/3) -->
           <div class="w-1/3 bg-white p-4 rounded-2xl shadow-md flex flex-col justify-between h-full">
             <div>
-              <h2 class="text-lg font-semibold mb-3 text-blue-500 text-center">Scan QR Code</h2>
-              <div id="reader" class="rounded-lg overflow-hidden border border-gray-300 h-[320px]"></div>
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold text-blue-500 flex-1">
+                  <i class="fas fa-camera mr-2"></i> Scan QR Code
+                </h2>
+                <button id="toggleCameraBtn"
+                  class="ml-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition">
+                  Open Camera
+                </button>
+              </div>
+
+              <div class="relative mx-auto rounded-lg overflow-hidden border border-gray-300 w-[320px] h-[320px]" id="readerContainer">
+                <div id="reader" class="absolute inset-0"></div>
+
+                <!--Position Indicator -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div class="border-4 border-blue-400 rounded-lg w-[220px] h-[220px] opacity-80 animate-pulse"></div>
+                </div>
+              </div>
+
+              <!--Camera Status Message -->
+              <p id="cameraStatus" class="text-center text-gray-500 text-sm mt-2 italic">
+                Camera is closed.
+              </p>
             </div>
 
             <div class="mt-4">
@@ -304,6 +325,7 @@ $db = $database->getConnect();
               </table>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -311,31 +333,74 @@ $db = $database->getConnect();
 
   <script>
     let html5QrcodeScanner;
+    let cameraActive = false;
+
     const fileInput = document.getElementById("qrFileInput");
+    const toggleCameraBtn = document.getElementById("toggleCameraBtn");
+    const cameraStatus = document.getElementById("cameraStatus");
 
     const codeValue = document.getElementById("codeValue");
     const codeOwner = document.getElementById("codeOwner");
     const codeType = document.getElementById("codeType");
     const codeStatus = document.getElementById("codeStatus");
 
-    window.addEventListener("load", () => {
-      startScanner();
+    toggleCameraBtn.addEventListener("click", async () => {
+      if (!cameraActive) {
+        startScanner();
+      } else {
+        stopScanner();
+      }
     });
 
-    function startScanner() {
-      html5QrcodeScanner = new Html5Qrcode("reader");
-      html5QrcodeScanner.start({
-          facingMode: "environment"
-        }, {
-          fps: 10,
-          qrbox: 250
-        },
-        qrCodeMessage => handleDecodedCode(qrCodeMessage),
-        errorMessage => console.log(errorMessage)
-      );
+    async function startScanner() {
+      try {
+        const qrboxSize = 250; // fixed square
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        cameraStatus.textContent = "📷 Initializing camera...";
+
+        await html5QrcodeScanner.start({
+            facingMode: "environment"
+          }, {
+            fps: 10,
+            qrbox: {
+              width: qrboxSize,
+              height: qrboxSize
+            },
+            aspectRatio: 1.0, // keep camera feed square
+            videoConstraints: {
+              zoom: 1.4
+            }
+          },
+          qrCodeMessage => handleDecodedCode(qrCodeMessage),
+          errorMessage => {
+            cameraStatus.textContent = "Fix qr code position..."; // feedback while scanning
+          }
+        );
+
+        cameraActive = true;
+        toggleCameraBtn.textContent = "Close Camera";
+        cameraStatus.textContent = "Point your camera at a QR code...";
+      } catch (err) {
+        console.error("Camera start failed:", err);
+        cameraStatus.textContent = "Failed to access camera.";
+      }
     }
 
-    // Handle uploaded QR
+    async function stopScanner() {
+      try {
+        if (html5QrcodeScanner) {
+          await html5QrcodeScanner.stop();
+          await html5QrcodeScanner.clear();
+          cameraActive = false;
+          toggleCameraBtn.textContent = "Open Camera";
+          cameraStatus.textContent = "Camera is closed.";
+        }
+      } catch (err) {
+        console.error("Error stopping camera:", err);
+      }
+    }
+
+    // Handle uploaded QR image
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files[0];
       if (!file) return;
@@ -356,9 +421,10 @@ $db = $database->getConnect();
       }
     });
 
-    // Handle decoded QR code
+    //  When QR successfully scanned
     function handleDecodedCode(qrValue) {
       codeValue.innerText = qrValue;
+      cameraStatus.textContent = "✅ QR Code Scanned!";
 
       fetch("fetch_qr.php", {
           method: "POST",
@@ -376,46 +442,7 @@ $db = $database->getConnect();
         .catch(err => console.error(err));
     }
 
-    // --- Toggle sorting (Recent ↔ Oldest)
-    const toggleBtn = document.getElementById('toggleOrderBtn');
-    const orderLabel = document.getElementById('orderLabel');
-    const gallery = document.getElementById('qrGallery');
 
-    toggleBtn.addEventListener('click', () => {
-      const cards = Array.from(gallery.children);
-      gallery.innerHTML = '';
-      cards.reverse().forEach(card => gallery.appendChild(card));
-      orderLabel.textContent = orderLabel.textContent === 'Recent' ? 'Oldest' : 'Recent';
-    });
-
-    // Search Function
-    function searchTable() {
-      const input = document.getElementById("searchInput");
-      const filter = input.value.toLowerCase();
-      const table = document.getElementById("gallonTable");
-      const rows = table.getElementsByTagName("tr");
-
-      for (let i = 1; i < rows.length; i++) { // skip header
-        const cells = rows[i].getElementsByTagName("td");
-        let match = false;
-
-        // If search is empty, show all rows
-        if (filter === "") {
-          rows[i].style.display = "";
-          continue;
-        }
-
-        // Otherwise, search the first 3 columns
-        for (let j = 0; j < 3; j++) {
-          if (cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
-            match = true;
-            break;
-          }
-        }
-
-        rows[i].style.display = match ? "" : "none";
-      }
-    }
     // Highlight selected QR cards and handle printing
     document.querySelectorAll(".qr-card").forEach(card => {
       const checkbox = card.querySelector(".qr-checkbox");
