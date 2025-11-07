@@ -1,15 +1,24 @@
 <?php
 // Include database connection
+<<<<<<< HEAD
 require_once '../Database/db_connection.php';
 session_start();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email']; // using email instead of username
+=======
+require_once '../database/Database.php';
+session_start();
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = $_POST['username'];
+>>>>>>> e40151c (Rider mobile view)
     $password = $_POST['password'];
 
     $db = new Database();
     $conn = $db->getConnect();
 
+<<<<<<< HEAD
     // Query users table for riders only
     $query = "SELECT * FROM users WHERE email = :email AND role = 'rider' LIMIT 1";
     $stmt = $conn->prepare($query);
@@ -32,6 +41,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } else {
         $error = "Invalid email or password";
+=======
+    $query = "SELECT * FROM riders WHERE username = :username AND password = :password";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':username', $username);
+    $stmt->bindParam(':password', $password);
+    $stmt->execute();
+
+    if ($stmt->rowCount() > 0) {
+        $_SESSION['rider_username'] = $username;
+        header("Location: dashboard.php");
+        exit();
+    } else {
+        $error = "Invalid username or password";
+>>>>>>> e40151c (Rider mobile view)
     }
 }
 ?>
@@ -72,7 +95,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: #000;
         }
 
+<<<<<<< HEAD
         input[type="email"], input[type="password"] {
+=======
+        input[type="text"], input[type="password"] {
+>>>>>>> e40151c (Rider mobile view)
             width: 85%;
             padding: 10px;
             margin: 10px 0;
@@ -171,7 +198,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <div class="container">
     <h2>Login Account</h2>
     <form method="POST" action="">
+<<<<<<< HEAD
         <input type="email" name="email" placeholder="Enter your email" required><br>
+=======
+        <input type="text" name="username" placeholder="Enter your username" required><br>
+>>>>>>> e40151c (Rider mobile view)
         <input type="password" name="password" placeholder="Enter your password" required><br>
         <button type="submit">Login</button>
     </form>
