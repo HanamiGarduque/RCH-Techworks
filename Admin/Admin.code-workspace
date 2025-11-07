@@ -1,0 +1,34 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../Assets"
+		},
+		{
+			"path": "../Customer"
+		},
+		{
+			"path": "../Database"
+		},
+		{
+			"path": "../Delivery"
+		},
+		{
+			"path": "../GallonOwnership"
+		},
+		{
+			"path": "../Inventory"
+		},
+		{
+			"path": "../Messaging"
+		},
+		{
+			"path": "../Notification"
+		},
+		{
+			"path": "../Order"
+		}
+	]
+}
