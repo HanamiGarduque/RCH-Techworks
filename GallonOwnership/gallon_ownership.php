@@ -33,7 +33,7 @@ $db = $database->getConnect();
 </head>
 
 
-<body class="bg-gray-50">
+<body class="bg-gray-50 overflow-hidden">
     <div class="flex h-screen">
         <!-- Sidebar -->
         <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg border-r border-gray-200 
@@ -137,10 +137,9 @@ $db = $database->getConnect();
 
         <!-- Main Content -->
 
-        <div id="page-content"
-            class="main-content fixed w-full top-0 right-0 overflow-auto h-full transition-all duration-300 ease-in-out">
-            <div
-                class="flex-1 transition-all duration-300 ease-in-out group-hover:ml-64 ml-20 flex flex-col overflow-hidden">
+        <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
+            <div class="flex flex-col h-screen">
+                <!-- Header -->
                 <div class="bg-white border-b border-gray-100 shadow-sm p-4 transition-all duration-300 ease-in-out">
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col">
@@ -163,7 +162,7 @@ $db = $database->getConnect();
                 </div>
 
 
-                <div class="m-3">
+                <div class="m-3 flex flex-col flex-1 overflow-hidden">
                     <!-- Search and Buttons -->
                     <div class="flex items-center gap-2 mb-4">
                         <div class="flex-1 relative">
@@ -179,6 +178,7 @@ $db = $database->getConnect();
                         </div>
                         <button
                             class="bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
+                            <i class="fas fa-plus mr-2"></i>
                             Add Gallon
                         </button>
 
@@ -191,9 +191,10 @@ $db = $database->getConnect();
                     </div>
 
                     <!-- Content Area -->
-                    <div class="p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 rounded-lg">
+                    <div class="p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 flex flex-col flex-1 overflow-hidden">
                         <!-- Filter Tabs -->
-                        <div class="flex gap-3 mb-6 flex-wrap">
+                        <div class="flex gap-3 mb-6 flex-wrap flex-shrink-0">
+                        
                             <button id="allTab"
                                 class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
                                 onclick="filterTab(this)">
@@ -217,9 +218,9 @@ $db = $database->getConnect();
                         </div>
 
                         <!-- Table -->
-                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col flex-1">
                             <!-- Scroll wrapper -->
-                            <div class="overflow-x-auto max-h-[500px]">
+                            <div class="overflow-x-auto overflow-y-auto flex-1">
 
                                 <table id="gallonTable" class="min-w-full text-sm text-left text-gray-700">
                                     <thead class="bg-blue-50 border-b border-gray-200 sticky top-0 z-10">
@@ -588,96 +589,141 @@ $db = $database->getConnect();
 
 
             function editGallon(id) {
-                Swal.fire({
-                    title: 'Edit Gallon Owner / Status',
-                    html: `
-            <input type="text" id="ownerName" class="swal2-input" placeholder="Enter new owner name">
-            <div style="margin-top: 10px; text-align: left;">
-                <label style="font-size: 14px;">
-                    <input type="checkbox" id="markDamaged" style="margin-right: 6px;">
-                    Mark as Damaged
-                </label>
-            </div>
-        `,
-                    confirmButtonText: 'Save Changes',
-                    showCancelButton: true,
-                    confirmButtonColor: '#2563eb',
-                    cancelButtonColor: '#9ca3af',
-                    preConfirm: () => {
-                        const ownerName = document.getElementById('ownerName').value.trim();
-                        const isDamaged = document.getElementById('markDamaged').checked;
+                // create modal overlay
+                const modal = document.createElement('div');
+                modal.className = "fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50";
 
-                        // Require at least one change (either owner name or damaged status)
-                        if (!ownerName && !isDamaged) {
-                            Swal.showValidationMessage('Please enter an owner name or mark as damaged.');
-                            return false;
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-lg w-96 p-6">
+                        <h2 class="text-2xl font-semibold text-blue-600 mb-4 text-center">Edit Gallon Owner / Status</h2>
+                        <form id="editGallonForm" class="flex flex-col items-center">
+                            <label class="self-start text-left font-medium text-blue-500 mr-2 w-full">Owner Name:</label>
+                            <input type="text" id="ownerName" class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium" placeholder="Enter new owner name" />
+
+                            <div class="flex items-center gap-3 mb-6 w-full">
+                                <label class="flex items-center gap-2 text-gray-700">
+                                    <input type="checkbox" id="markDamaged" class="h-4 w-4" />
+                                    <span class="text-sm">Mark as Damaged</span>
+                                </label>
+                            </div>
+
+                            <div class="flex justify-center gap-3 w-full">
+                                <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
+                                    <i class="fas fa-save mr-1"></i>Save
+                                </button>
+                                <button type="button" id="cancelEditBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
+                                    <i class="fas fa-times mr-1"></i>Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                modal.querySelector('#ownerName').focus();
+
+                // Cancel handler - remove modal
+                modal.querySelector('#cancelEditBtn').addEventListener('click', () => {
+                    modal.remove();
+                });
+
+                // Submit handler
+                modal.querySelector('#editGallonForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    const ownerName = modal.querySelector('#ownerName').value.trim();
+                    const isDamaged = modal.querySelector('#markDamaged').checked;
+
+                    if (!ownerName && !isDamaged) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Validation',
+                            text: 'Please enter an owner name or mark as damaged.',
+                            confirmButtonColor: '#2563eb'
+                        });
+                        return;
+                    }
+
+                    // Build payload
+                    const payload = { id };
+                    if (ownerName) payload.ownerName = ownerName;
+                    if (isDamaged) payload.status = 'Lost/Damaged';
+
+                    // Send update
+                    fetch('update_changes.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Updated!',
+                                text: isDamaged ? 'Gallon marked as damaged successfully.' : 'Owner updated successfully.',
+                                confirmButtonColor: '#2563eb'
+                            }).then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed to update gallon.', 'error');
                         }
-
-                        return {
-                            id,
-                            ownerName,
-                            isDamaged
-                        };
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const {
-                            id,
-                            ownerName,
-                            isDamaged
-                        } = result.value;
-
-                        // Build request body dynamically (only send what's needed)
-                        const payload = {
-                            id
-                        };
-                        if (ownerName) payload.ownerName = ownerName;
-                        if (isDamaged) payload.status = 'Lost/Damaged';
-
-                        fetch('update_changes.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(payload)
-                            })
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.success) {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Updated!',
-                                        text: isDamaged ?
-                                            'Gallon marked as damaged successfully.' : 'Owner updated successfully.',
-                                        confirmButtonColor: '#2563eb'
-                                    }).then(() => location.reload());
-                                } else {
-                                    Swal.fire('Error', data.message || 'Failed to update gallon.', 'error');
-                                }
-                            })
-                            .catch(err => {
-                                console.error(err);
-                                Swal.fire('Error', 'Request failed. Please check your connection.', 'error');
-                            });
-                    }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        Swal.fire('Error', 'Request failed. Please check your connection.', 'error');
+                    })
+                    .finally(() => {
+                        modal.remove();
+                    });
                 });
             }
-
-            // DELETE FUNCTION (with password confirmation)
+                   
+            // DELETE FUNCTION 
             function deleteGallon(id) {
                 Swal.fire({
                     title: 'Confirm Deletion',
                     html: `
-            <p>Please enter admin password to confirm:</p>
-            <input type="password" id="adminPass" class="swal2-input" placeholder="Enter password">
-        `,
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="password" id="adminPass" class="swal2-input" placeholder="Enter password" style="flex:1; margin:10px;" />
+                        <button type="button" id="togglePassBtn" title="Show/Hide password" style="background:transparent; border:none; cursor:pointer; color:#374151; font-size:24px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                `,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#9ca3af',
                     confirmButtonText: 'Delete',
+                    didOpen: () => {
+                        const popup = Swal.getPopup();
+                        const btn = popup.querySelector('#togglePassBtn');
+                        const input = popup.querySelector('#adminPass');
+
+                        // Toggle show/hide password
+                        btn.addEventListener('click', () => {
+                            if (input.type === 'password') {
+                                input.type = 'text';
+                                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                            } else {
+                                input.type = 'password';
+                                btn.innerHTML = '<i class="fas fa-eye"></i>';
+                            }
+                            input.focus();
+                        });
+
+                        // allow Enter to confirm
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                Swal.clickConfirm();
+                            }
+                        });
+
+                        input.focus();
+                    },
                     preConfirm: () => {
-                        const pass = document.getElementById('adminPass').value;
+                        const passEl = Swal.getPopup().querySelector('#adminPass');
+                        const pass = passEl ? passEl.value : '';
                         if (!pass) {
                             Swal.showValidationMessage('Password is required');
                             return false;

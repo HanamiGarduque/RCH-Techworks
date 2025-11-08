@@ -33,7 +33,7 @@ $db = $database->getConnect();
     </style>
 </head>
 
-<body class="bg-gray-50">
+<body class="bg-gray-50 overflow-hidden">
     <div class="flex h-screen">
         <!-- Sidebar -->
         <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg border-r border-gray-200 
@@ -131,10 +131,8 @@ $db = $database->getConnect();
         </aside>
 
         <!-- Main Content -->
-        <div id="page-content"
-            class="main-content fixed w-full top-0 right-0 overflow-auto h-full transition-all duration-300 ease-in-out">
-            <div
-                class="flex-1 transition-all duration-300 ease-in-out group-hover:ml-64 ml-20 flex flex-col overflow-hidden">
+        <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
+            <div class="flex flex-col h-screen">
                 <div class="bg-white border-b border-gray-100 shadow-sm p-4 transition-all duration-300 ease-in-out">
                     <div class="flex items-center justify-between">
                         <h1 class="text-2xl font-semibold text-blue-500">Performance Metrics    </h1>

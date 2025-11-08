@@ -38,7 +38,7 @@ $db = $database->getConnect();
   </style>
 </head>
 
-<body class="bg-gray-50">
+<body class="bg-gray-50 overflow-hidden">
   <div class="flex h-screen">
     <!-- Sidebar -->
     <aside
