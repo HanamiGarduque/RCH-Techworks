@@ -151,7 +151,7 @@ $db = $database->getConnect();
                             <a href="../Notification/notifications.php" title="Notifications" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
                                 <i class="fas fa-bell text-blue-500 text-xl"></i>
                             </a>
-                            <a href="../Messaging/messages.php" title="Messages" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
+                            <a href="../Messaging/admin_messages.php" title="Messages" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
                                 <i class="fas fa-envelope text-blue-500 text-xl"></i>
                             </a>
                             <a href="../Admin/profile.php" title="Profile" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
