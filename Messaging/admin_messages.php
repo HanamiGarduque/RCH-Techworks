@@ -40,134 +40,25 @@ $db = $database->getConnect();
 <body class="bg-gray-50 overflow-hidden">
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg border-r border-gray-200 
-        flex-shrink-0 fixed top-0 left-0 h-full overflow-hidden flex flex-col text-white 
-        transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
+        <script src="../Admin/includes/sidebar.js"></script>
 
-            <!-- Logo -->
-            <div class="p-7 border-b border-blue-400 flex items-center gap-2">
-                <i class="fas fa-droplet text-3xl"></i>
-                <div class="overflow-hidden">
-                    <span class="text-2xl font-semibold block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">
-                        RCH Water
-                    </span>
-                </div>
-            </div>
 
-            <nav class="mt-6 flex-1">
-                <ul class="space-y-1 px-4">
-                    <li>
-                        <a href="../Admin/dashboard.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-chart-line text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                                     opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Dashboard
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../Order/orders_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-shopping-cart text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                                     opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Orders
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../GallonOwnership/gallon_ownership.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-tint text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Gallon Ownership
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../Inventory/inventory_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-boxes text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Inventory
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../Customer/customers_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-users text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Customers
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../Delivery/deliveries_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-truck text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Deliveries
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-
-            <div class="border-t border-blue-400 p-4">
-                <a href="../logout.php" class="flex items-center px-4 py-3 font-medium text-white hover:bg-blue-500 rounded-lg transition-colors">
-                    <i class="fas fa-sign-out-alt text-lg"></i>
-                    <span class="ml-3 hidden group-hover:inline">Logout</span>
-                </a>
-            </div>
-        </aside>
-
-         <!-- Main Content -->
+        <!-- Main Content -->
         <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
             <div class="flex flex-col h-screen">
-                
+
                 <!-- Header -->
-                <div class="bg-white border-b border-gray-100 shadow-sm p-4 transition-all duration-300 ease-in-out">
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col">
-                            <h1 class="text-3xl font-semibold text-blue-500 flex items-center gap-2">
-                                Admin Messages
-                            </h1>
-                            <p class="text-sm text-gray-700 mt-1">Chat with riders and customers in real-time.</p>
-                        </div>
-
-                        <div class="flex items-center space-x-4">
-                            <a href="../Notification/notifications.php" title="Notifications" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
-                                <i class="fas fa-bell text-blue-500 text-xl"></i>
-                            </a>
-                            <a href="../Messaging/admin_messages.php" title="Messages" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
-                                <i class="fas fa-envelope text-blue-500 text-xl"></i>
-                            </a>
-                            <a href="../Admin/profile.php" title="Profile" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
-                                <i class="fas fa-user text-blue-500 text-xl"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
+                <?php
+                $pageTitle = "Admin Messages";
+                $pageSubtitle = "Chat with riders and customers in real-time.";
+                include '../Admin/includes/header.php';
+                ?>
                 <!-- Chat Container -->
                 <div class="flex-1 flex gap-4 p-4 overflow-hidden">
-                    
+
                     <!-- Chat list panel on the left -->
                     <div class="w-80 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        
+
                         <!-- Search Bar -->
                         <div class="p-4 border-b border-gray-100">
                             <div class="relative">
@@ -177,16 +68,16 @@ $db = $database->getConnect();
                         </div>
 
                         <!-- Chat List -->
-                        <div class="flex-1 overflow-y-auto" id="chat-list-container">                          
-                              <!-- Customer Chats Section -->             
+                        <div class="flex-1 overflow-y-auto" id="chat-list-container">
+                            <!-- Customer Chats Section -->
                         </div>
                     </div>
 
                     <!-- Chat main area on the right -->
- <div class="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">                        
+                    <div class="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <!-- Chat Header -->
                         <div class="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-between" id="chat-header">
-                            
+
                         </div>
 
 
@@ -218,26 +109,38 @@ $db = $database->getConnect();
                 </div>
             </div>
         </div>
-        
+
         <input type="file" id="image-input" accept="image/*" style="display: none;">
+        <!-- Image Preview Modal -->
+        <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
+            <img id="modalImage" src="" class="max-w-[90%] max-h-[90%] rounded-lg shadow-lg" alt="Preview">
+        </div>
 
 
     </div>
-    
+
     <script>
-        const currentUserId = 1; 
-        const currentUserType = 'admin';
+        const currentUserId = 3;
+        const currentUserType = 'rider';
         let activeReceiverId = null;
         let activeReceiverName = '';
         let allContacts = [];
 
         function formatMessageTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            if (!timestamp) return "";
+            const date = new Date(timestamp.replace(" ", "T"));
+            if (isNaN(date)) return ""; // fallback
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
         }
 
         function formatLastMessageTime(timestamp) {
-            const date = new Date(timestamp);
+            if (!timestamp) return "";
+            const date = new Date(timestamp.replace(" ", "T"));
+            if (isNaN(date)) return "—";
             const now = new Date();
             const diffMs = now - date;
             const diffMins = Math.floor(diffMs / 60000);
@@ -248,9 +151,9 @@ $db = $database->getConnect();
             if (diffMins < 60) return `${diffMins}m`;
             if (diffHours < 24) return `${diffHours}h`;
             if (diffDays < 7) return `${diffDays}d`;
-            
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            return date.toLocaleDateString();
         }
+
 
         function loadContacts(searchQuery = '') {
             const params = new URLSearchParams({
@@ -453,51 +356,70 @@ $db = $database->getConnect();
 
                     sortedData.forEach(msg => {
                         const isSelf = msg.sender_id == currentUserId;
-                        let bubble = '';
 
-                        if (msg.message) {
-                            bubble += `<p class="text-sm">${msg.message}</p>`;
+                        // Determine message content (text or image)
+                        let bubbleContent = '';
+                        if (msg.image_path && msg.image_path.trim() !== '') {
+                            bubbleContent = `<img src="${msg.image_path}" alt="Sent image" class="w-40 rounded-lg cursor-pointer hover:opacity-90 transition">`;
+                        } else if (msg.message && msg.message.trim() !== '') {
+                            bubbleContent = `<p class="text-sm">${msg.message}</p>`;
                         }
 
-                        if (msg.image_path) {
-                            bubble += `<img src="../${msg.image_path}" class="rounded-lg mt-2 max-w-[200px]" alt="sent image">`;
-                        }
-
-                        container.innerHTML += `
-                            <div class="flex ${isSelf ? 'justify-end' : 'justify-start'}">
-                                <div class="max-w-xs lg:max-w-md">
-                                    <div class="flex items-end gap-2">
-                                        ${!isSelf ? `<div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                            ${msg.sender_initials || '?'}
-                                        </div>` : ''}
-                                        <div class="${isSelf ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-3xl rounded-tl-sm'} px-4 py-2 shadow-sm">
-                                            ${bubble}
-                                        </div>
-                                    </div>
-                                    <p class="text-xs text-gray-500 mt-1 ${isSelf ? 'text-right' : 'ml-10'}">
-                                        ${formatMessageTime(msg.created_at)}
-                                    </p>
+                        // Create the message bubble wrapper
+                        const messageHTML = `
+                    <div class="flex ${isSelf ? 'justify-end' : 'justify-start'} mb-2">
+                        <div class="max-w-xs lg:max-w-md">
+                            <div class="flex items-end gap-2">
+                                ${!isSelf ? `<div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                    ${msg.sender_initials || '?'}
+                                </div>` : ''}
+                                <div class="${isSelf ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl rounded-tr-sm px-4 py-2 shadow-sm'
+                                                : 'bg-white border border-gray-200 text-gray-800 rounded-3xl rounded-tl-sm px-4 py-2 shadow-sm'}">
+                                    ${bubbleContent}
                                 </div>
                             </div>
-                        `;
+                            <p class="text-xs text-gray-500 mt-1 ${isSelf ? 'text-right' : 'ml-10'}">
+                                ${formatMessageTime(msg.created_at)}
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                        // Append the message bubble
+                        container.insertAdjacentHTML('beforeend', messageHTML);
+
+                        // Attach click handler to image for modal
+                        const lastImg = container.querySelector('img:last-of-type');
+                        if (lastImg) {
+                            lastImg.addEventListener('click', () => {
+                                const modal = document.getElementById('imageModal');
+                                const modalImage = document.getElementById('modalImage');
+                                modalImage.src = lastImg.src;
+                                modal.classList.remove('hidden');
+                                modal.classList.add('flex');
+                            });
+                        }
                     });
+
+                    // Scroll to bottom
                     container.scrollTop = container.scrollHeight;
                 })
                 .catch(err => console.log("[v0] Error loading messages:", err));
         }
 
+
         function sendMessage(formData) {
             fetch('send_message.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(() => {
-                document.querySelector('input[placeholder="Type your message..."]').value = '';
-                document.querySelector('#image-input').value = '';
-                loadMessages();
-            })
-            .catch(err => console.log("[v0] Error sending message:", err));
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(() => {
+                    document.querySelector('input[placeholder="Type your message..."]').value = '';
+                    document.querySelector('#image-input').value = '';
+                    loadMessages();
+                })
+                .catch(err => console.log("[v0] Error sending message:", err));
         }
 
         // Send text when clicking send icon
@@ -556,6 +478,19 @@ $db = $database->getConnect();
         loadContacts();
         setInterval(loadContacts, 5000); // Refresh contacts every 5 seconds
         setInterval(loadMessages, 3000); // Refresh messages every 3 seconds
+        function openImageModal(src) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            modalImage.src = src;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        document.getElementById('imageModal').addEventListener('click', () => {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }); 
     </script>
 
 </body>

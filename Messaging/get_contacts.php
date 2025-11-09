@@ -5,16 +5,20 @@ session_start();
 // Example: the currently logged-in user's ID
 // $current_user_id = $_SESSION['user_id'] ?? null;
 
-$current_user_id = 1;
+$current_user_id = 3;
 if (!$current_user_id) {
     echo json_encode([]);
     exit;
 }
 
+
 $database = new Database();
 $db = $database->getConnect();
 
-// Fetch all users except the current one
+// Get search query (if any)
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+// Base SQL: fetch all users except current one
 $sql = "
     SELECT 
         u.user_id,
@@ -23,8 +27,22 @@ $sql = "
     FROM users u
     WHERE u.user_id != :current_user_id
 ";
+
+// Add search condition if query is provided
+if (!empty($search)) {
+    $sql .= " AND u.name LIKE :search";
+}
+
+$sql .= " ORDER BY u.name ASC";
+
 $stmt = $db->prepare($sql);
-$stmt->execute([':current_user_id' => $current_user_id]);
+$stmt->bindValue(':current_user_id', $current_user_id, PDO::PARAM_INT);
+
+if (!empty($search)) {
+    $stmt->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
+}
+
+$stmt->execute();
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $contacts = [];
@@ -72,34 +90,28 @@ foreach ($users as $user) {
     $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
 
     // Format time ago
+    $timeAgo = '';
+    if (!empty($lastMessage['created_at'])) {
+        $createdTime = strtotime($lastMessage['created_at']);
+        $now = time();
+        $diff = $now - $createdTime;
 
+        $diffMins = floor($diff / 60);
+        $diffHours = floor($diff / 3600);
+        $diffDays = floor($diff / 86400);
 
-$timeAgo = '';
-
-if (!empty($lastMessage['created_at'])) {
-    $createdTime = strtotime($lastMessage['created_at']);
-    $now = time();
-    $diff = $now - $createdTime;
-
-    $diffMins = floor($diff / 60);
-    $diffHours = floor($diff / 3600);
-    $diffDays = floor($diff / 86400);
-
-    if ($diffMins < 1) {
-        $timeAgo = 'just now';
-    } elseif ($diffMins < 60) {
-        $timeAgo = $diffMins . 'm';
-    } elseif ($diffHours < 24) {
-        $timeAgo = $diffHours . 'h';
-    } elseif ($diffDays < 7) {
-        $timeAgo = $diffDays . 'd';
-    } else {
-        // Format like "08:00 PM"
-        $timeAgo = date('h:i A', $createdTime);
+        if ($diffMins < 1) {
+            $timeAgo = 'just now';
+        } elseif ($diffMins < 60) {
+            $timeAgo = $diffMins . 'm';
+        } elseif ($diffHours < 24) {
+            $timeAgo = $diffHours . 'h';
+        } elseif ($diffDays < 7) {
+            $timeAgo = $diffDays . 'd';
+        } else {
+            $timeAgo = date('h:i A', $createdTime);
+        }
     }
-}
-
-
 
     // Determine last message text
     $lastMsgText = '';
@@ -114,8 +126,9 @@ if (!empty($lastMessage['created_at'])) {
     $contacts[] = [
         'user_id' => $user['user_id'],
         'name' => $user['name'],
-        'type' => strtolower($user['role']), // "customer" or "rider"
+        'type' => strtolower($user['role']),
         'last_message' => $lastMsgText,
+        'last_message_time' => $lastMessage['created_at'] ?? null,
         'time_ago' => $timeAgo,
         'unread_count' => $unread,
         'initials' => $initials,

@@ -36,132 +36,17 @@ $db = $database->getConnect();
 <body class="bg-gray-50 overflow-hidden">
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg border-r border-gray-200 
-        flex-shrink-0 fixed top-0 left-0 h-full overflow-hidden flex flex-col text-white 
-        transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
-
-            <!-- Logo -->
-            <div class="px-7 py-7 border-b border-blue-400 flex items-center gap-2">
-                <i class="fas fa-droplet text-3xl"></i>
-                <div class="overflow-hidden">
-                    <span class="text-2xl font-semibold block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">
-                        RCH Water
-                    </span>
-                </div>
-            </div>
-
-            <nav class="mt-6 flex-1">
-                <ul class="space-y-1 px-4">
-                    <li>
-                        <a href="../Admin/dashboard.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-chart-line text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                                     opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Dashboard
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../Order/orders_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-shopping-cart text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                                     opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Orders
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../GallonOwnership/gallon_ownership.php" class="flex items-center px-4 py-3 bg-white/20 text-white rounded-lg font-medium">
-                            <i class="fas fa-tint text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Gallon Ownership
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../Inventory/inventory_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-boxes text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Inventory
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../Customer/customers_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-users text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Customers
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../Delivery/deliveries_list.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                            <i class="fas fa-truck text-lg"></i>
-                            <div class="overflow-hidden ml-3">
-                                <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                    Deliveries
-                                </span>
-                            </div>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-
-            <div class="border-t border-blue-400 px-4 py-5">
-                <a href="../logout.php" class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
-                    <i class="fas fa-sign-out-alt text-lg"></i>
-                    <div class="overflow-hidden ml-3">
-                        <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
-                             opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                            Logout
-                        </span>
-                    </div>
-                </a>
-            </div>
-        </aside>
-
+        <script src="../Admin/includes/sidebar.js"></script>
         <!-- Main Content -->
-
         <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
             <div class="flex flex-col h-screen">
                 <!-- Header -->
-                <div class="bg-white border-b border-gray-100 shadow-sm p-4 transition-all duration-300 ease-in-out">
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col">
-                            <h1 class="text-3xl font-semibold text-blue-500">Gallon Ownership</h1>
-                            <p class="text-sm text-gray-700 mt-1">Manage and track ownership of gallons between customers and the station.</p>
-                        </div>
-
-                        <div class="flex items-center space-x-4">
-                            <a href="../Notification/notifications.php" title="Notifications" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
-                                <i class="fas fa-bell text-blue-500 text-xl"></i>
-                            </a>
-                            <a href="../Messaging/admin_messages.php" title="Messages" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
-                                <i class="fas fa-envelope text-blue-500 text-xl"></i>
-                            </a>
-                            <a href="../Admin/profile.php" title="Profile" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
-                                <i class="fas fa-user text-blue-500 text-xl"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-
+                <?php
+                $pageTitle = "Gallon Ownership";
+                $pageSubtitle = "Manage and track ownership of gallons between customers and the station.";
+                include '../Admin/includes/header.php';
+                ?>
+                
                 <div class="m-3 flex flex-col flex-1 overflow-hidden">
                     <!-- Search and Buttons -->
                     <div class="flex items-center gap-2 mb-4">
@@ -194,7 +79,7 @@ $db = $database->getConnect();
                     <div class="p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 flex flex-col flex-1 overflow-hidden">
                         <!-- Filter Tabs -->
                         <div class="flex gap-3 mb-6 flex-wrap flex-shrink-0">
-                        
+
                             <button id="allTab"
                                 class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
                                 onclick="filterTab(this)">
@@ -628,7 +513,7 @@ $db = $database->getConnect();
                 });
 
                 // Submit handler
-                modal.querySelector('#editGallonForm').addEventListener('submit', function (e) {
+                modal.querySelector('#editGallonForm').addEventListener('submit', function(e) {
                     e.preventDefault();
 
                     const ownerName = modal.querySelector('#ownerName').value.trim();
@@ -645,39 +530,43 @@ $db = $database->getConnect();
                     }
 
                     // Build payload
-                    const payload = { id };
+                    const payload = {
+                        id
+                    };
                     if (ownerName) payload.ownerName = ownerName;
                     if (isDamaged) payload.status = 'Lost/Damaged';
 
                     // Send update
                     fetch('update_changes.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Updated!',
-                                text: isDamaged ? 'Gallon marked as damaged successfully.' : 'Owner updated successfully.',
-                                confirmButtonColor: '#2563eb'
-                            }).then(() => location.reload());
-                        } else {
-                            Swal.fire('Error', data.message || 'Failed to update gallon.', 'error');
-                        }
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        Swal.fire('Error', 'Request failed. Please check your connection.', 'error');
-                    })
-                    .finally(() => {
-                        modal.remove();
-                    });
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Updated!',
+                                    text: isDamaged ? 'Gallon marked as damaged successfully.' : 'Owner updated successfully.',
+                                    confirmButtonColor: '#2563eb'
+                                }).then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', data.message || 'Failed to update gallon.', 'error');
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            Swal.fire('Error', 'Request failed. Please check your connection.', 'error');
+                        })
+                        .finally(() => {
+                            modal.remove();
+                        });
                 });
             }
-                   
+
             // DELETE FUNCTION 
             function deleteGallon(id) {
                 Swal.fire({

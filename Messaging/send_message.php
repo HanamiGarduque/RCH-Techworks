@@ -3,7 +3,7 @@ require_once '../Database/db_connection.php';
 $database = new Database();
 $db = $database->getConnect();
 
-$sender_id = $_POST['sender_id'];
+$sender_id = $_POST['sender_id'];   
 $receiver_id = $_POST['receiver_id'];
 $message = trim($_POST['message'] ?? '');
 $image_path = null;
