@@ -110,7 +110,13 @@ $db = $database->getConnect();
             </div>
         </div>
 
+        <!-- Existing hidden input -->
         <input type="file" id="image-input" accept="image/*" style="display: none;">
+
+        <!-- Assuming this is the button you click to attach -->
+        <button id="attach-btn" title="Attach a file" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300 transition">
+            <i class="fas fa-plus"></i>
+        </button>
         <!-- Image Preview Modal -->
         <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
             <img id="modalImage" src="" class="max-w-[90%] max-h-[90%] rounded-lg shadow-lg" alt="Preview">
@@ -164,7 +170,7 @@ $db = $database->getConnect();
             fetch(`get_contacts.php?${params}`)
                 .then(res => res.json())
                 .then(data => {
-                    console.log("[v0] Contacts loaded:", data);
+                    console.log("[] Contacts loaded:", data);
                     allContacts = data;
                     const container = document.getElementById('chat-list-container');
                     container.innerHTML = '';
@@ -186,21 +192,23 @@ $db = $database->getConnect();
                         customers.forEach(customer => {
                             const bgClass = customer.avatar_color || 'from-blue-400 to-blue-600';
                             const isActive = activeReceiverId == customer.user_id;
+                            const unreadClass = customer.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
+                            const lastMsgClass = customer.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
+
                             container.innerHTML += `
-                                <div class="chat-item p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${customer.user_id}" data-receiver-name="${customer.name}">
+                                <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${customer.user_id}" data-receiver-name="${customer.name}">
                                     <div class="flex items-start justify-between">
                                         <div class="flex items-start gap-2 flex-1">
                                             <div class="w-10 h-10 bg-gradient-to-br ${bgClass} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
                                                 ${customer.initials}
                                             </div>
                                             <div class="flex-1 min-w-0">
-                                                <p class="font-semibold text-gray-800 text-sm">${customer.name}</p>
-                                                <p class="text-xs text-gray-600 truncate">${customer.last_message}</p>
+                                                <p class="${unreadClass} text-sm truncate">${customer.name}</p>
+                                                <p class="text-xs truncate ${lastMsgClass}">${customer.last_message}</p>
                                             </div>
                                         </div>
                                         <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${formatLastMessageTime(customer.last_message_time)}</span>
                                     </div>
-                                    ${customer.unread_count > 0 ? `<span class="inline-block px-2 py-1 bg-blue-500 text-white text-xs rounded-full mt-2">${customer.unread_count}</span>` : ''}
                                 </div>
                             `;
                         });
@@ -219,21 +227,23 @@ $db = $database->getConnect();
                         riders.forEach(rider => {
                             const bgClass = rider.avatar_color || 'from-orange-400 to-orange-600';
                             const isActive = activeReceiverId == rider.user_id;
+                            const unreadClass = rider.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
+                            const lastMsgClass = rider.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
+
                             container.innerHTML += `
-                                <div class="chat-item p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${rider.user_id}" data-receiver-name="${rider.name}">
+                                <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${rider.user_id}" data-receiver-name="${rider.name}">
                                     <div class="flex items-start justify-between">
                                         <div class="flex items-start gap-2 flex-1">
                                             <div class="w-10 h-10 bg-gradient-to-br ${bgClass} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
                                                 ${rider.initials}
                                             </div>
                                             <div class="flex-1 min-w-0">
-                                                <p class="font-semibold text-gray-800 text-sm">${rider.name}</p>
-                                                <p class="text-xs text-gray-600 truncate">${rider.last_message}</p>
+                                                <p class="${unreadClass} text-sm truncate">${rider.name}</p>
+                                                <p class="text-xs truncate ${lastMsgClass}">${rider.last_message}</p>
                                             </div>
                                         </div>
                                         <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${formatLastMessageTime(rider.last_message_time)}</span>
                                     </div>
-                                    ${rider.unread_count > 0 ? `<span class="inline-block px-2 py-1 bg-blue-500 text-white text-xs rounded-full mt-2">${rider.unread_count}</span>` : ''}
                                 </div>
                             `;
                         });
@@ -252,21 +262,23 @@ $db = $database->getConnect();
                         admins.forEach(admin => {
                             const bgClass = admin.avatar_color || 'from-purple-400 to-purple-600';
                             const isActive = activeReceiverId == admin.user_id;
+                            const unreadClass = admin.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
+                            const lastMsgClass = admin.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
+
                             container.innerHTML += `
-                                <div class="chat-item p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${admin.user_id}" data-receiver-name="${admin.name}">
+                                <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${admin.user_id}" data-receiver-name="${admin.name}">
                                     <div class="flex items-start justify-between">
                                         <div class="flex items-start gap-2 flex-1">
                                             <div class="w-10 h-10 bg-gradient-to-br ${bgClass} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
                                                 ${admin.initials}
                                             </div>
                                             <div class="flex-1 min-w-0">
-                                                <p class="font-semibold text-gray-800 text-sm">${admin.name}</p>
-                                                <p class="text-xs text-gray-600 truncate">${admin.last_message}</p>
+                                                <p class="${unreadClass} text-sm truncate">${admin.name}</p>
+                                                <p class="text-xs truncate ${lastMsgClass}">${admin.last_message}</p>
                                             </div>
                                         </div>
                                         <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${formatLastMessageTime(admin.last_message_time)}</span>
                                     </div>
-                                    ${admin.unread_count > 0 ? `<span class="inline-block px-2 py-1 bg-blue-500 text-white text-xs rounded-full mt-2">${admin.unread_count}</span>` : ''}
                                 </div>
                             `;
                         });
@@ -277,7 +289,7 @@ $db = $database->getConnect();
                     attachContactListeners();
                     restoreActiveContact();
                 })
-                .catch(err => console.log("[v0] Error loading contacts:", err));
+                .catch(err => console.log("[] Error loading contacts:", err));
         }
 
         function restoreActiveContact() {
@@ -311,9 +323,21 @@ $db = $database->getConnect();
                     // Update chat header
                     updateChatHeader(receiverName, this.querySelector('.w-10').textContent);
 
+                    // Mark messages as read immediately
+                    fetch('mark_read.php', {
+                            method: 'POST',
+                            body: new URLSearchParams({
+                                contact_id: activeReceiverId
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(() => loadContacts()) // refresh contact list to remove bold/unread styling
+                        .catch(console.error);
+
                     // Load messages for this contact
                     loadMessages();
                 });
+
             });
         }
 
@@ -357,7 +381,6 @@ $db = $database->getConnect();
                     sortedData.forEach(msg => {
                         const isSelf = msg.sender_id == currentUserId;
 
-                        // Determine message content (text or image)
                         let bubbleContent = '';
                         if (msg.image_path && msg.image_path.trim() !== '') {
                             bubbleContent = `<img src="${msg.image_path}" alt="Sent image" class="w-40 rounded-lg cursor-pointer hover:opacity-90 transition">`;
@@ -365,16 +388,16 @@ $db = $database->getConnect();
                             bubbleContent = `<p class="text-sm">${msg.message}</p>`;
                         }
 
-                        // Create the message bubble wrapper
                         const messageHTML = `
                     <div class="flex ${isSelf ? 'justify-end' : 'justify-start'} mb-2">
                         <div class="max-w-xs lg:max-w-md">
                             <div class="flex items-end gap-2">
                                 ${!isSelf ? `<div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                    ${msg.sender_initials || '?'}
+                                    ${msg.sender_initials ? msg.sender_initials : '<i class="fas fa-user"></i>'}
                                 </div>` : ''}
-                                <div class="${isSelf ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl rounded-tr-sm px-4 py-2 shadow-sm'
-                                                : 'bg-white border border-gray-200 text-gray-800 rounded-3xl rounded-tl-sm px-4 py-2 shadow-sm'}">
+                                <div class="${isSelf 
+                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl rounded-tr-sm px-4 py-2 shadow-sm'
+                                    : 'bg-white border border-gray-200 text-gray-800 rounded-3xl rounded-tl-sm px-4 py-2 shadow-sm'}">
                                     ${bubbleContent}
                                 </div>
                             </div>
@@ -385,27 +408,33 @@ $db = $database->getConnect();
                     </div>
                 `;
 
-                        // Append the message bubble
                         container.insertAdjacentHTML('beforeend', messageHTML);
 
-                        // Attach click handler to image for modal
                         const lastImg = container.querySelector('img:last-of-type');
                         if (lastImg) {
                             lastImg.addEventListener('click', () => {
-                                const modal = document.getElementById('imageModal');
-                                const modalImage = document.getElementById('modalImage');
-                                modalImage.src = lastImg.src;
-                                modal.classList.remove('hidden');
-                                modal.classList.add('flex');
+                                openImageModal(lastImg.src);
                             });
                         }
                     });
 
                     // Scroll to bottom
                     container.scrollTop = container.scrollHeight;
+
+                    // Automatically mark all messages as read for this contact
+                    fetch('mark_read.php', {
+                            method: 'POST',
+                            body: new URLSearchParams({
+                                contact_id: activeReceiverId
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(() => loadContacts()) // update bold/unread in chat list
+                        .catch(console.error);
                 })
-                .catch(err => console.log("[v0] Error loading messages:", err));
+                .catch(err => console.log("[] Error loading messages:", err));
         }
+
 
 
         function sendMessage(formData) {
@@ -419,7 +448,7 @@ $db = $database->getConnect();
                     document.querySelector('#image-input').value = '';
                     loadMessages();
                 })
-                .catch(err => console.log("[v0] Error sending message:", err));
+                .catch(err => console.log("[] Error sending message:", err));
         }
 
         // Send text when clicking send icon
@@ -467,13 +496,31 @@ $db = $database->getConnect();
         });
 
         let searchTimeout;
+        let isSearching = false;
+
+        // Search input handler
         document.getElementById('search-input').addEventListener('input', function() {
             clearTimeout(searchTimeout);
+
             const searchQuery = this.value.trim();
+
+            if (searchQuery.length > 0) {
+                isSearching = true; // pause auto reload
+            }
+
             searchTimeout = setTimeout(() => {
                 loadContacts(searchQuery);
-            }, 300);
+                isSearching = false; // search finished, resume auto reload
+            }, 500); // wait 500ms after last keystroke
         });
+
+        // Auto-reload contacts every 5 seconds but skip while searching
+        setInterval(() => {
+            if (!isSearching) {
+                loadContacts();
+            }
+        }, 5000);
+
 
         loadContacts();
         setInterval(loadContacts, 5000); // Refresh contacts every 5 seconds
@@ -490,7 +537,10 @@ $db = $database->getConnect();
             const modal = document.getElementById('imageModal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
-        }); 
+        });
+        document.getElementById('attach-btn').addEventListener('click', () => {
+            document.getElementById('image-input').click();
+        });
     </script>
 
 </body>

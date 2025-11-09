@@ -69,21 +69,24 @@ foreach ($users as $user) {
     ]);
     $lastMessage = $msgStmt->fetch(PDO::FETCH_ASSOC);
 
-    // Get unread messages count
+    // Check if there are unread messages
     $unreadQuery = "
-        SELECT COUNT(*) AS unread_count
-        FROM messages
-        WHERE receiver_id = :current_user
-        AND sender_id = :contact
-        AND message IS NOT NULL
-        AND message != ''
-    ";
+    SELECT 1
+    FROM messages
+    WHERE receiver_id = :current_user
+      AND sender_id = :contact
+      AND message IS NOT NULL
+      AND message != ''
+      AND is_read = 0
+    LIMIT 1
+";
     $unreadStmt = $db->prepare($unreadQuery);
     $unreadStmt->execute([
         ':current_user' => $current_user_id,
         ':contact' => $user['user_id']
     ]);
-    $unread = $unreadStmt->fetch(PDO::FETCH_ASSOC)['unread_count'] ?? 0;
+    $hasUnread = $unreadStmt->fetch(PDO::FETCH_ASSOC) ? true : false;
+
 
     // Compute initials
     $nameParts = explode(' ', trim($user['name']));
@@ -130,11 +133,10 @@ foreach ($users as $user) {
         'last_message' => $lastMsgText,
         'last_message_time' => $lastMessage['created_at'] ?? null,
         'time_ago' => $timeAgo,
-        'unread_count' => $unread,
+        'has_unread' => $hasUnread,
         'initials' => $initials,
         'avatar_color' => $user['role'] === 'customer' ? 'from-blue-400 to-blue-600' : 'from-orange-400 to-orange-600'
     ];
 }
 
 echo json_encode($contacts);
-?>
