@@ -113,10 +113,6 @@ $db = $database->getConnect();
         <!-- Existing hidden input -->
         <input type="file" id="image-input" accept="image/*" style="display: none;">
 
-        <!-- Assuming this is the button you click to attach -->
-        <button id="attach-btn" title="Attach a file" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300 transition">
-            <i class="fas fa-plus"></i>
-        </button>
         <!-- Image Preview Modal -->
         <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
             <img id="modalImage" src="" class="max-w-[90%] max-h-[90%] rounded-lg shadow-lg" alt="Preview">
@@ -537,9 +533,6 @@ $db = $database->getConnect();
             const modal = document.getElementById('imageModal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
-        });
-        document.getElementById('attach-btn').addEventListener('click', () => {
-            document.getElementById('image-input').click();
         });
     </script>
 

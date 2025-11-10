@@ -6,6 +6,9 @@ if (!isset($pageTitle)) {
 if (!isset($pageSubtitle)) {
     $pageSubtitle = "Welcome to the dashboard overview.";
 }
+
+// Detect current page name
+$currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 
 <!-- Header -->
@@ -17,13 +20,27 @@ if (!isset($pageSubtitle)) {
         </div>
 
         <div class="flex items-center space-x-4">
-            <a href="../Notification/notifications.php" title="Notifications" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
+            <!-- Notifications -->
+            <a href="../Notification/notifications.php"
+               title="Notifications"
+               class="w-10 h-10 flex items-center justify-center rounded-full transition
+                      <?= $currentPage === 'notifications.php' ? 'bg-blue-100' : 'hover:bg-blue-100' ?>">
                 <i class="fas fa-bell text-blue-500 text-xl"></i>
             </a>
-            <a href="../Messaging/admin_messages.php" title="Messages" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
+
+            <!-- Messages -->
+            <a href="../Messaging/admin_messages.php"
+               title="Messages"
+               class="w-10 h-10 flex items-center justify-center rounded-full transition
+                      <?= $currentPage === 'admin_messages.php' ? 'bg-blue-100' : 'hover:bg-blue-100' ?>">
                 <i class="fas fa-envelope text-blue-500 text-xl"></i>
             </a>
-            <a href="../Admin/profile.php" title="Profile" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-blue-100 cursor-pointer transition">
+
+            <!-- Profile -->
+            <a href="../Admin/profile.php"
+               title="Profile"
+               class="w-10 h-10 flex items-center justify-center rounded-full transition
+                      <?= $currentPage === 'profile.php' ? 'bg-blue-100' : 'hover:bg-blue-100' ?>">
                 <i class="fas fa-user text-blue-500 text-xl"></i>
             </a>
         </div>

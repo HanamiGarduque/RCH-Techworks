@@ -16,14 +16,14 @@ $db = $database->getConnect();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCH Water - Gallon Ownership</title>
+    <title>RCH Water - Performance Metrics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 
     <style>
@@ -35,22 +35,23 @@ $db = $database->getConnect();
 
 <body class="bg-gray-50 overflow-hidden">
     <div class="flex h-screen">
+
         <!-- Sidebar -->
         <script src="../Admin/includes/sidebar.js"></script>
 
         <!-- Main Content -->
         <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
-            <div class="flex flex-col h-screen">
-                <!-- Header -->
+            <div class="flex flex-col h-screen"> <!-- Header -->
+                <div class="flex-shrink-0">
                     <?php
                     $pageTitle = "Performance Metrics";
                     $pageSubtitle = "Detailed insights into orders, deliveries, and customer behavior.";
                     include '../Admin/includes/header.php';
                     ?>
+                </div>
 
                 <!-- Content Area -->
-                <div class="overflow-x-auto overflow-y-auto p-8 space-y-8">
-                    <!-- Metric Cards -->
+                <div class="flex-1 overflow-y-auto overflow-x-hidden p-8 space-y-8"> <!-- Metric Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Added icons to metric cards -->
                         <div class="bg-white rounded-lg p-6 shadow-sm flex items-center gap-4 hover:shadow-md transition">
@@ -350,242 +351,276 @@ $db = $database->getConnect();
             </div>
 
         </div>
+    </div>
+    <script>
+        function initializeCharts() {
+            // Ensure all canvas elements exist before creating charts
+            const requiredCharts = ['ordersChart', 'orderTypeChart', 'completionChart', 'deliveryHoursChart', 'frequentCustomersChart', 'gallonStatusChart', 'stationCustomerChart'];
 
-        <script>
-            //for smooth page transition
-            document.querySelectorAll('.sidebar-link').forEach(link => {
-                link.addEventListener('click', e => {
-                    e.preventDefault();
-                    const target = e.currentTarget.getAttribute('href');
-                    const content = document.getElementById('page-content');
-
-                    // Fade out
-                    content.classList.add('opacity-0', 'translate-x-2');
-
-                    setTimeout(() => {
-                        window.location.href = target;
-                    }, 300); // same as duration-300
-                });
-            });
-
-            const content = document.getElementById('page-content');
-            content.classList.add('opacity-0');
-            setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
+            const missingCharts = requiredCharts.filter(id => !document.getElementById(id));
+            if (missingCharts.length > 0) {
+                console.warn('[v0] Missing chart canvases:', missingCharts);
+                return;
+            }
 
             // Orders Over Time Chart
-            const ordersCtx = document.getElementById('ordersChart').getContext('2d');
-            new Chart(ordersCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Orders',
-                        data: [12, 19, 8, 15, 22, 16, 9],
-                        backgroundColor: '#1E90FF',
-                        borderRadius: 6,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+            const ordersCtx = document.getElementById('ordersChart');
+            if (ordersCtx) {
+                new Chart(ordersCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Orders',
+                            data: [12, 19, 8, 15, 22, 16, 9],
+                            backgroundColor: '#1E90FF',
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 5
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 5
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Order Type Breakdown Chart
-            const orderTypeCtx = document.getElementById('orderTypeChart').getContext('2d');
-            new Chart(orderTypeCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Refill', 'New Order'],
-                    datasets: [{
-                        data: [60, 40],
-                        backgroundColor: ['#1E90FF', '#046CD2'],
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
+            const orderTypeCtx = document.getElementById('orderTypeChart');
+            if (orderTypeCtx) {
+                new Chart(orderTypeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Refill', 'New Order'],
+                        datasets: [{
+                            data: [60, 40],
+                            backgroundColor: ['#1E90FF', '#046CD2'],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Delivery Completion Rate Chart
-            const completionCtx = document.getElementById('completionChart').getContext('2d');
-            new Chart(completionCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Completed', 'Pending', 'Cancelled'],
-                    datasets: [{
-                        data: [70, 20, 10],
-                        backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
+            const completionCtx = document.getElementById('completionChart');
+            if (completionCtx) {
+                new Chart(completionCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Completed', 'Pending', 'Cancelled'],
+                        datasets: [{
+                            data: [70, 20, 10],
+                            backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Average Delivery Hours Chart
-            const deliveryHoursCtx = document.getElementById('deliveryHoursChart').getContext('2d');
-            new Chart(deliveryHoursCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Hours',
-                        data: [2, 3, 2.5, 4, 3.5, 2, 3],
-                        backgroundColor: 'rgba(30, 144, 255, 0.1)',
-                        borderColor: '#1E90FF',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#1E90FF',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+            const deliveryHoursCtx = document.getElementById('deliveryHoursChart');
+            if (deliveryHoursCtx) {
+                new Chart(deliveryHoursCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Hours',
+                            data: [2, 3, 2.5, 4, 3.5, 2, 3],
+                            backgroundColor: 'rgba(30, 144, 255, 0.1)',
+                            borderColor: '#1E90FF',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#1E90FF',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Most Frequent Customers Chart
-            const frequentCustomersCtx = document.getElementById('frequentCustomersChart').getContext('2d');
-            new Chart(frequentCustomersCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Leon Dala Cruz', 'Felicity M Varrua', 'Jenalyn Gentilique', 'Bryson Forte', 'Christine May'],
-                    datasets: [{
-                        label: 'Number of Orders',
-                        data: [45, 38, 32, 28, 25],
-                        backgroundColor: ['#1E90FF', '#046CD2', '#1873CC', '#1460B8', '#1050A4'],
-                        borderRadius: 6,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+            const frequentCustomersCtx = document.getElementById('frequentCustomersChart');
+            if (frequentCustomersCtx) {
+                new Chart(frequentCustomersCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Leon Dala Cruz', 'Felicity M Varrua', 'Jenalyn Gentilique', 'Bryson Forte', 'Christine May'],
+                        datasets: [{
+                            label: 'Number of Orders',
+                            data: [45, 38, 32, 28, 25],
+                            backgroundColor: ['#1E90FF', '#046CD2', '#1873CC', '#1460B8', '#1050A4'],
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }]
                     },
-                    scales: {
-                        x: {
-                            beginAtZero: true
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Gallon Status Overview Chart
-            const gallonStatusCtx = document.getElementById('gallonStatusChart').getContext('2d');
-            new Chart(gallonStatusCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['In Stock', 'In Transit', 'Damaged', 'Lost'],
-                    datasets: [{
-                        label: 'Gallons',
-                        data: [450, 320, 45, 15],
-                        backgroundColor: ['#10B981', '#3B82F6', '#EF4444', '#F59E0B'],
-                        borderRadius: 6,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+            const gallonStatusCtx = document.getElementById('gallonStatusChart');
+            if (gallonStatusCtx) {
+                new Chart(gallonStatusCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['In Stock', 'In Transit', 'Damaged', 'Lost'],
+                        datasets: [{
+                            label: 'Gallons',
+                            data: [450, 320, 45, 15],
+                            backgroundColor: ['#10B981', '#3B82F6', '#EF4444', '#F59E0B'],
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Station vs Customer Gallons Chart
-            const stationCustomerCtx = document.getElementById('stationCustomerChart').getContext('2d');
-            new Chart(stationCustomerCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Station A', 'Station B', 'Station C', 'Station D'],
-                    datasets: [{
-                            label: 'Station Owned',
-                            data: [120, 150, 100, 130],
-                            backgroundColor: '#1E90FF',
-                            borderRadius: 6
-                        },
-                        {
-                            label: 'Customer Owned',
-                            data: [80, 95, 110, 75],
-                            backgroundColor: '#046CD2',
-                            borderRadius: 6
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+            const stationCustomerCtx = document.getElementById('stationCustomerChart');
+            if (stationCustomerCtx) {
+                new Chart(stationCustomerCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Station A', 'Station B', 'Station C', 'Station D'],
+                        datasets: [{
+                                label: 'Station Owned',
+                                data: [120, 150, 100, 130],
+                                backgroundColor: '#1E90FF',
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Customer Owned',
+                                data: [80, 95, 110, 75],
+                                backgroundColor: '#046CD2',
+                                borderRadius: 6
+                            }
+                        ]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
+                });
+            }
+        }
+
+        // Initialize charts when DOM is fully loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeCharts);
+        } else {
+            initializeCharts();
+        }
+
+        //for smooth page transition
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                const target = e.currentTarget.getAttribute('href');
+                const content = document.getElementById('page-content');
+
+                // Fade out
+                content.classList.add('opacity-0', 'translate-x-2');
+
+                setTimeout(() => {
+                    window.location.href = target;
+                }, 300); // same as duration-300
             });
-        </script>
+        });
+
+        const content = document.getElementById('page-content');
+        if (content) {
+            content.classList.add('opacity-0');
+            setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
+        }
+    </script>
 </body>
 
 </html>

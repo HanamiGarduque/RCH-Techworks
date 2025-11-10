@@ -24,7 +24,7 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
             ${createNavItem("../Order/orders_list.php", "fas fa-shopping-cart", "Orders", "orders_list.php")}
             ${createNavItem("../GallonOwnership/gallon_ownership.php", "fas fa-tint", "Gallon Ownership", "gallon_ownership.php")}
             ${createNavItem("../Inventory/inventory_list.php", "fas fa-boxes", "Inventory", "inventory_list.php")}
-            ${createNavItem("../Customer/customers_list.php", "fas fa-users", "Customers", "customers_list.php")}
+            ${createNavItem("../Customer/users_list.php", "fas fa-users", "Users", "users_list.php")}
             ${createNavItem("../Delivery/deliveries_list.php", "fas fa-truck", "Deliveries", "deliveries_list.php")}
         </ul>
     </nav>

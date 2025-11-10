@@ -46,7 +46,7 @@ $db = $database->getConnect();
                 $pageSubtitle = "Manage and track ownership of gallons between customers and the station.";
                 include '../Admin/includes/header.php';
                 ?>
-                
+
                 <div class="m-3 flex flex-col flex-1 overflow-hidden">
                     <!-- Search and Buttons -->
                     <div class="flex items-center gap-2 mb-4">
@@ -129,7 +129,8 @@ $db = $database->getConnect();
                                             go.status AS `Status`,
                                             go.qr_image AS `QR Image`
                                         FROM gallon_ownership AS go
-                                        LEFT JOIN users AS u ON go.owner_id = u.user_id";
+                                        LEFT JOIN users AS u ON go.owner_id = u.user_id
+                                        ORDER BY `Gallon ID` DESC";
 
                                         $stmt = $db->prepare($query);
                                         $stmt->execute();
@@ -139,6 +140,8 @@ $db = $database->getConnect();
 
                                         if ($num > 0) {
                                             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                                $statusClass = $row['Status'] === 'banned' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+
                                                 echo "<tr class='border-b divide-x divide-gray-200 hover:bg-gray-50'>";
                                                 echo "<td class='px-6 py-4'>" . htmlspecialchars($row['Gallon ID']) . "</td>";
                                                 echo "<td class='px-6 py-4'>" . htmlspecialchars($row['Gallon Type']) . "</td>";
@@ -279,11 +282,11 @@ $db = $database->getConnect();
                 statusCells.forEach(cell => {
                     const text = cell.textContent.trim().toLowerCase();
 
-                    if (text === "available") {
+                    if (text === "Available") {
                         cell.className = "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold";
-                    } else if (text === "in-use") {
+                    } else if (text === "In-Use") {
                         cell.className = "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold";
-                    } else if (text === "lost/damaged") {
+                    } else if (text === "Lost/Damaged") {
                         cell.className = "bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold";
                     } else {
                         cell.className = "bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold"; // fallback for unknown statuses
