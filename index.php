@@ -90,7 +90,8 @@
                     <p class="text-gray-600">Welcome! Please enter your details to continue.</p>
                 </div>
 
-                <form class="space-y-6">
+                <form action="index_backend.php" method="POST" class="space-y-6">
+
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                         <input type="email" id="email" name="email" placeholder="Enter your email"
@@ -111,7 +112,7 @@
                                 class="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500">
                             <label for="remember" class="text-sm text-gray-600">Remember me</label>
                         </div>
-                        <a href="#" class="text-sm text-blue-500 hover:text-blue-600 font-medium">Forgot password?</a>
+                        <a href="forgot_password.php" class="text-blue-600 text-sm">Forgot Password?</a>
                     </div>
 
                     <button type="submit"
