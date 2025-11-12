@@ -253,9 +253,9 @@
         <!-- Step 3: Quantity (hidden initially) -->
         <div id="set3" class="hidden">
           <div class="flex items-center justify-center space-x-6 py-8">
-            <button id="qtyMinus" class="w-16 h-16 bg-white border rounded-lg text-2xl">-</button>
+            <button id="qtyMinus" type="button" class="w-16 h-16 bg-white border rounded-lg text-2xl">-</button>
             <div id="qtyDisplay" class="text-4xl font-bold text-blue-600">1</div>
-            <button id="qtyPlus" class="w-16 h-16 bg-white border rounded-lg text-2xl">+</button>
+            <button id="qtyPlus" type="button" class="w-16 h-16 bg-white border rounded-lg text-2xl">+</button>
           </div>
 
           <div class="text-center mt-6">
@@ -267,12 +267,12 @@
 
         <!-- Controls: Step 2 has only Back; Step 3 has Back + Next -->
         <div id="controlsStep2" class="mt-6 hidden flex justify-start">
-          <button id="backBtn" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+          <button id="backBtn" type="button" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
         </div>
 
         <div id="controlsStep3" class="mt-6 hidden flex justify-between">
-          <button id="backBtn3" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
-          <button id="nextBtn3" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
+          <button id="backBtn3" type="button" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+          <button id="nextBtn3" type="button" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
         </div>
 
         <!-- Step 4: Pickup date & time (hidden initially) -->
@@ -284,16 +284,16 @@
 
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">Gallon Pick Up Time</label>
-            <div class="flex space-x-4">
-              <button id="timeMorning" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="07:30">Morning - 7:30 AM</button>
-              <button id="timeAfternoon" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="13:00">Afternoon - 1:00 PM</button>
+              <div class="flex space-x-4">
+              <button id="timeMorning" type="button" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="07:30">Morning - 7:30 AM</button>
+              <button id="timeAfternoon" type="button" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="13:00">Afternoon - 1:00 PM</button>
             </div>
           </div>
         </div>
 
         <div id="controlsStep4" class="mt-6 hidden flex justify-between">
-          <button id="backBtn4" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
-          <button id="nextBtn4" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
+          <button id="backBtn4" type="button" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+          <button id="nextBtn4" type="button" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
         </div>
 
         <!-- Step 5: Delivery date & time slots (hidden initially) -->
@@ -305,18 +305,18 @@
 
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">Gallon Delivery Time</label>
-            <div class="grid grid-cols-2 gap-4">
-              <button id="delTime1" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="09:00">Morning - 9:00 AM</button>
-              <button id="delTime2" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="11:00">Morning - 11:00 AM</button>
-              <button id="delTime3" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="14:00">Afternoon - 2:00 PM</button>
-              <button id="delTime4" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="16:00">Afternoon - 4:00 PM</button>
+              <div class="grid grid-cols-2 gap-4">
+              <button id="delTime1" type="button" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="09:00">Morning - 9:00 AM</button>
+              <button id="delTime2" type="button" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="11:00">Morning - 11:00 AM</button>
+              <button id="delTime3" type="button" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="14:00">Afternoon - 2:00 PM</button>
+              <button id="delTime4" type="button" class="px-6 py-3 bg-white border rounded hover:bg-blue-600 transition-colors duration-200" data-time="16:00">Afternoon - 4:00 PM</button>
             </div>
           </div>
         </div>
 
         <div id="controlsStep5" class="mt-6 hidden flex justify-between">
-          <button id="backBtn5" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
-          <button id="nextBtn5" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
+          <button id="backBtn5" type="button" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+          <button id="nextBtn5" type="button" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
         </div>
       </div>
     </main>
@@ -367,6 +367,9 @@
     let chosenSize = null; // 'large' | 'small'
     let chosenPrice = 0;
     let quantity = 1;
+  // Pickup/delivery time selections
+  let chosenPickupTime = null;
+  let chosenDeliveryTime = null;
     // User info / address (defaults can be replaced with actual profile data)
     let userName = 'Christine May Padua';
     let userContact = '09161951955';
