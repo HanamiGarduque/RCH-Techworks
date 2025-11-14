@@ -49,7 +49,7 @@
     .step-line.completed {
       background-color: #2563eb;
     }
-    /* Thicker lines between steps */
+    /* Lines between steps */
     .step-line { height: 6px; border-radius: 4px; }
 
     /* Sidebar buttons */
@@ -78,7 +78,7 @@
       color: white;
     }
 
-    /* Hover should be a bit whiter */
+    /* Hover */
     .sidebar-btn:hover {
       background: rgba(255,255,255,0.12);
       color: #ffffff;
