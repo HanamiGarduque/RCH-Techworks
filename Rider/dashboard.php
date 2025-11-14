@@ -1,6 +1,7 @@
 <?php
 session_start();
 <<<<<<< HEAD
+<<<<<<< HEAD
 require_once '../Database/db_connection.php';
 
 // Redirect if rider is not logged in
@@ -49,6 +50,9 @@ if (isset($_GET['start_delivery'])) {
 // Example: replace with actual session login name
 $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] : "Joshua Garcia";
 >>>>>>> e40151c (Rider mobile view)
+=======
+$rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] : "Rider";
+>>>>>>> e70e61c (rider)
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -119,7 +123,6 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         font-size: 18px;
         font-weight: 600;
     }
-
     .deliveries {
         margin: 30px 20px;
     }
@@ -205,6 +208,7 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
 <div class="header">
     <h2><?= htmlspecialchars($rider_name); ?></h2>
 <<<<<<< HEAD
+<<<<<<< HEAD
     <span class="notif">🔔</span>
     <div class="stats">
         <div class="card">
@@ -216,15 +220,23 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
             <p><?= $completed_count; ?></p>
 =======
     <span class="bell" onclick="window.location.href='notifications.php'">🔔</span>
+=======
+    <span class="notif" onclick="window.location.href='notifications.php'">🔔</span>
+
+>>>>>>> e70e61c (rider)
     <div class="stats">
         <div class="card">
             <h3>Today's Delivery</h3>
-            <p>2</p>
+            <p id="todayCount">0</p>
         </div>
         <div class="card">
             <h3>Completed</h3>
+<<<<<<< HEAD
             <p>1</p>
 >>>>>>> e40151c (Rider mobile view)
+=======
+            <p id="completedCount">0</p>
+>>>>>>> e70e61c (rider)
         </div>
     </div>
 </div>
@@ -232,6 +244,7 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
 <div class="deliveries">
     <h3>Active Deliveries</h3>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     <?php foreach ($deliveries as $delivery): ?>
     <div class="delivery-card">
@@ -285,9 +298,61 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         </div>
         <button class="start-btn" onclick="startRoute('Christine May Padua')">Start Route</button>
     </div>
+=======
+    <!-- AUTO-GENERATED DELIVERIES -->
+    <div id="deliveryList"></div>
+>>>>>>> e70e61c (rider)
 </div>
 
 <script>
+document.addEventListener("DOMContentLoaded", () => {
+    fetch('dashboard_backend.php')
+        .then(res => res.json())
+        .then(data => {
+            console.log(data);
+
+            document.getElementById("todayCount").innerText = data.today;
+            document.getElementById("completedCount").innerText = data.completed;
+
+            const container = document.getElementById("deliveryList");
+            container.innerHTML = "";
+
+            if (data.deliveries.length === 0) {
+                container.innerHTML = "<p>No active deliveries.</p>";
+                return;
+            }
+
+            data.deliveries.forEach(del => {
+                const div = document.createElement("div");
+                div.classList.add("delivery-card");
+
+                let statusClass = del.status === "Ready for Pickup" ? "ready" : "ontheway";
+
+                div.innerHTML = `
+                    <div class="delivery-header">
+                        <h4>${del.customer_name}</h4>
+                        <span class="status ${statusClass}">${del.status}</span>
+                    </div>
+
+                    <div class="delivery-info">📍 ${del.address}</div>
+
+                    <div class="details">
+                        <span>${del.quantity} Gallons</span>
+                        <span>${del.distance} km Distance</span>
+                        <span>${del.eta} min ETA</span>
+                    </div>
+
+                    <button class="start-btn" onclick="startRoute('${del.customer_name}')">Start Route</button>
+                `;
+
+                container.appendChild(div);
+            });
+        })
+        .catch(err => {
+            console.error("Fetch error:", err);
+        });
+});
+
 function startRoute(name) {
     alert("Starting route for " + name);
     window.location.href = "rider_map.php?customer=" + encodeURIComponent(name);
