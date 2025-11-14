@@ -140,7 +140,8 @@
 
                 <!-- Scrollable form container -->
                 <div class="form-scroll-container">
-                    <form class="space-y-5 pb-6 m-2">
+                    <form action="signup_backend.php" method="POST" class="space-y-5 pb-6 m-2">
+
                         <div>
                             <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                             <input type="text" id="fullName" name="fullName" placeholder="Enter your full name"
@@ -163,11 +164,21 @@
                         </div>
 
                         <div>
-                            <label for="address" class="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
-                            <textarea id="address" name="address" rows="2" placeholder="Enter your complete delivery address"
-                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all resize-none"
-                                required></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+
+                            <input type="text" name="house_number" placeholder="House No." class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
+
+                            <input type="text" name="street_name" placeholder="Street Name" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
+
+                            <input type="text" name="barangay" placeholder="Barangay" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
+
+                            <input type="text" name="city" placeholder="City / Municipality" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
+
+                            <input type="text" name="province" placeholder="Province" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
+
+                            <input type="text" name="postal_code" placeholder="Postal Code" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg" required>
                         </div>
+
 
                         <div>
                             <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
