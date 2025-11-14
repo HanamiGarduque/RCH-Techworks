@@ -29,6 +29,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         exit();
     }
+    if ($_POST['action'] === 'change_role') {
+        $userId = intval($_POST['user_id']);
+        $newRole = $_POST['role'];
+
+        // Validate allowed roles
+        $allowedRoles = ['customer', 'admin', 'rider'];
+        if (!in_array($newRole, $allowedRoles)) {
+            echo json_encode(['success' => false, 'error' => 'Invalid role']);
+            exit();
+        }
+
+        $query = "UPDATE users SET role = :role WHERE user_id = :user_id";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':role', $newRole);
+        $stmt->bindParam(':user_id', $userId);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'newRole' => $newRole]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Failed to update role']);
+        }
+        exit();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -168,13 +191,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                                 $userId = htmlspecialchars($row['user_id']);
                                                 $userName = htmlspecialchars($row['name']);
                                                 $userStatus = htmlspecialchars($row['status']);
-                                                
 
-                                                echo '<td class="px-6 py-4 text-center">';
+
+                                               echo '<td class="px-6 py-4 text-center">';
+
+                                                echo "<div class='flex items-center justify-center gap-3'>";
+
                                                 $banBtnClass = $userStatus === 'banned' ? 'text-green-600' : 'text-red-600';
                                                 $banBtnTitle = $userStatus === 'banned' ? 'Unban Account' : 'Ban Account';
-                                                echo "<i class=\"fas fa-lock mx-1 {$banBtnClass} hover:scale-125 transition-transform\" title=\"{$banBtnTitle}\" style=\"cursor:pointer;\" onclick=\"toggleBanUser({$userId}, '{$userName}', '{$userStatus}')\"></i>";
+
+                                                // Change Role button
+                                                echo "<i class='fas fa-user-cog text-blue-600 hover:scale-125 transition-transform cursor-pointer'
+                                                        title='Change Role'
+                                                        onclick=\"openRoleModal({$userId}, '{$row['user_type']}')\"></i>";
+
+                                                // Ban / Unban button
+                                                echo "<i class=\"fas fa-lock {$banBtnClass} hover:scale-125 transition-transform cursor-pointer\" 
+                                                        title=\"{$banBtnTitle}\" 
+                                                        onclick=\"toggleBanUser({$userId}, '{$userName}', '{$userStatus}')\"></i>";
+
+                                                echo "</div>";
+
                                                 echo '</td>';
+
+                                                
 
                                                 echo "</tr>";
                                             }
@@ -196,141 +236,183 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     </div>
     </div>
     <script>
-    // Smooth page transition
-    document.querySelectorAll('.sidebar-link').forEach(link => {
-        link.addEventListener('click', e => {
-            e.preventDefault();
-            const target = e.currentTarget.getAttribute('href');
-            const content = document.getElementById('page-content');
-            content.classList.add('opacity-0', 'translate-x-2');
-            setTimeout(() => {
-                window.location.href = target;
-            }, 300);
-        });
-    });
-
-    const content = document.getElementById('page-content');
-    if (content) {
-        content.classList.add('opacity-0');
-        setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
-    }
-
-    function filterTab(filter, button) {
-        // Update tab styles
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('bg-blue-600', 'text-white');
-            btn.classList.add('bg-blue-50', 'text-blue-500');
-        });
-        button.classList.remove('bg-blue-50', 'text-blue-500');
-        button.classList.add('bg-blue-600', 'text-white');
-
-        const rows = document.querySelectorAll('#usersTable tbody tr');
-        rows.forEach(row => {
-            const userType = row.querySelector('.usertype-cell')?.textContent.trim().toLowerCase();
-            const userStatus = row.querySelector('.userstatus-cell')?.textContent.trim().toLowerCase();
-
-            let show = false;
-            if (filter === "all") show = true;
-            else if (filter === "customer" && userType === "customer") show = true;
-            else if (filter === "rider" && userType === "rider") show = true;
-            else if (filter === "banned" && userStatus === "banned") show = true;
-
-            row.style.display = show ? "" : "none";
+        // Smooth page transition
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                const target = e.currentTarget.getAttribute('href');
+                const content = document.getElementById('page-content');
+                content.classList.add('opacity-0', 'translate-x-2');
+                setTimeout(() => {
+                    window.location.href = target;
+                }, 300);
+            });
         });
 
-    }
-
-    // ✅ Fixed searchTable function
-    function searchTable() {
-    const input = document.getElementById('searchInput');
-    const filter = input.value.toLowerCase();
-    const rows = Array.from(document.querySelectorAll('#usersTable tbody tr'));
-
-    rows.forEach(row => {
-        const cells = row.getElementsByTagName("td");
-        let match = false;
-
-        if (filter === "") {
-            row.style.display = "";
-            return;
+        const content = document.getElementById('page-content');
+        if (content) {
+            content.classList.add('opacity-0');
+            setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
         }
 
-        for (let j = 0; j < cells.length; j++) { // include all cells
-            if (cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
-                match = true;
-                break;
-            }
+        function filterTab(filter, button) {
+            // Update tab styles
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-blue-50', 'text-blue-500');
+            });
+            button.classList.remove('bg-blue-50', 'text-blue-500');
+            button.classList.add('bg-blue-600', 'text-white');
+
+            const rows = document.querySelectorAll('#usersTable tbody tr');
+            rows.forEach(row => {
+                const userType = row.querySelector('.usertype-cell')?.textContent.trim().toLowerCase();
+                const userStatus = row.querySelector('.userstatus-cell')?.textContent.trim().toLowerCase();
+
+                let show = false;
+                if (filter === "all") show = true;
+                else if (filter === "customer" && userType === "customer") show = true;
+                else if (filter === "rider" && userType === "rider") show = true;
+                else if (filter === "banned" && userStatus === "banned") show = true;
+
+                row.style.display = show ? "" : "none";
+            });
+
         }
 
-        row.style.display = match ? "" : "none";
-    });
-}
+        // Fixed searchTable function
+        function searchTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const rows = Array.from(document.querySelectorAll('#usersTable tbody tr'));
 
+            rows.forEach(row => {
+                const cells = row.getElementsByTagName("td");
+                let match = false;
 
-    // Ban/Unban User
-    function toggleBanUser(userId, userName, currentStatus) {
-        const action = currentStatus === 'banned' ? 'unban' : 'ban';
-        const title = action === 'ban' ? 'Ban Account' : 'Unban Account';
-        const message = action === 'ban'
-            ? `Are you sure you want to ban <strong>${userName}</strong>? They will no longer be able to access their account.`
-            : `Are you sure you want to unban <strong>${userName}</strong>? They will regain access to their account.`;
+                if (filter === "") {
+                    row.style.display = "";
+                    return;
+                }
 
-        Swal.fire({
-            title: title,
-            html: message,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: action === 'ban' ? '#dc2626' : '#16a34a',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: action === 'ban' ? 'Yes, Ban User' : 'Yes, Unban User',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const formData = new FormData();
-                formData.append('action', 'ban');
-                formData.append('user_id', userId);
-                formData.append('status', currentStatus);
-
-                fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            title: 'Success',
-                            text: `User has been ${action}ned successfully`,
-                            icon: 'success',
-                            confirmButtonColor: '#3b82f6'
-                        }).then(() => location.reload());
-                    } else {
-                        Swal.fire('Error', data.error || 'Failed to update user status', 'error');
+                for (let j = 0; j < cells.length; j++) { // include all cells
+                    if (cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
+                        match = true;
+                        break;
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire('Error', 'An error occurred while updating user status', 'error');
-                });
-            }
-        });
-    }
+                }
 
-    // Simple column sorting
-    function sortTable(columnIndex) {
-        const table = document.getElementById('usersTable');
-        const rows = Array.from(table.querySelectorAll('tbody tr'));
+                row.style.display = match ? "" : "none";
+            });
+        }
 
-        rows.sort((a, b) => {
-            const aValue = a.cells[columnIndex].textContent.trim();
-            const bValue = b.cells[columnIndex].textContent.trim();
-            return aValue.localeCompare(bValue);
-        });
 
-        const tbody = table.querySelector('tbody');
-        rows.forEach(row => tbody.appendChild(row));
-    }
-</script>
+        // Ban/Unban User
+        function toggleBanUser(userId, userName, currentStatus) {
+            const action = currentStatus === 'banned' ? 'unban' : 'ban';
+            const title = action === 'ban' ? 'Ban Account' : 'Unban Account';
+            const message = action === 'ban' ?
+                `Are you sure you want to ban <strong>${userName}</strong>? They will no longer be able to access their account.` :
+                `Are you sure you want to unban <strong>${userName}</strong>? They will regain access to their account.`;
+
+            Swal.fire({
+                title: title,
+                html: message,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: action === 'ban' ? '#dc2626' : '#16a34a',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: action === 'ban' ? 'Yes, Ban User' : 'Yes, Unban User',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('action', 'ban');
+                    formData.append('user_id', userId);
+                    formData.append('status', currentStatus);
+
+                    fetch(window.location.href, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: 'Success',
+                                    text: `User has been ${action}ned successfully`,
+                                    icon: 'success',
+                                    confirmButtonColor: '#3b82f6'
+                                }).then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', data.error || 'Failed to update user status', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire('Error', 'An error occurred while updating user status', 'error');
+                        });
+                }
+            });
+        }
+
+        // Simple column sorting
+        function sortTable(columnIndex) {
+            const table = document.getElementById('usersTable');
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+            rows.sort((a, b) => {
+                const aValue = a.cells[columnIndex].textContent.trim();
+                const bValue = b.cells[columnIndex].textContent.trim();
+                return aValue.localeCompare(bValue);
+            });
+
+            const tbody = table.querySelector('tbody');
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        function openRoleModal(userId, currentRole) {
+            Swal.fire({
+                title: "Change User Role",
+                input: "select",
+                inputOptions: {
+                    customer: "Customer",
+                    admin: "Admin",
+                    rider: "Rider"
+                },
+                inputValue: currentRole.toLowerCase(),
+                showCancelButton: true,
+                confirmButtonText: "Update Role",
+                confirmButtonColor: "#2563eb"
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append("action", "change_role");
+                    formData.append("user_id", userId);
+                    formData.append("role", result.value);
+
+                    fetch(window.location.href, {
+                            method: "POST",
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: "Success",
+                                    text: "User role updated successfully!",
+                                    icon: "success",
+                                    confirmButtonColor: "#2563eb"
+                                }).then(() => location.reload());
+                            } else {
+                                Swal.fire("Error", data.error, "error");
+                            }
+                        })
+                        .catch(err => Swal.fire("Error", "Something went wrong", "error"));
+                }
+            });
+        }
+    </script>
 
 </body>
 
