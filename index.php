@@ -95,8 +95,10 @@
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                         <input type="email" id="email" name="email" placeholder="Enter your email"
-                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
-                            required>
+       value="<?php echo isset($_COOKIE['remember_email']) ? htmlspecialchars($_COOKIE['remember_email']) : ''; ?>"
+       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+       required>
+
                     </div>
 
                     <div>
@@ -252,6 +254,7 @@
                 <!-- Step 3: New Password -->
                 <div id="step3" class="hidden space-y-4">
                     <p class="text-gray-600 text-sm mb-4">Create a new password for your account.</p>
+
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
                         <input 
@@ -260,18 +263,23 @@
                             placeholder="Enter new password" 
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
                         >
-                        <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+                        <p id="passwordReqReset" class="text-sm text-red-500 mt-1">
+                            Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character (!@#$%^&*(),.?)
+                        </p>
                     </div>
+
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
                         <input 
                             type="password" 
-                            id="confirmPassword" 
+                            id="confirmResetPassword" 
                             placeholder="Confirm new password" 
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
                         >
+                        <p id="resetPasswordMatch" class="text-sm mt-1"></p>
                         <span id="passwordError" class="text-red-500 text-xs mt-1 hidden"></span>
                     </div>
+
                     <button 
                         onclick="resetPassword()" 
                         class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300 mt-4"
@@ -279,6 +287,7 @@
                         Reset Password
                     </button>
                 </div>
+
 
                 <!-- Success Message -->
                 <div id="success" class="hidden text-center space-y-4">
@@ -351,24 +360,64 @@
         function sendOTP() {
             const phone = document.getElementById('phoneNumber').value.trim();
             const phoneError = document.getElementById('phoneError');
-            
+            const sendBtn = event.target;
+
             if (!phone) {
                 phoneError.textContent = 'Phone number is required';
                 phoneError.classList.remove('hidden');
                 return;
             }
 
-            if (!/^\+?[\d\s\-()]{10,}$/.test(phone)) {
+            if (!/^[\d\s\-()]{10,}$/.test(phone)) {
                 phoneError.textContent = 'Please enter a valid phone number';
                 phoneError.classList.remove('hidden');
                 return;
             }
 
-            phoneError.classList.add('hidden');
-            document.getElementById('step1').classList.add('hidden');
-            document.getElementById('step2').classList.remove('hidden');
-            startTimer();
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+
+            // ✅ Make sure this file exists in the same directory as index.php
+            fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    action: 'send_otp',
+                    phone: phone
+                })
+            })
+            .then(async response => {
+                // If the file is missing or returns HTML, this will prevent JSON errors
+                const contentType = response.headers.get('content-type');
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                } else if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error('Invalid response (HTML returned): ' + text.slice(0, 50));
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    phoneError.classList.add('hidden');
+                    document.getElementById('step1').classList.add('hidden');
+                    document.getElementById('step2').classList.remove('hidden');
+                    startTimer();
+                } else {
+                    phoneError.textContent = data.message || 'Failed to send OTP';
+                    phoneError.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                phoneError.textContent = 'Network error: ' + error.message;
+                phoneError.classList.remove('hidden');
+            })
+            .finally(() => {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send OTP';
+            });
         }
+
 
         // Timer
         let timerInterval;
@@ -387,18 +436,53 @@
             }, 1000);
         }
 
-        // Resend OTP
         function resendOTP() {
-            document.querySelectorAll('.otp-input').forEach(input => input.value = '');
-            document.getElementById('resendBtn').disabled = true;
+    document.querySelectorAll('.otp-input').forEach(input => input.value = '');
+    const resendBtn = document.getElementById('resendBtn');
+    const otpError = document.getElementById('otpError');
+    
+    resendBtn.disabled = true;
+    resendBtn.textContent = 'Sending...';
+
+    const phone = document.getElementById('phoneNumber').value.trim();
+    if (!phone) return;
+
+    const formData = new FormData();
+    formData.append('action', 'send_otp'); // use the same as initial sendOTP
+    formData.append('phone', phone);       // don't forget to include phone
+
+    fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            otpError.classList.add('hidden');
             startTimer();
+            resendBtn.textContent = 'Resend';
+        } else {
+            otpError.textContent = data.message || 'Failed to resend OTP';
+            otpError.classList.remove('hidden');
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend';
         }
+    })
+    .catch(error => {
+        otpError.textContent = 'Network error: ' + error.message;
+        otpError.classList.remove('hidden');
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Resend';
+    });
+}
+
 
         // Verify OTP
         function verifyOTP() {
             const otpInputs = document.querySelectorAll('.otp-input');
             const otp = Array.from(otpInputs).map(input => input.value).join('');
             const otpError = document.getElementById('otpError');
+            const verifyBtn = event.target;
 
             if (otp.length !== 6) {
                 otpError.textContent = 'Please enter all 6 digits';
@@ -406,26 +490,132 @@
                 return;
             }
 
-            otpError.classList.add('hidden');
-            clearInterval(timerInterval);
-            document.getElementById('step2').classList.add('hidden');
-            document.getElementById('step3').classList.remove('hidden');
+            // Disable button and show loading state
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Verifying...';
+
+            // Verify OTP via AJAX
+            const formData = new FormData();
+            formData.append('action', 'verify_otp');
+            formData.append('otp', otp);
+
+            fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    otpError.classList.add('hidden');
+                    clearInterval(timerInterval);
+                    document.getElementById('step2').classList.add('hidden');
+                    document.getElementById('step3').classList.remove('hidden');
+                    verifyBtn.disabled = false;
+                    verifyBtn.textContent = 'Verify OTP';
+                } else {
+                    otpError.textContent = data.message || 'Invalid OTP';
+                    otpError.classList.remove('hidden');
+                    verifyBtn.disabled = false;
+                    verifyBtn.textContent = 'Verify OTP';
+                }
+            })
+            .catch(error => {
+                otpError.textContent = 'Network error: ' + error.message;
+                otpError.classList.remove('hidden');
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = 'Verify OTP';
+            });
         }
 
         // Reset Password
-        function resetPassword() {
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const passwordError = document.getElementById('passwordError');
+        // Password Requirements Elements
+        const newPasswordInput = document.getElementById('newPassword');
+        const confirmPasswordInput = document.getElementById('confirmResetPassword');
+        const passwordReqReset = document.getElementById('passwordReqReset');
+        const resetPasswordMatch = document.getElementById('resetPasswordMatch');
+        const resetBtn = document.querySelector('#step3 button');
 
-            if (!newPassword || !confirmPassword) {
-                passwordError.textContent = 'Both password fields are required';
-                passwordError.classList.remove('hidden');
+        const requirements = [
+            { regex: /.{8,}/, text: '8+' },
+            { regex: /[A-Z]/, text: 'A-Z' },
+            { regex: /[a-z]/, text: 'a-z' },
+            { regex: /[0-9]/, text: '0-9' },
+            { regex: /[!@#$%^&*(),.?":{}|<>]/, text: '!@#$...' },
+        ];
+
+        // Function to update password requirement indicators (inline) and input border
+        function updatePasswordRequirements() {
+            const value = newPasswordInput.value;
+            let allMet = true;
+            let html = '';
+            requirements.forEach((req, index) => {
+                if (req.regex.test(value)) {
+                    html += `<span class="text-green-600 font-semibold">${req.text}</span>`;
+                } else {
+                    html += `<span class="text-red-500 font-semibold">${req.text}</span>`;
+                    allMet = false;
+                }
+                if (index !== requirements.length - 1) html += ' , '; // separator
+            });
+            passwordReqReset.innerHTML = html;
+
+            // Update input border color
+            if (value) {
+                if (allMet) {
+                    newPasswordInput.classList.remove('border-red-500');
+                    newPasswordInput.classList.add('border-green-600');
+                } else {
+                    newPasswordInput.classList.remove('border-green-600');
+                    newPasswordInput.classList.add('border-red-500');
+                }
+            } else {
+                newPasswordInput.classList.remove('border-green-600', 'border-red-500');
+            }
+
+            return allMet;
+        }
+
+        // Function to update password match with professional messages and input border
+        function updatePasswordMatch() {
+            if (!confirmPasswordInput.value) {
+                resetPasswordMatch.textContent = '';
+                confirmPasswordInput.classList.remove('border-green-600', 'border-red-500');
                 return;
             }
 
-            if (newPassword.length < 8) {
-                passwordError.textContent = 'Password must be at least 8 characters';
+            if (newPasswordInput.value === confirmPasswordInput.value) {
+                resetPasswordMatch.textContent = 'Great! Your passwords match.';
+                resetPasswordMatch.classList.remove('text-red-500');
+                resetPasswordMatch.classList.add('text-green-600');
+
+                confirmPasswordInput.classList.remove('border-red-500');
+                confirmPasswordInput.classList.add('border-green-600');
+            } else {
+                resetPasswordMatch.textContent = 'Oops! Your passwords don’t match.';
+                resetPasswordMatch.classList.remove('text-green-600');
+                resetPasswordMatch.classList.add('text-red-500');
+
+                confirmPasswordInput.classList.remove('border-green-600');
+                confirmPasswordInput.classList.add('border-red-500');
+            }
+        }
+
+        // Real-time listeners
+        newPasswordInput.addEventListener('input', () => {
+            updatePasswordRequirements();
+            updatePasswordMatch(); // Check match in real-time
+        });
+        confirmPasswordInput.addEventListener('input', updatePasswordMatch);
+
+
+        // Reset Password Function
+        function resetPassword() {
+            const newPassword = newPasswordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            const passwordError = document.getElementById('passwordError');
+
+            if (!updatePasswordRequirements()) {
+                passwordError.textContent = 'Password does not meet all requirements';
                 passwordError.classList.remove('hidden');
                 return;
             }
@@ -437,27 +627,40 @@
             }
 
             passwordError.classList.add('hidden');
-            document.getElementById('step3').classList.add('hidden');
-            document.getElementById('success').classList.remove('hidden');
-        }
 
-        // Login Form
-        const loginFormEl = document.querySelector('form[action="index_backend.php"]');
-        if (loginFormEl) {
-            loginFormEl.addEventListener('submit', function(e) {
-                // Keep original behavior: submit to backend
-            });
-        }
+            resetBtn.disabled = true;
+            resetBtn.textContent = 'Resetting...';
 
-        // Close modal when clicking outside
-        const forgotModalEl = document.getElementById('forgotPasswordModal');
-        if (forgotModalEl) {
-            forgotModalEl.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeForgotPasswordModal();
+            const formData = new FormData();
+            formData.append('action', 'reset_password');
+            formData.append('password', newPassword);
+            formData.append('confirmPassword', confirmPassword);
+
+            fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    passwordError.classList.add('hidden');
+                    document.getElementById('step3').classList.add('hidden');
+                    document.getElementById('success').classList.remove('hidden');
+                } else {
+                    passwordError.textContent = data.message || 'Failed to reset password';
+                    passwordError.classList.remove('hidden');
                 }
+            })
+            .catch(error => {
+                passwordError.textContent = 'Network error: ' + error.message;
+                passwordError.classList.remove('hidden');
+            })
+            .finally(() => {
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Reset Password';
             });
         }
+
     </script>
 
 </body>

@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - RCH Water Refilling System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -92,6 +94,104 @@
     </style>
 </head>
 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirmPassword');
+    const passwordReqText = document.getElementById('passwordReq');
+    const confirmReqText = document.getElementById('confirmPasswordReq');
+
+    const requirements = [
+        { regex: /.{8,}/, text: '8+' },
+        { regex: /[A-Z]/, text: 'A-Z' },
+        { regex: /[a-z]/, text: 'a-z' },
+        { regex: /[0-9]/, text: '0-9' },
+        { regex: /[!@#$%^&*(),.?":{}|<>]/, text: '!@#$' },
+    ];
+
+    function updatePasswordReqText() {
+        const value = passwordInput.value;
+        let html = '';
+        let allMet = true;
+
+        requirements.forEach((req, index) => {
+            if (req.regex.test(value)) {
+                html += `<span class="text-green-600 font-semibold">${req.text}</span>`;
+            } else {
+                html += `<span class="text-red-500 font-semibold">${req.text}</span>`;
+                allMet = false;
+            }
+            if (index !== requirements.length - 1) html += ' , ';
+        });
+
+        passwordReqText.innerHTML = html;
+
+        // Change input border based on all requirements
+        if (allMet) {
+            passwordInput.classList.remove("border-red-500");
+            passwordInput.classList.add("border-green-600");
+        } else {
+            passwordInput.classList.remove("border-green-600");
+            passwordInput.classList.add("border-red-500");
+        }
+
+        return allMet;
+    }
+
+    function updateConfirmPasswordText() {
+        const password = passwordInput.value;
+        const confirm = confirmInput.value;
+
+        if (confirm === "") {
+            confirmReqText.textContent = "";
+            confirmInput.classList.remove("border-green-600", "border-red-500");
+        } else if (password === confirm) {
+            confirmReqText.textContent = "Great! Your passwords match.";
+            confirmReqText.classList.remove("text-red-500");
+            confirmReqText.classList.add("text-green-600");
+            confirmInput.classList.remove("border-red-500");
+            confirmInput.classList.add("border-green-600");
+        } else {
+            confirmReqText.textContent = "Oops! Your passwords don’t match.";
+            confirmReqText.classList.remove("text-green-600");
+            confirmReqText.classList.add("text-red-500");
+            confirmInput.classList.remove("border-green-600");
+            confirmInput.classList.add("border-red-500");
+        }
+    }
+
+    passwordInput.addEventListener('input', function() {
+        updatePasswordReqText();
+        updateConfirmPasswordText();
+    });
+
+    confirmInput.addEventListener('input', updateConfirmPasswordText);
+
+    // Form submission validation
+    const form = document.querySelector("form");
+    form.addEventListener("submit", function (e) {
+        const value = passwordInput.value;
+        const confirm = confirmInput.value;
+
+        const allMet = updatePasswordReqText();
+        if (!allMet) {
+            e.preventDefault();
+            alert("Password does not meet all required criteria.");
+            return;
+        }
+
+        if (value !== confirm) {
+            e.preventDefault();
+            alert("Passwords do not match.");
+        }
+    });
+
+    // Initialize on load
+    updatePasswordReqText();
+});
+</script>
+
+
 <body class="bg-gray-50 min-h-screen flex items-center justify-center p-10">
     <div class="flex h-[600px] bg-white rounded-2xl shadow-lg overflow-hidden max-w-5xl w-full">
         <!-- Left Panel -->
@@ -141,28 +241,28 @@
                     <form action="signup_backend.php" method="POST" class="space-y-5 pb-6 m-2">
 
                         <div>
-                            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">Full Name<span class="text-red-500">*</span></label>
                             <input type="text" id="fullName" name="fullName" placeholder="Enter your full name"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
                         </div>
 
                         <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address<span class="text-red-500">*</span></label>
                             <input type="email" id="email" name="email" placeholder="Enter your email address"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
                         </div>
 
                         <div>
-                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number<span class="text-red-500">*</span></label>
                             <input type="tel" id="phone" name="phone" placeholder="Enter your phone number"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Address<span class="text-red-500">*</span></label>
 
                             <input type="text" name="house_number" placeholder="House No." class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
 
@@ -179,24 +279,30 @@
 
 
                         <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password<span class="text-red-500">*</span></label>
                             <input type="password" id="password" name="password" placeholder="Enter your password"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
+
+                            <p id="passwordReq" class="text-sm text-red-500 mt-2">
+                                Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character (!@#$%^&*(),.?)
+                            </p>
+
                         </div>
 
                         <div>
-                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password<span class="text-red-500">*</span></label>
                             <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter your password"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
+                                <p id="confirmPasswordReq" class="text-sm mt-2"></p>
                         </div>
 
                         <div class="flex items-start gap-2">
                             <input type="checkbox" id="terms" name="terms"
                                 class="mt-1 w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500" required>
                             <label for="terms" class="text-sm text-gray-600">
-                                I agree to the <a href="#" class="text-blue-500 hover:text-blue-600 font-medium">Terms and Conditions</a> and <a href="#" class="text-blue-500 hover:text-blue-600 font-medium">Privacy Policy</a>
+                                I agree to the <a href="javascript:void(0);" onclick="openModal('termsModal')" class="text-blue-500 hover:text-blue-600 font-medium">Terms and Conditions</a> and <a href="javascript:void(0);" onclick="openModal('privacyModal')" class="text-blue-500 hover:text-blue-600 font-medium">Privacy Policy<span class="text-red-500">*</span></a>
                             </label>
                         </div>
 
@@ -214,6 +320,71 @@
             </div>
         </div>
     </div>
-</body>
 
+    <!-- Modals -->
+    <!-- Terms and Conditions Modal -->
+    <div id="termsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-y-auto max-h-[80vh]">
+            <div class="px-6 py-4 flex justify-between items-center border-b">
+                <h2 class="text-2xl font-bold">Terms and Conditions</h2>
+                <button onclick="closeModal('termsModal')" class="text-gray-500 hover:text-gray-700 p-2 rounded-full transition">&times;</button>
+            </div>
+            <div class="p-6 text-gray-700 space-y-4">
+                <p>Welcome to RCH Water Refilling System! By using our services, you agree to the following terms and conditions.</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>Users must provide accurate and complete information during signup.</li>
+                    <li>Account sharing is strictly prohibited.</li>
+                    <li>All orders are subject to availability and confirmation.</li>
+                    <li>RCH Water is not responsible for delays due to unforeseen circumstances.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-y-auto max-h-[80vh]">
+            <div class="px-6 py-4 flex justify-between items-center border-b">
+                <h2 class="text-2xl font-bold">Privacy Policy</h2>
+                <button onclick="closeModal('privacyModal')" class="text-gray-500 hover:text-gray-700 p-2 rounded-full transition">&times;</button>
+            </div>
+            <div class="p-6 text-gray-700 space-y-4">
+                <p>RCH Water Refilling System respects your privacy and is committed to protecting your personal information.</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>We collect only necessary information for service provision.</li>
+                    <li>Personal data will not be shared with third parties without consent.</li>
+                    <li>Data is stored securely and handled according to local privacy laws.</li>
+                    <li>Users may request to view or delete their personal information anytime.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+    </script>
+
+    <?php if (isset($_SESSION['alert'])): ?>
+<script>
+Swal.fire({
+    icon: "<?= $_SESSION['alert']['icon'] ?>",
+    title: "<?= $_SESSION['alert']['title'] ?>",
+    text: "<?= $_SESSION['alert']['text'] ?>",
+}).then(() => {
+    <?php if ($_SESSION['alert']['action'] == "redirect"): ?>
+        window.location = "<?= $_SESSION['alert']['url'] ?>";
+    <?php else: ?>
+        window.history.back();
+    <?php endif; ?>
+});
+</script>
+<?php unset($_SESSION['alert']); endif; ?>
+
+</body>
 </html>

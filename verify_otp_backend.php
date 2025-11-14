@@ -10,65 +10,59 @@ if (!isset($_SESSION['reg_data'])) {
     exit;
 }
 
-$reg = &$_SESSION['reg_data']; // Shortcut
+$reg = &$_SESSION['reg_data'];
+
+$swal_script = ''; // Collect SweetAlert scripts
 
 // Handle OTP verification
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['verify'])) {
     $entered_otp = trim($_POST['otp']);
-    $otp_validity = 300; // 5 minutes
+    $otp_validity = 300;
 
     if (time() - $reg['otp_sent_at'] > $otp_validity) {
-        echo "<script>alert('OTP expired! Please request a new one.');</script>";
+        $swal_script = "Swal.fire({icon:'error', title:'OTP Expired', text:'Please request a new OTP.'});";
     } elseif ($entered_otp == $reg['otp']) {
-        // ✅ OTP correct → save to database
         $stmt = $db->prepare("INSERT INTO users (name, email, password_hash, phone_number, address, role, status, created_at, updated_at) 
                               VALUES (:name, :email, :password_hash, :phone, :address, 'customer', 'active', NOW(), NOW())");
 
         $stmt->bindParam(':name', $reg['fullName']);
         $stmt->bindParam(':email', $reg['email']);
         $stmt->bindParam(':password_hash', $reg['password_hash']);
-        $stmt->bindParam(':phone', $reg['phone']);
+        $stmt->bindParam(':phone', $reg['phone_number']);
         $stmt->bindParam(':address', $reg['address']);
 
         if ($stmt->execute()) {
             unset($_SESSION['reg_data']);
-            echo "<script>alert('Phone number verified! Account created successfully.'); window.location='../index.php';</script>";
-            exit;
+            $swal_script = "Swal.fire({icon:'success', title:'Account Created', text:'Phone verified successfully!'}).then(()=>{window.location='./index.php'});";
         } else {
-            echo "<script>alert('Error creating account. Please try again.');</script>";
+            $swal_script = "Swal.fire({icon:'error', title:'Error', text:'Failed to create account. Try again.'});";
         }
     } else {
-        echo "<script>alert('Invalid OTP. Please try again.');</script>";
+        $swal_script = "Swal.fire({icon:'error', title:'Invalid OTP', text:'Please try again.'});";
     }
 }
 
 // Handle resend OTP
 if (isset($_POST['resend'])) {
-    if ($reg['otp_tries'] >= 3) {
-        echo "<script>alert('You have reached the maximum resend attempts. Please try again later.');</script>";
-    } else {
-        $reg['otp'] = rand(100000, 999999);
-        $reg['otp_sent_at'] = time();
-        $reg['otp_tries']++;
+    $reg['otp'] = rand(100000, 999999);
+    $reg['otp_sent_at'] = time();
 
-        // Send new OTP
-        $api_token = "ba9958e785ac42c22bda17b617158dac68c24165";
-        $data = [
-            'api_token'    => $api_token,
-            'phone_number' => $reg['phone'],
-            'message'      => "Your new RCH Water verification code is: {$reg['otp']}. It will expire in 5 minutes."
-        ];
+    $api_token = "ba9958e785ac42c22bda17b617158dac68c24165";
+    $data = [
+        'api_token'    => $api_token,
+        'phone_number' => $reg['phone_number'],
+        'message'      => "Your new RCH Water verification code is: {$reg['otp']}. It will expire in 5 minutes."
+    ];
 
-        $ch = curl_init("https://sms.iprogtech.com/api/v1/otp/send_otp");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        $response = curl_exec($ch);
-        curl_close($ch);
+    $ch = curl_init("https://sms.iprogtech.com/api/v1/otp/send_otp");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_exec($ch);
+    curl_close($ch);
 
-        echo "<script>alert('A new OTP has been sent to your phone.');</script>";
-    }
+    $swal_script = "Swal.fire({icon:'success', title:'OTP Sent', text:'A new OTP has been sent to your phone.'});";
 }
 ?>
 
@@ -76,15 +70,22 @@ if (isset($_POST['resend'])) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Verify OTP</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify OTP - RCH Water</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-let countdown = 300; // 5 minutes
+let countdown = 300;
 function updateTimer() {
     const timer = document.getElementById('timer');
+    const resendText = document.getElementById('resendText');
+
     if (countdown <= 0) {
         timer.innerText = "Expired!";
-        document.getElementById('verifyBtn').disabled = true;
+        resendText.classList.remove('text-gray-400');
+        resendText.classList.add('text-blue-600');
+        resendText.classList.remove('cursor-not-allowed');
+        resendText.addEventListener('click', resendOTP);
     } else {
         const mins = Math.floor(countdown / 60);
         const secs = countdown % 60;
@@ -93,25 +94,43 @@ function updateTimer() {
         setTimeout(updateTimer, 1000);
     }
 }
-window.onload = updateTimer;
+
+function resendOTP() {
+    const form = document.getElementById('resendForm');
+    form.submit();
+}
+
+window.onload = function() {
+    updateTimer();
+    <?php echo $swal_script; ?>
+}
 </script>
 </head>
-<body class="bg-light">
-<div class="container mt-5">
-  <div class="card p-4 shadow" style="max-width:400px;margin:auto;">
-    <h4 class="text-center mb-3">Verify Your Phone Number</h4>
-    <p class="text-center text-muted">We’ve sent a 6-digit code to <strong><?php echo htmlspecialchars($reg['phone']); ?></strong></p>
-    <p class="text-center text-danger">Expires in: <span id="timer">5:00</span></p>
-    
-    <form method="POST">
-      <div class="mb-3">
-        <input type="text" name="otp" class="form-control text-center" placeholder="Enter 6-digit code" maxlength="6" required>
-      </div>
-      <button type="submit" name="verify" id="verifyBtn" class="btn btn-primary w-100 mb-2">Verify</button>
-      <button type="submit" name="resend" class="btn btn-outline-secondary w-100">Resend OTP</button>
-      <p class="text-center mt-2 small text-muted">Resend attempts left: <?php echo 3 - $reg['otp_tries']; ?></p>
+<body class="bg-blue-50 min-h-screen flex items-center justify-center p-4">
+<div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+    <h2 class="text-2xl font-bold text-blue-600 mb-2 text-center">Verify Your Phone Number</h2>
+    <p class="text-gray-600 text-center mb-6">
+        We’ve sent a 6-digit code to <strong><?php echo htmlspecialchars($reg['phone_number']); ?></strong>
+    </p>
+
+    <form method="POST" class="space-y-4">
+        <input type="text" name="otp" maxlength="6" required
+            class="w-full text-center px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500"
+            placeholder="Enter 6-digit code">
+        <button type="submit" name="verify"
+            class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-medium transition">
+            Verify
+        </button>
     </form>
-  </div>
+
+    <!-- Timer + Resend -->
+    <div class="flex justify-center items-center gap-2 mt-4 text-sm text-gray-600">
+        <span>Expires in: <span id="timer" class="font-semibold text-blue-600">5:00</span></span>
+        <form id="resendForm" method="POST">
+            <input type="hidden" name="resend" value="1">
+            <span id="resendText" class="underline text-gray-400 cursor-not-allowed">Resend</span>
+        </form>
+    </div>
 </div>
 </body>
 </html>

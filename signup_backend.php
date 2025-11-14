@@ -1,3 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- SWEET ALERT NEEDS TO LOAD HERE -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body></body>
+
 <?php
 session_start();
 require_once 'Database/db_connection.php';
@@ -20,10 +28,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $confirmPassword = $_POST['confirmPassword'];
 
     $address = "$house_number, $street_name, $barangay, $city, $province, $postal_code";
+    
 
     // Password match check
     if ($password !== $confirmPassword) {
-        echo "<script>alert('Passwords do not match!'); window.history.back();</script>";
+        echo "
+        <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Password Mismatch',
+            text: 'Passwords do not match!',
+        }).then(() => { window.history.back(); });
+        </script>";
         exit;
     }
 
@@ -33,11 +49,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $checkEmail->execute();
 
     if ($checkEmail->rowCount() > 0) {
-        echo "<script>alert('Email already registered!'); window.history.back();</script>";
+        echo "
+        <script>
+        Swal.fire({
+            icon: 'warning',
+            title: 'Email Already Exists',
+            text: 'This email is already registered!',
+        }).then(() => { window.history.back(); });
+        </script>";
         exit;
     }
 
-    // ✅ Generate OTP
+    if (!preg_match('/^09\d{9}$/', $phone)) {
+    echo "
+    <script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Invalid Phone Number',
+        text: 'Phone number must start with 09 and be 11 digits long!',
+    }).then(() => { window.history.back(); });
+    </script>";
+    exit;
+}
+
+    // ✅ CORRECTED PHONE CHECK (phone_number column)
+    $checkPhone = $db->prepare("SELECT phone_number FROM users WHERE phone_number = :phone");
+    $checkPhone->bindParam(':phone', $phone, PDO::PARAM_STR);
+    $checkPhone->execute();
+
+    if ($checkPhone->rowCount() > 0) {
+        echo "
+        <script>
+        Swal.fire({
+            icon: 'warning',
+            title: 'Phone Number Exists',
+            text: 'This phone number is already registered!',
+        }).then(() => { window.history.back(); });
+        </script>";
+        exit;
+    }
+
+    // Generate OTP
     $otp = rand(100000, 999999);
 
     // Store registration data in session temporarily
@@ -45,14 +97,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'fullName' => $fullName,
         'email' => $email,
         'password_hash' => hash('sha256', $password),
-        'phone' => $phone,
+        'phone_number' => $phone,   // ← updated
         'address' => $address,
         'otp' => $otp,
         'otp_sent_at' => time(),
-        'otp_tries' => 0 // resend counter
+        'otp_tries' => 0
     ];
 
-    // ✅ Send OTP using iProg SMS API
+    // Send OTP using iProg SMS API
     $api_token = "ba9958e785ac42c22bda17b617158dac68c24165";
 
     $data = [
@@ -71,15 +123,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     curl_close($ch);
 
     if ($error) {
-        echo "<script>alert('Failed to send OTP. $error'); window.history.back();</script>";
+        echo "
+        <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'SMS Error',
+            text: 'Failed to send OTP: $error',
+        }).then(() => { window.history.back(); });
+        </script>";
         exit;
     }
 
     $result = json_decode($response, true);
+
     if (isset($result['status']) && $result['status'] === 'success') {
-        echo "<script>alert('OTP sent successfully! Please verify your phone number.'); window.location='verify_otp.php';</script>";
+        echo "
+        <script>
+        Swal.fire({
+            icon: 'success',
+            title: 'OTP Sent',
+            text: 'Verification code sent! Please check your SMS.',
+        }).then(() => { window.location='verify_otp_backend.php'; });
+        </script>";
     } else {
-        echo "<script>alert('Failed to send OTP. Please try again later.'); window.history.back();</script>";
+        echo "
+        <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'OTP Failed',
+            text: 'Unable to send OTP. Please try again later.',
+        }).then(() => { window.history.back(); });
+        </script>";
     }
 }
 ?>
+
+</html>
