@@ -1,6 +1,7 @@
 <?php
 session_start();
 <<<<<<< HEAD
+<<<<<<< HEAD
 require_once '../Database/db_connection.php';
 
 // Redirect if rider not logged in
@@ -49,6 +50,8 @@ $address = $delivery['address'];
 $instructions = $delivery['special_instructions'] ?? '';
 $status = $delivery['status'];
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 // Example only — later connect this dynamically to your database
 $order_id = "#DEL001";
 $customer_name = "Hanami Garduque";
@@ -58,7 +61,10 @@ $items = [
     ["name" => "Slim Box type Gallon (20L)", "code" => "SP-204-022", "status" => "Ready"]
 ];
 $instructions = "Call upon arrival.";
+<<<<<<< HEAD
 >>>>>>> e40151c (Rider mobile view)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -68,6 +74,7 @@ $instructions = "Call upon arrival.";
 <title>Delivery Info | RCH Water</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+<<<<<<< HEAD
 <<<<<<< HEAD
     body { font-family: 'Poppins', sans-serif; background-color: #f4f6fa; margin: 0; padding: 0; color: #333; }
     .header { background-color: #2196F3; color: white; padding: 30px 20px 60px; border-radius: 0 0 40px 40px; position: relative; }
@@ -95,6 +102,8 @@ $instructions = "Call upon arrival.";
     .start-btn { background-color: #1E90FF; color: white; border: none; border-radius: 25px; font-size: 16px; padding: 12px 0; width: 90%; display: block; margin: 20px auto; cursor: pointer; }
     .start-btn:hover { background-color: #0b7dda; }
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     body {
         font-family: 'Poppins', sans-serif;
         background-color: #f4f6fa;
@@ -249,12 +258,16 @@ $instructions = "Call upon arrival.";
     .start-btn:hover {
         background-color: #0b7dda;
     }
+<<<<<<< HEAD
 >>>>>>> e40151c (Rider mobile view)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 </style>
 </head>
 <body>
 
 <div class="header">
+<<<<<<< HEAD
 <<<<<<< HEAD
     <div class="back-btn" onclick="window.location.href='dashboard.php'">←</div>
     <span class="status-badge"><?= htmlspecialchars($status) ?></span>
@@ -264,10 +277,16 @@ $instructions = "Call upon arrival.";
     <span class="status-badge">Active</span>
     <p>Delivery <?= $order_id ?></p>
 >>>>>>> e40151c (Rider mobile view)
+=======
+    <div class="back-btn" onclick="history.back()">←</div>
+    <span class="status-badge">Active</span>
+    <p>Delivery <?= $order_id ?></p>
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     <h3><?= htmlspecialchars($customer_name) ?></h3>
 </div>
 
 <div class="card">
+<<<<<<< HEAD
 <<<<<<< HEAD
     <div class="step"><div class="circle <?= $status != 'Ready for Pickup' ? 'active-step' : ''; ?>">1</div> <div><span>Ready for Pickup</span><small>Order prepared</small></div></div>
     <div class="step"><div class="circle <?= $status == 'On the Way' || $status == 'Completed' ? 'active-step' : ''; ?>">2</div> <div><span>On the Way</span><small>Heading to location</small></div></div>
@@ -277,6 +296,11 @@ $instructions = "Call upon arrival.";
     <div class="step"><div class="circle">2</div> <div><span>On the Way</span><small>Heading to location</small></div></div>
     <div class="step"><div class="circle">3</div> <div><span>Completed</span><small>Delivered</small></div></div>
 >>>>>>> e40151c (Rider mobile view)
+=======
+    <div class="step"><div class="circle active-step">1</div> <div><span>Ready for Pickup</span><small>Order prepared</small></div></div>
+    <div class="step"><div class="circle">2</div> <div><span>On the Way</span><small>Heading to location</small></div></div>
+    <div class="step"><div class="circle">3</div> <div><span>Completed</span><small>Delivered</small></div></div>
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 </div>
 
 <div class="card">
@@ -295,12 +319,17 @@ $instructions = "Call upon arrival.";
         <div class="item">
             <div class="item-info">
 <<<<<<< HEAD
+<<<<<<< HEAD
                 <?= htmlspecialchars($item['item_name']) ?><br>
                 <small><?= htmlspecialchars($item['item_code']) ?></small>
 =======
                 <?= htmlspecialchars($item['name']) ?><br>
                 <small><?= htmlspecialchars($item['code']) ?></small>
 >>>>>>> e40151c (Rider mobile view)
+=======
+                <?= htmlspecialchars($item['name']) ?><br>
+                <small><?= htmlspecialchars($item['code']) ?></small>
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
             </div>
             <div class="item-status"><?= htmlspecialchars($item['status']) ?></div>
         </div>
@@ -313,6 +342,7 @@ $instructions = "Call upon arrival.";
 </div>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 <?php if ($status == 'Ready for Pickup'): ?>
 <form method="POST">
     <button type="submit" name="start_delivery" class="start-btn">Start Delivery</button>
@@ -324,6 +354,8 @@ function openMap() { window.open("https://www.openstreetmap.org", "_blank"); }
 function callCustomer() { alert("Calling customer..."); }
 function messageCustomer() { alert("Opening messaging app..."); }
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 <button class="start-btn" onclick="startDelivery()">Start Delivery</button>
 
 <script>
@@ -339,7 +371,10 @@ function messageCustomer() {
 function startDelivery() {
     window.location.href = "order_arrival.php";
 }
+<<<<<<< HEAD
 >>>>>>> e40151c (Rider mobile view)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 </script>
 
 </body>

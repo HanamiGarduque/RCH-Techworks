@@ -1,5 +1,6 @@
 <?php
 <<<<<<< HEAD
+<<<<<<< HEAD
 require_once '../Database/db_connection.php';
 session_start();
 
@@ -33,6 +34,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "Invalid email or password";
     }
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 session_start();
 require_once '../Database/db_connection.php';
 
@@ -62,6 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     header("Location: login.php");
     exit;
+<<<<<<< HEAD
 >>>>>>> e70e61c (rider)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 }
 ?>

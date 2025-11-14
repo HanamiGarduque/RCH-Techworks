@@ -1,5 +1,6 @@
 <?php
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Include database connection
 <<<<<<< HEAD
 require_once '../Database/db_connection.php';
@@ -61,6 +62,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 =======
 session_start();
 >>>>>>> e70e61c (rider)
+=======
+session_start();
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 ?>
 
 <!DOCTYPE html>
@@ -97,6 +101,7 @@ session_start();
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         input[type="email"], input[type="password"] {
 =======
         input[type="text"], input[type="password"] {
@@ -110,13 +115,18 @@ session_start();
             font-size: 14px;
         }
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     h2 {
         margin-bottom: 25px;
         color: #000;
         font-weight: 600;
         font-size: 22px;
     }
+<<<<<<< HEAD
 >>>>>>> e70e61c (rider)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 
     input[type="email"], input[type="password"] {
         width: 85%;
@@ -208,6 +218,7 @@ session_start();
 
 <div class="container">
 <<<<<<< HEAD
+<<<<<<< HEAD
     <h2>Login Account</h2>
     <form method="POST" action="">
 <<<<<<< HEAD
@@ -216,6 +227,8 @@ session_start();
         <input type="text" name="username" placeholder="Enter your username" required><br>
 >>>>>>> e40151c (Rider mobile view)
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     <h2>Rider Login</h2>
 
     <!-- Show error only when login fails -->
@@ -227,7 +240,10 @@ session_start();
     <!-- LOGIN FORM -->
     <form action="login_backend.php" method="POST">
         <input type="email" name="email" placeholder="Enter your email" required><br>
+<<<<<<< HEAD
 >>>>>>> e70e61c (rider)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
         <input type="password" name="password" placeholder="Enter your password" required><br>
         <button type="submit">Login</button>
     </form>

@@ -2,6 +2,7 @@
 session_start();
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 require_once '../Database/db_connection.php';
 
 // Redirect if rider is not logged in
@@ -53,6 +54,9 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
 =======
 $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] : "Rider";
 >>>>>>> e70e61c (rider)
+=======
+$rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] : "Rider";
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -76,10 +80,13 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         position: relative;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     .header h2 { margin: 0; font-weight: 600; font-size: 22px; }
     .notif { position: absolute; top: 35px; right: 25px; font-size: 20px; cursor: pointer; }
     .stats { display: flex; justify-content: space-around; margin-top: 20px; }
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     .header h2 {
         margin: 0;
         font-weight: 600;
@@ -97,7 +104,10 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         justify-content: space-around;
         margin-top: 20px;
     }
+<<<<<<< HEAD
 >>>>>>> e40151c (Rider mobile view)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     .card {
         background-color: rgba(255,255,255,0.3);
         backdrop-filter: blur(10px);
@@ -107,12 +117,15 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         color: white;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     .card h3 { margin: 0; font-size: 14px; font-weight: 400; }
     .card p { margin: 5px 0 0; font-size: 18px; font-weight: 600; }
 
     .deliveries { margin: 30px 20px; }
     .deliveries h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     .card h3 {
         margin: 0;
         font-size: 14px;
@@ -131,7 +144,10 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         font-weight: 600;
         margin-bottom: 10px;
     }
+<<<<<<< HEAD
 >>>>>>> e40151c (Rider mobile view)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     .delivery-card {
         background-color: white;
         border-radius: 15px;
@@ -140,9 +156,12 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         padding: 15px;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     .delivery-header { display: flex; justify-content: space-between; align-items: center; }
     .delivery-header h4 { margin: 0; font-size: 15px; font-weight: 600; }
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     .delivery-header {
         display: flex;
         justify-content: space-between;
@@ -153,7 +172,10 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         font-size: 15px;
         font-weight: 600;
     }
+<<<<<<< HEAD
 >>>>>>> e40151c (Rider mobile view)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     .status {
         padding: 4px 10px;
         border-radius: 12px;
@@ -161,11 +183,14 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         color: white;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     .ready { background-color: #FF6F61; }
     .ontheway { background-color: #4CAF50; }
     .delivery-info { font-size: 13px; color: #666; margin: 5px 0 10px; }
     .details { display: flex; justify-content: space-between; margin-bottom: 10px; color: #333; font-size: 13px; }
 =======
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     .ready {
         background-color: #FF6F61;
     }
@@ -183,7 +208,10 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         margin-bottom: 10px;
         color: #333;
     }
+<<<<<<< HEAD
 >>>>>>> e40151c (Rider mobile view)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     .start-btn {
         background-color: #1E90FF;
         color: white;
@@ -195,18 +223,25 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         cursor: pointer;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     .start-btn:hover { background-color: #0b7dda; }
 =======
     .start-btn:hover {
         background-color: #0b7dda;
     }
 >>>>>>> e40151c (Rider mobile view)
+=======
+    .start-btn:hover {
+        background-color: #0b7dda;
+    }
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 </style>
 </head>
 <body>
 
 <div class="header">
     <h2><?= htmlspecialchars($rider_name); ?></h2>
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     <span class="notif">🔔</span>
@@ -224,6 +259,10 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
     <span class="notif" onclick="window.location.href='notifications.php'">🔔</span>
 
 >>>>>>> e70e61c (rider)
+=======
+    <span class="notif" onclick="window.location.href='notifications.php'">🔔</span>
+
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
     <div class="stats">
         <div class="card">
             <h3>Today's Delivery</h3>
@@ -232,11 +271,15 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
         <div class="card">
             <h3>Completed</h3>
 <<<<<<< HEAD
+<<<<<<< HEAD
             <p>1</p>
 >>>>>>> e40151c (Rider mobile view)
 =======
             <p id="completedCount">0</p>
 >>>>>>> e70e61c (rider)
+=======
+            <p id="completedCount">0</p>
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
         </div>
     </div>
 </div>
@@ -244,6 +287,7 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
 <div class="deliveries">
     <h3>Active Deliveries</h3>
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     <?php foreach ($deliveries as $delivery): ?>
@@ -302,6 +346,10 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
     <!-- AUTO-GENERATED DELIVERIES -->
     <div id="deliveryList"></div>
 >>>>>>> e70e61c (rider)
+=======
+    <!-- AUTO-GENERATED DELIVERIES -->
+    <div id="deliveryList"></div>
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 </div>
 
 <script>
@@ -359,6 +407,9 @@ function startRoute(name) {
 }
 </script>
 
+<<<<<<< HEAD
 >>>>>>> e40151c (Rider mobile view)
+=======
+>>>>>>> e70e61c6d9b34d520c5eb233fb632ee3492ace3b
 </body>
 </html>
