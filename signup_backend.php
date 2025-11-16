@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!-- SWEET ALERT NEEDS TO LOAD HERE -->
+    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body></body>
@@ -71,8 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </script>";
     exit;
 }
-
-    // ✅ CORRECTED PHONE CHECK (phone_number column)
+    // Phone number duplicate check
     $checkPhone = $db->prepare("SELECT phone_number FROM users WHERE phone_number = :phone");
     $checkPhone->bindParam(':phone', $phone, PDO::PARAM_STR);
     $checkPhone->execute();
@@ -97,7 +96,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         'fullName' => $fullName,
         'email' => $email,
         'password_hash' => hash('sha256', $password),
-        'phone_number' => $phone,   // ← updated
+        'phone_number' => $phone,  
         'address' => $address,
         'otp' => $otp,
         'otp_sent_at' => time(),

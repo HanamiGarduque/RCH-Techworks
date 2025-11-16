@@ -6,16 +6,14 @@ header('Content-Type: application/json');
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// ✅ Correct path depending on folder location
 require_once __DIR__ . '/Database/db_connection.php';
 
 $database = new Database();
 $db = $database->getConnect();
 
-// Your iProg SMS API token
 $API_TOKEN = "ba9958e785ac42c22bda17b617158dac68c24165";
 
-// ✅ Function to send SMS via iProg API (same as signup)
+// Function to send SMS via iProg API (same as signup)
 function sendSMS($phone, $message, $api_token)
 {
     $url = "https://sms.iprogtech.com/api/v1/otp/send_otp";
@@ -44,7 +42,7 @@ function sendSMS($phone, $message, $api_token)
 $action = $_POST['action'] ?? '';
 
 try {
-    // ✅ SEND OTP
+    // SEND OTP
     if ($action === 'send_otp') {
         $phone = trim($_POST['phone'] ?? '');
 
@@ -53,7 +51,7 @@ try {
             exit;
         }
 
-        // Check if phone exists
+        // Check if phone number exists
         $stmt = $db->prepare("SELECT * FROM users WHERE phone_number = ?");
         $stmt->execute([$phone]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -76,7 +74,7 @@ try {
         exit;
     }
 
-    // ✅ VERIFY OTP
+    // VERIFY OTP
     if ($action === 'verify_otp') {
         $otp = $_POST['otp'] ?? '';
 
@@ -100,7 +98,7 @@ try {
         exit;
     }
 
-    // ✅ RESET PASSWORD
+    // RESET PASSWORD
 if ($action === 'reset_password') {
     if (empty($_SESSION['otp_verified']) || !$_SESSION['otp_verified']) {
         echo json_encode(['success' => false, 'message' => 'OTP verification required before resetting password.']);
@@ -120,7 +118,6 @@ if ($action === 'reset_password') {
         exit;
     }
 
-    // 🔹 Use SHA-256 instead of password_hash()
     $hashedPassword = hash('sha256', $password);
     $phone = $_SESSION['reset_phone'];
 
@@ -133,7 +130,6 @@ if ($action === 'reset_password') {
     echo json_encode(['success' => true, 'message' => 'Password reset successful. You can now log in.']);
     exit;
 }
-
 
     // Default invalid action
     echo json_encode(['success' => false, 'message' => 'Invalid action.']);

@@ -9,7 +9,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $email = $_POST["email"];
     $password = $_POST["password"];
-    $remember = isset($_POST['remember']); // ✅ Remember Me checkbox
+    $remember = isset($_POST['remember']); 
 
     // Hash input password for comparison
     $password_hash = hash('sha256', $password);
@@ -36,9 +36,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
 
-            // ✅ Remember Me: set simple cookie for email (will expire in 1 day)
+            // Remember Me: set simple cookie for email (will expire in 1 day)
             if ($remember) {
-                setcookie('remember_email', $email, time() + 86400, "/"); // 1 day
+                setcookie('remember_email', $email, time() + 86400, "/"); 
             } else {
                 // Remove cookie if unchecked
                 if (isset($_COOKIE['remember_email'])) {

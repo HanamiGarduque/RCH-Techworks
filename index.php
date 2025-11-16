@@ -377,7 +377,6 @@
             sendBtn.disabled = true;
             sendBtn.textContent = 'Sending...';
 
-            // ✅ Make sure this file exists in the same directory as index.php
             fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -387,7 +386,6 @@
                 })
             })
             .then(async response => {
-                // If the file is missing or returns HTML, this will prevent JSON errors
                 const contentType = response.headers.get('content-type');
                 if (!response.ok) {
                     throw new Error(`Server error: ${response.status}`);
@@ -448,8 +446,8 @@
     if (!phone) return;
 
     const formData = new FormData();
-    formData.append('action', 'send_otp'); // use the same as initial sendOTP
-    formData.append('phone', phone);       // don't forget to include phone
+    formData.append('action', 'send_otp'); 
+    formData.append('phone', phone);    
 
     fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
         method: 'POST',
@@ -475,7 +473,6 @@
         resendBtn.textContent = 'Resend';
     });
 }
-
 
         // Verify OTP
         function verifyOTP() {
@@ -555,7 +552,7 @@
                     html += `<span class="text-red-500 font-semibold">${req.text}</span>`;
                     allMet = false;
                 }
-                if (index !== requirements.length - 1) html += ' , '; // separator
+                if (index !== requirements.length - 1) html += ' , '; 
             });
             passwordReqReset.innerHTML = html;
 
