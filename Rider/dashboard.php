@@ -154,7 +154,8 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
             <span>1.4 km Distance</span>
             <span>10 min ETA</span>
         </div>
-        <button class="start-btn" onclick="startRoute('Hanami Garduque')">Start Route</button>
+        <button class="start-btn" onclick="startRoute('<?= urlencode('Hanami Garduque') ?>')">Start Route</button>
+
     </div>
 
     <div class="delivery-card">
@@ -174,9 +175,10 @@ $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] :
 
 <script>
 function startRoute(name) {
-    alert("Starting route for " + name);
-    window.location.href = "rider_map.php?customer=" + encodeURIComponent(name);
+    // Redirect to delivery_info.php with customer name as query parameter
+    window.location.href = "delivery_info.php?customer=" + encodeURIComponent(name);
 }
+
 </script>
 
 </body>
