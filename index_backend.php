@@ -50,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($user['role'] === 'admin') {
                 header("Location: admin/dashboard.php");
             } else {
-                header("Location: Customer/landing_page.php");
+                header("Location: Customer/order_water_refill.php");
             }
             exit;
 
