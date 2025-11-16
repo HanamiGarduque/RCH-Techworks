@@ -1,20 +1,40 @@
 <?php
+require_once '../Database/db_connection.php';
 session_start();
 
-// Flash error message
-$login_error = $_SESSION['login_error'] ?? null;
-unset($_SESSION['login_error']);
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = $_POST['username']; // This can be name or email depending on your login design
+    $password = $_POST['password'];
+
+    $db = new Database();
+    $conn = $db->getConnect();
+
+    // Use prepared statement to fetch the rider
+    $query = "SELECT * FROM users WHERE (name = :username OR email = :username) AND role = 'rider' AND status = 'active' LIMIT 1";
+    $stmt = $conn->prepare($query);
+    $stmt->bindParam(':username', $username);
+    $stmt->execute();
+
+    $rider = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($rider && hash('sha256', $password) === $rider['password_hash']) {
+        // Login successful
+        $_SESSION['rider_id'] = $rider['user_id'];
+        $_SESSION['rider_name'] = $rider['name'];
+        header("Location: dashboard.php");
+        exit();
+    } else {
+        $error = "Invalid username or password";
+    }
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCH Water | Rider Login</title>
-
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
@@ -70,12 +90,23 @@ unset($_SESSION['login_error']);
             background-color: #0b7dda;
         }
 
+        .social-login {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 20px;
+        }
+
+        .social-login img {
+            width: 30px;
+            cursor: pointer;
+        }
+
         .header {
             position: absolute;
             top: 30px;
             text-align: center;
             color: white;
-            width: 100%;
         }
 
         .header h1 {
@@ -89,7 +120,12 @@ unset($_SESSION['login_error']);
             color: white;
             font-size: 12px;
             text-align: center;
-            width: 100%;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
         }
 
         /* Decorative circles */
@@ -115,47 +151,38 @@ unset($_SESSION['login_error']);
         }
     </style>
 </head>
-
 <body>
 
 <div class="circle1"></div>
 <div class="circle2"></div>
 
 <div class="header">
-    <h1>💧 RCH Water</h1>
-    <p>Fresh, clean water delivered right to your doorstep.</p>
+    <h1>💧RCH Water</h1>
+    <p>Join us today and enjoy fresh, clean water delivered right at your doorstep.</p>
 </div>
 
 <div class="container">
     <h2>Login Account</h2>
-
-    <form action="login_backend.php" method="POST">
+    <form method="POST" action="">
         <input type="text" name="username" placeholder="Enter your username" required><br>
         <input type="password" name="password" placeholder="Enter your password" required><br>
         <button type="submit">Login</button>
     </form>
 
+    <div class="error">
+        <?php if (!empty($error)) echo $error; ?>
+    </div>
+
     <p>OR</p>
     <div class="social-login">
-        <img src="https://cdn-icons-png.flaticon.com/512/124/124010.png" width="32">
-        <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" width="32">
+        <img src="https://cdn-icons-png.flaticon.com/512/124/124010.png" alt="Facebook">
+        <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google">
     </div>
 </div>
 
 <div class="footer">
     © RCH Water Refilling System
 </div>
-
-<?php if ($login_error): ?>
-<script>
-Swal.fire({
-    icon: "error",
-    title: "Login Failed",
-    text: "<?= $login_error ?>",
-    confirmButtonColor: "#d33"
-});
-</script>
-<?php endif; ?>
 
 </body>
 </html>
