@@ -50,12 +50,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: #333;
         }
 
+        @media (max-width: 480px) {
+    body {
+        height: auto;              /* allow body to expand */
+        padding: 20px 0;           /* top/bottom spacing */
+        align-items: flex-start; 
+    }
+}
+    
+
         .container {
-            width: 90%;
+            width: 500px;
             max-width: 360px;
             background-color: white;
             border-radius: 25px;
-            padding: 30px 20px;
+            padding: 20px 15px;
             box-shadow: 0px 4px 20px rgba(0,0,0,0.2);
             text-align: center;
         }
@@ -104,7 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .header {
             position: absolute;
-            top: 30px;
+            top: 20px;
             text-align: center;
             color: white;
         }
@@ -137,17 +146,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .circle1 {
-            width: 150px;
-            height: 150px;
-            top: 30px;
+            width:  300px;
+            height: 300px;
+            top: 70px;
             left: 40px;
         }
 
         .circle2 {
-            width: 120px;
-            height: 120px;
-            bottom: 40px;
-            right: 40px;
+            width: 200px;
+            height: 200px;
+            bottom: 60px;
+            right: 30px;
         }
     </style>
 </head>
@@ -173,11 +182,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <?php if (!empty($error)) echo $error; ?>
     </div>
 
-    <p>OR</p>
-    <div class="social-login">
-        <img src="https://cdn-icons-png.flaticon.com/512/124/124010.png" alt="Facebook">
-        <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google">
-    </div>
+  
 </div>
 
 <div class="footer">
