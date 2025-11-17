@@ -88,6 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
+    
     // Generate OTP
     $otp = rand(100000, 999999);
 
@@ -109,7 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $data = [
         'api_token'    => $api_token,
         'phone_number' => $phone,
-        'message'      => "Your RCH Water verification code is: $otp. It will expire in 5 minutes."
+        'message'      => "Your RCH Water account verification code is: $otp. Please enter this code to complete your account registration. This code is valid for 5 minutes."
     ];
 
     $ch = curl_init("https://sms.iprogtech.com/api/v1/otp/send_otp");
