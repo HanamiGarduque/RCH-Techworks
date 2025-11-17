@@ -212,7 +212,7 @@ $db = $database->getConnect();
                     go.status AS `Status`,
                     go.qr_image AS `QR Image`
                     FROM gallon_ownership AS go
-                    LEFT JOIN users AS u ON go.owner_id = u.user_id
+                    LEFT JOIN users AS u ON go.current_owner_id = u.user_id
                     WHERE go.qr_image IS NOT NULL AND go.qr_image <> ''
                     ORDER BY go.ownership_id DESC";
 

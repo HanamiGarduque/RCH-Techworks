@@ -15,7 +15,7 @@ if (isset($_POST['code'])) {
                 go.code_value AS `Code Value`,
                 go.status AS `Status`
               FROM gallon_ownership AS go
-              LEFT JOIN users AS u ON go.owner_id = u.user_id 
+              LEFT JOIN users AS u ON go.current_owner_id = u.user_id 
               WHERE go.code_value = :code_value";
 
     $stmt = $conn->prepare($query);

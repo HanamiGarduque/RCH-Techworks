@@ -309,28 +309,47 @@
 
         // ---------- State (preserved across steps) ----------
         const state = {
-
             chosenType: null, // 'slim' | 'round'
             chosenSize: null, // 'large' | 'small' | '18.9L'
             chosenPrice: 0,
             quantity: 1,
-            chosenPickupTime: null, // 'Morning - 7:30 AM' | 'Afternoon - 1:00 PM'
-            chosenDeliveryTime: null, // one of delivery labels
+            chosenPickupTime: null,
+            chosenDeliveryTime: null,
+            hasOwnGallon: true, // default value
 
-
-            userName: 'Christine May Padua',
-            userContact: '09161951955',
+            userName: '',
+            userContact: '',
             userAddress: {
-                house: 'Camella Homes, Block 26 Lot 33',
-                street: 'Alexia Street, Phase 1',
-                barangay: 'Tibig',
-                city: 'Lipa City',
-                province: 'Batangas',
-                postal: '4217'
-
+                house: '',
+                street: '',
+                barangay: '',
+                city: '',
+                province: '',
+                postal: ''
             },
             orders: [] // saved orders if user adds multiple
         };
+
+        fetch('../Order/get_user.php')
+            .then(res => res.json())
+            .then(user => {
+                const addrParts = user.address.split(',').map(part => part.trim());
+
+                // update existing state
+                state.userName = user.name;
+                state.userContact = user.phone_number;
+                state.userAddress = {
+                    house: addrParts[0] || '',
+                    street: addrParts[1] || '',
+                    barangay: addrParts[2] || '',
+                    city: addrParts[3] || '',
+                    province: addrParts[4] || '',
+                    postal: addrParts[5] || ''
+                };
+
+                console.log(state);
+            });
+
 
 
         // ---------- Utility functions ----------
@@ -458,17 +477,14 @@
             <button id="addMoreOrdersBtn" class="w-40 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600">Add More Orders</button>
         </div>
         <div class="flex space-x-3">
-            <button id="addToCartBtn" class="w-40 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Add to Cart</button>
             <button id="placeOrderBtn" class="w-40 bg-green-600 text-white py-2 rounded-lg">Place Order</button>
         </div>
-    </div>`;
+     </div>`;
             }
 
 
             controlsContainer.innerHTML = html;
 
-            // 🌟 Apply the new conditional back-button logic where needed
-            // ──────────────────────────────────────────────────────────────
 
             // Step 2 Back (always goes to step 1)
             if (step === 2) {
@@ -487,7 +503,7 @@
 
                 if (backBtn3) {
                     backBtn3.addEventListener("click", () => {
-                        // 🟢 NEW LOGIC INSERTED HERE
+                        //  NEW LOGIC INSERTED HERE
                         if (state.chosenType === "round") {
                             goToStep(1); // skip slim step
                         } else if (state.chosenType === "slim") {
@@ -612,7 +628,7 @@
                 renderOrdersInStep6();
             }
 
-            // ⭐ FIX: Apply conditional navigation shortcuts
+            //  Apply conditional navigation shortcuts
             // example: if round gallon → skip step 2
             if (n === 2 && state.chosenType === "round") {
                 // step 2 should never appear for round gallons
@@ -750,37 +766,66 @@
         // Gallon type
         slim.addEventListener('click', () => {
             state.chosenType = 'slim';
-            // visual
+
             slim.classList.add('border-blue-500', 'border-4');
             round.classList.remove('border-blue-500', 'border-4');
-            // restore grid
             slim.classList.remove('hidden');
             set1.classList.remove('grid-cols-1', 'place-items-center');
             set1.classList.add('grid-cols-2');
-            // reset any round-specific fields
+
             const roundLabel = round.querySelector('p');
             if (roundLabel) roundLabel.textContent = 'Round Gallon';
-            // move to size selection
-            goToStep(2);
+
+            // ⭐ Show SweetAlert AFTER selecting Slim
+            Swal.fire({
+                title: "Do you have your own gallon?",
+                text: "Or would you like to borrow a gallon from the station?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "I have my own",
+                cancelButtonText: "Borrow from station"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    state.hasOwnGallon = true;
+                } else {
+                    state.hasOwnGallon = false;
+                }
+                goToStep(2); // proceed to size selection
+            });
         });
 
         round.addEventListener('click', () => {
             state.chosenType = 'round';
-            // visuals
+
             round.classList.add('border-blue-500', 'border-4');
             slim.classList.remove('border-blue-500', 'border-4');
-            // hide slim and center round
             slim.classList.add('hidden');
             set1.classList.remove('grid-cols-2');
             set1.classList.add('grid-cols-1', 'place-items-center');
-            // adjust label & price
+
             const roundLabel = round.querySelector('p');
             if (roundLabel) roundLabel.textContent = 'Round Gallon - 18.9L';
+
             if (!round.dataset.price) round.dataset.price = '30';
             state.chosenSize = '18.9L';
             state.chosenPrice = parseFloat(round.dataset.price) || 0;
-            // go directly to quantity
-            goToStep(3);
+
+            // ⭐ Show SweetAlert AFTER selecting Round
+            Swal.fire({
+                title: "Do you have your own gallon?",
+                text: "Or would you like to borrow a gallon from the station?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "I have my own",
+                cancelButtonText: "Borrow from station"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    state.hasOwnGallon = true;
+                } else {
+                    state.hasOwnGallon = false;
+                }
+                goToStep(3); // round skips step 2
+            });
         });
 
         // Size selection
@@ -995,7 +1040,7 @@
         ${state.userAddress.house || ''} ${state.userAddress.street || ''}<br>
         ${state.userAddress.barangay || ''}, ${state.userAddress.city || ''}, 
         ${state.userAddress.province || ''} ${state.userAddress.postal || ''}
-    `;
+        `;
             if (pickupSummary) pickupSummary.textContent = `${pickupDate?.value || ''} ${state.chosenPickupTime || ''}`;
             if (deliverySummary) deliverySummary.textContent = `${deliveryDate?.value || ''} ${state.chosenDeliveryTime || ''}`;
         }
@@ -1046,29 +1091,63 @@
         function onPlaceOrder() {
             const addr = state.userAddress;
             const addrFilled = addr.house && addr.street && addr.barangay && addr.city && addr.province && addr.postal;
+
             if (!addrFilled) {
                 Swal.fire('Please provide a full delivery address before placing the order', '', 'warning');
                 return;
             }
-            // Show pending payment
-            Swal.fire({
-                title: '<span style="color:#2563eb;font-weight:600;">Pending Payment</span>',
-                html: `<div class="text-base mb-4">Thank you for your order! Please have your payment ready upon delivery.</div>
-          <div class="text-center"><button id='viewOrdersBtn' class='bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'>View My Orders</button></div>`,
-                showConfirmButton: false,
-                showCloseButton: false,
-                allowOutsideClick: false,
-                customClass: {
-                    popup: 'rounded-lg'
-                },
-                didRender: () => {
-                    const btn = document.getElementById('viewOrdersBtn');
-                    if (btn) btn.onclick = () => {
-                        window.location.href = '#'; /* replace with actual link */
-                    };
-                }
-            });
+
+            // Determine gallon owner
+            const gallonOwner = state.hasOwnGallon ? 'customer' : 'station';
+
+            // Example: send order to backend (AJAX/fetch)
+            fetch('../Order/water_refill_backend.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: state.userId,
+                        order_number: state.orderNumber,
+                        total_amount: state.totalAmount,
+                        pickup_datetime: state.pickupDatetime,
+                        delivery_datetime: state.deliveryDatetime,
+                        order_status: 'pending',
+                        gallon_owner: gallonOwner
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: '<span style="color:#2563eb;font-weight:600;">Pending Payment</span>',
+                            html: `<div class="text-base mb-4">Thank you for your order! Please have your payment ready upon delivery.</div>
+                       <div class="text-center">
+                           <button id='viewOrdersBtn' class='bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'>View My Orders</button>
+                       </div>`,
+                            showConfirmButton: false,
+                            showCloseButton: false,
+                            allowOutsideClick: false,
+                            customClass: {
+                                popup: 'rounded-lg'
+                            },
+                            didRender: () => {
+                                const btn = document.getElementById('viewOrdersBtn');
+                                if (btn) btn.onclick = () => {
+                                    window.location.href = '#'; /* replace with actual link */
+                                };
+                            }
+                        });
+                    } else {
+                        Swal.fire('Error', 'Failed to place order. Please try again.', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Error', 'Something went wrong.', 'error');
+                });
         }
+
 
         // ---------- Date initialization and listeners ----------
         function initializeDateInputs() {

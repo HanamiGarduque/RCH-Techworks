@@ -33,8 +33,8 @@ try {
         }
 
         $user = $checkUser->fetch(PDO::FETCH_ASSOC);
-        $params[':owner_id'] = $user['user_id'];
-        $updateFields[] = "owner_id = :owner_id";
+        $params[':current_owner_id'] = $user['user_id'];
+        $updateFields[] = "current_owner_id = :current_owner_id";
     }
 
     // ✅ If status is provided (not null or empty), update status
