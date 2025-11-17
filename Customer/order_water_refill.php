@@ -108,12 +108,12 @@
                 <!-- Step containers -->
                 <div id="set1" class="grid grid-cols-2 gap-6">
                     <div id="slimCard" class="border-2 border-gray-300 p-4 rounded-xl cursor-pointer text-center hover:bg-blue-500 hover:text-white transition">
-                        <img src="landing_page-img/20L_box_type_gallon.jpg" class="mx-auto w-40" />
+                        <img src="img/20L_box_type_gallon.jpg" class="mx-auto w-40" />
                         <p class="font-medium mt-2">Slim Gallon</p>
                     </div>
 
                     <div id="roundCard" data-price="30" class="border-2 border-gray-300 p-4 rounded-xl cursor-pointer text-center hover:bg-blue-500 hover:text-white transition">
-                        <img src="landing_page-img/18.9L_round_gallon.jpg" class="mx-auto w-40" />
+                        <img src="img/18.9L_round_gallon.jpg" class="mx-auto w-40" />
                         <p class="font-medium mt-2">Round Gallon</p>
                     </div>
                 </div>
@@ -122,7 +122,7 @@
                     <div id="sizeCard1" data-size="large" data-price="30"
                         class="size-card border-2 border-gray-300 p-6 rounded-xl cursor-pointer text-center transition hover:bg-blue-600 hover:text-white">
                         <div class="p-6 bg-white rounded-md">
-                            <img src="landing_page-img/20L_box_type_gallon.jpg" class="mx-auto w-36" />
+                            <img src="img/20L_box_type_gallon.jpg" class="mx-auto w-36" />
                         </div>
                         <p class="font-medium mt-4">Slim Gallon - 20L</p>
                         <p class="font-large mt-4">₱30.00</p>
@@ -131,7 +131,7 @@
                     <div id="sizeCard2" data-size="small" data-price="20"
                         class="size-card border-2 border-gray-300 p-6 rounded-xl cursor-pointer text-center transition hover:bg-blue-600 hover:text-white">
                         <div class="p-6 bg-white rounded-md">
-                            <img src="landing_page-img/10L_box_type_gallon.jpg" class="mx-auto w-36" />
+                            <img src="img/10L_box_type_gallon.jpg" class="mx-auto w-36" />
                         </div>
                         <p class="font-medium mt-4">Slim Gallon - 10L</p>
                         <p class="font-large mt-4">₱20.00</p>
