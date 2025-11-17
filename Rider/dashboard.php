@@ -1,7 +1,7 @@
 <?php
 session_start();
 // Example: replace with actual session login name
-$rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] : "Joshua Garcia";
+// $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] : "Joshua Garcia";
 ?>
 <!DOCTYPE html>
 <html lang="en">

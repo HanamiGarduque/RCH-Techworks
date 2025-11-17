@@ -62,10 +62,12 @@ $db = $database->getConnect();
                                 onkeyup="searchTable()">
                         </div>
                         <button
+                            id="addGallonBtn"
                             class="bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
                             <i class="fas fa-plus mr-2"></i>
                             Add Gallon
                         </button>
+
 
                         <a href="qr_scanner.php" id="scanBtn"
                             class="inline-flex items-center bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
@@ -129,7 +131,7 @@ $db = $database->getConnect();
                                             go.status AS `Status`,
                                             go.qr_image AS `QR Image`
                                         FROM gallon_ownership AS go
-                                        LEFT JOIN users AS u ON go.owner_id = u.user_id
+                                        LEFT JOIN users AS u ON go.current_owner_id = u.user_id
                                         ORDER BY `Gallon ID` DESC";
 
                                         $stmt = $db->prepare($query);
@@ -294,22 +296,22 @@ $db = $database->getConnect();
                 });
             });
             // Add Gallon button
-            document.querySelector('button').addEventListener('click', addGallon);
+            document.getElementById('addGallonBtn').addEventListener('click', addGallon);
 
             function addGallon() {
                 Swal.fire({
                     title: 'Add New Gallon',
                     html: `
-            <label style="font-size: 14px; margin-bottom: 8px; display:block;">Select Gallon Type:</label>
-            <select id="gallonTypeDropdown" class="swal2-select"
-                style="width: 300px; padding:8px 10px; border-radius:6px; border:1px solid #e5e7eb; box-shadow: 0 0 0 4px rgba(156,163,175,0.25); transition: box-shadow .15s ease, border-color .15s ease; outline: none;"
-                onfocus="this.style.boxShadow='0 0 0 4px rgba(59,130,246,0.25)'; this.style.borderColor='#2563eb';"
-                onblur="this.style.boxShadow='0 0 0 4px rgba(156,163,175,0.25)'; this.style.borderColor='#e5e7eb';">
-                <option value="1" data-type="18.9L Round Gallon">18.9L Round Gallon</option>
-                <option value="2" data-type="20L Slim Gallon">20L Slim Gallon</option>
-                <option value="11" data-type="10L Slim Gallon">10L Slim Gallon</option>
-            </select>
-        `,
+                    <label style="font-size: 14px; margin-bottom: 8px; display:block;">Select Gallon Type:</label>
+                    <select id="gallonTypeDropdown" class="swal2-select"
+                        style="width: 300px; padding:8px 10px; border-radius:6px; border:1px solid #e5e7eb; box-shadow: 0 0 0 4px rgba(156,163,175,0.25); transition: box-shadow .15s ease, border-color .15s ease; outline: none;"
+                        onfocus="this.style.boxShadow='0 0 0 4px rgba(59,130,246,0.25)'; this.style.borderColor='#2563eb';"
+                        onblur="this.style.boxShadow='0 0 0 4px rgba(156,163,175,0.25)'; this.style.borderColor='#e5e7eb';">
+                        <option value="1" data-type="18.9L Round Gallon">18.9L Round Gallon</option>
+                        <option value="2" data-type="20L Slim Gallon">20L Slim Gallon</option>
+                        <option value="11" data-type="10L Slim Gallon">10L Slim Gallon</option>
+                    </select>
+                `,
                     confirmButtonText: 'Add Gallon',
                     showCancelButton: true,
                     confirmButtonColor: '#2563eb',
