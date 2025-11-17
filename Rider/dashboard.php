@@ -17,6 +17,13 @@ session_start();
         margin: 0;
         padding: 0;
     }
+    @media (max-width: 480px) {
+    body {
+        height: auto;              /* allow body to expand */
+        padding: 20px 0;           /* top/bottom spacing */
+        align-items: flex-start; 
+    }
+}
     .header {
         background-color: #2196F3;
         color: white;
@@ -145,31 +152,35 @@ session_start();
 
     <div class="delivery-card">
         <div class="delivery-header">
-            <h4>Hanami Garduque</h4>
+            <h4>Christine May Padua</h4>
             <span class="status ready">Ready for Pickup</span>
         </div>
-        <div class="delivery-info">📍 123 Main St, Batangas</div>
+        <div class="delivery-info">📍 116 Purok 1, Sico, Lipa City, Batangas</div>
         <div class="details">
             <span>2 Gallons</span>
             <span>1.4 km Distance</span>
             <span>10 min ETA</span>
         </div>
-        <button class="start-btn" onclick="startRoute('<?= urlencode('Hanami Garduque') ?>')">Start Route</button>
+        <button class="start-btn" onclick="window.location.href='delivery_info.php?id=2'">
+    Start Route 
+</button>
 
     </div>
 
     <div class="delivery-card">
         <div class="delivery-header">
-            <h4>Christine May Padua</h4>
+            <h4>Juan Dela Cruz</h4>
             <span class="status ontheway">On the Way</span>
         </div>
-        <div class="delivery-info">📍 387 Washington St, Batangas</div>
+        <div class="delivery-info">📍 Purok 1, Lodlod, Lipa City, Batangas</div>
         <div class="details">
             <span>1 Gallon</span>
             <span>2.2 km Distance</span>
             <span>17 min ETA</span>
         </div>
-        <button class="start-btn" onclick="startRoute('Christine May Padua')">Start Route</button>
+        <button class="start-btn" onclick="window.location.href='delivery_info.php?id=5'">
+    Start Route
+</button>
     </div>
 </div>
 
