@@ -11,19 +11,28 @@ if (!isset($_SESSION['reg_data'])) {
 }
 
 $reg = &$_SESSION['reg_data'];
+$swal_script = ''; 
 
-$swal_script = ''; // Collect SweetAlert scripts
-
-// Handle OTP verification
+// -------------------------------
+// HANDLE OTP VERIFICATION
+// -------------------------------
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['verify'])) {
+
     $entered_otp = trim($_POST['otp']);
-    $otp_validity = 300;
+    $otp_validity = 300; // 5 minutes
 
     if (time() - $reg['otp_sent_at'] > $otp_validity) {
+
         $swal_script = "Swal.fire({icon:'error', title:'OTP Expired', text:'Please request a new OTP.'});";
+
     } elseif ($entered_otp == $reg['otp']) {
-        $stmt = $db->prepare("INSERT INTO users (name, email, password_hash, phone_number, address, role, status, created_at, updated_at) 
-                              VALUES (:name, :email, :password_hash, :phone, :address, 'customer', 'active', NOW(), NOW())");
+
+        // Insert user into database
+        $stmt = $db->prepare("
+            INSERT INTO users 
+            (name, email, password_hash, phone_number, address, role, status, created_at, updated_at) 
+            VALUES (:name, :email, :password_hash, :phone, :address, 'customer', 'active', NOW(), NOW())
+        ");
 
         $stmt->bindParam(':name', $reg['fullName']);
         $stmt->bindParam(':email', $reg['email']);
@@ -32,26 +41,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['verify'])) {
         $stmt->bindParam(':address', $reg['address']);
 
         if ($stmt->execute()) {
+
+            // Send registration email
+            require_once "email.php";
+            sendCustomerRegistration($reg['email'], $reg['fullName']);
+
             unset($_SESSION['reg_data']);
-            $swal_script = "Swal.fire({icon:'success', title:'Account Created', text:'Phone verified successfully!'}).then(()=>{window.location='./index.php'});";
+
+            $swal_script = "Swal.fire({
+                icon:'success',
+                title:'Account Created',
+                text:'Your account has been successfully created!',
+            }).then(()=>{ window.location='./index.php'; });";
+
         } else {
-            $swal_script = "Swal.fire({icon:'error', title:'Error', text:'Failed to create account. Try again.'});";
+
+            $swal_script = "Swal.fire({
+                icon:'error',
+                title:'Error',
+                text:'Failed to create account. Try again.',
+            });";
         }
+
     } else {
-        $swal_script = "Swal.fire({icon:'error', title:'Invalid OTP', text:'Please try again.'});";
+
+        $swal_script = "Swal.fire({
+            icon:'error',
+            title:'Invalid OTP',
+            text:'Please try again.',
+        });";
     }
 }
 
-// Handle resend OTP
+// -------------------------------
+// HANDLE RESEND OTP
+// -------------------------------
 if (isset($_POST['resend'])) {
+
     $reg['otp'] = rand(100000, 999999);
     $reg['otp_sent_at'] = time();
 
     $api_token = "ba9958e785ac42c22bda17b617158dac68c24165";
+
     $data = [
         'api_token'    => $api_token,
         'phone_number' => $reg['phone_number'],
-        'message'      => "Your new RCH Water verification code is: {$reg['otp']}. It will expire in 5 minutes."
+        'message'      => "Your RCH Water account verification code is: {$reg['otp']}. Please enter this code to complete your account registration. This code is valid for 5 minutes."
     ];
 
     $ch = curl_init("https://sms.iprogtech.com/api/v1/otp/send_otp");
@@ -62,9 +97,14 @@ if (isset($_POST['resend'])) {
     curl_exec($ch);
     curl_close($ch);
 
-    $swal_script = "Swal.fire({icon:'success', title:'OTP Sent', text:'A new OTP has been sent to your phone.'});";
+    $swal_script = "Swal.fire({
+        icon:'success',
+        title:'OTP Sent',
+        text:'A new OTP has been sent to your phone.'
+    });";
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
