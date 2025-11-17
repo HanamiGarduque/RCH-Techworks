@@ -190,8 +190,8 @@ body {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // Map Initialization
-let lat = <?= $customer['lat'] ?? 13.7565 ?>;
-let lng = <?= $customer['lng'] ?? 121.0583 ?>;
+let lat = <?= $customer['latitude'] ?? 13.7565 ?>;
+let lng = <?= $customer['longitude'] ?? 121.0583 ?>;
 let map = L.map('map').setView([lat, lng], 15);
 
 // Click map to open full map

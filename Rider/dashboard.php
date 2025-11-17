@@ -1,7 +1,11 @@
 <?php
 session_start();
-// Example: replace with actual session login name
-// $rider_name = isset($_SESSION['rider_username']) ? $_SESSION['rider_username'] : "Joshua Garcia";
+
+if (!isset($_SESSION)) session_start();
+
+// prefer session value, fall back to other possible keys, then default name
+$rider_name = $_SESSION['rider_username'] ?? $_SESSION['rider_name'] ?? 'Joshua Garcia';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -151,36 +155,35 @@ session_start();
     <h3>Active Deliveries</h3>
 
     <div class="delivery-card">
-        <div class="delivery-header">
-            <h4>Christine May Padua</h4>
-            <span class="status ready">Ready for Pickup</span>
-        </div>
-        <div class="delivery-info">📍 116 Purok 1, Sico, Lipa City, Batangas</div>
-        <div class="details">
-            <span>2 Gallons</span>
-            <span>1.4 km Distance</span>
-            <span>10 min ETA</span>
-        </div>
-        <button class="start-btn" onclick="window.location.href='delivery_info.php?id=2'">
-    Start Route 
-</button>
-
+    <div class="delivery-header">
+        <h4>Christine May Padua</h4>
+        <span class="status ready">Ready for Pickup</span>
     </div>
+    <div class="delivery-info">📍 116 Purok 1, Sico, Lipa City, Batangas</div>
+    <div class="details">
+        <span>2 Gallons</span>
+        <span>1.4 km Distance</span>
+        <span>10 min ETA</span>
+    </div>
+    <button class="start-btn" onclick="window.location.href='full_map.php?customer=<?= urlencode('Christine May Padua') ?>&lat=13.9434&lng=121.1279&order_id=2'">
+        Start Route
+    </button>
+</div>
 
-    <div class="delivery-card">
-        <div class="delivery-header">
-            <h4>Juan Dela Cruz</h4>
-            <span class="status ontheway">On the Way</span>
-        </div>
-        <div class="delivery-info">📍 Purok 1, Lodlod, Lipa City, Batangas</div>
-        <div class="details">
-            <span>1 Gallon</span>
-            <span>2.2 km Distance</span>
-            <span>17 min ETA</span>
-        </div>
-        <button class="start-btn" onclick="window.location.href='delivery_info.php?id=5'">
-    Start Route
-</button>
+<div class="delivery-card">
+    <div class="delivery-header">
+        <h4>Juan Dela Cruz</h4>
+        <span class="status ontheway">On the Way</span>
+    </div>
+    <div class="delivery-info">📍 Purok 1, Lodlod, Lipa City, Batangas</div>
+    <div class="details">
+        <span>1 Gallon</span>
+        <span>2.2 km Distance</span>
+        <span>17 min ETA</span>
+    </div>
+    <button class="start-btn" onclick="window.location.href='full_map.php?customer=<?= urlencode('Juan Dela Cruz') ?>&lat=13.93645&lng=121.14982&order_id=5'">
+        Start Route
+    </button>
     </div>
 </div>
 
