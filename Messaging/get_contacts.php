@@ -5,7 +5,7 @@ session_start();
 // Example: the currently logged-in user's ID
 // $current_user_id = $_SESSION['user_id'] ?? null;
 
-$current_user_id = 3;
+$current_user_id = 4;
 if (!$current_user_id) {
     echo json_encode([]);
     exit;

@@ -79,7 +79,7 @@
 
         <!-- Main Content -->
         <main class="flex-1 ml-20 bg-gray-50 rounded-xl shadow overflow-y-auto">
-            <div class="main-header">
+            <div class="main-heade  r">
                 <?php
                 $pageTitle = "Order Water Refill";
                 $pageSubtitle = "Hydrate made easy—order and we'll handle the rest!";

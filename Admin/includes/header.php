@@ -21,10 +21,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
         <div class="flex items-center space-x-4">
             <!-- Notifications -->
-            <a href="../Notification/notifications.php"
+            <a href="../Notification/admin_notifications.php"
                title="Notifications"
                class="w-10 h-10 flex items-center justify-center rounded-full transition
-                      <?= $currentPage === 'notifications.php' ? 'bg-blue-100' : 'hover:bg-blue-100' ?>">
+                      <?= $currentPage === 'admin_notifications.php' ? 'bg-blue-100' : 'hover:bg-blue-100' ?>">
                 <i class="fas fa-bell text-blue-500 text-xl"></i>
             </a>
 

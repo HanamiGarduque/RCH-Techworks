@@ -20,12 +20,11 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
     <nav class="mt-6 flex-1">
         <ul class="space-y-1 px-4">
 
-            ${createNavItem("#", "fas fa-tint", "Order Water Refill", "order.php")}
-            ${createNavItem("#", "fas fa-shopping-basket", "Browse Products", "browse.php")}
-            ${createNavItem("#", "fas fa-box", "My Orders", "my_orders.php")}
-            ${createNavItem("#", "fas fa-water", "My Gallons", "gallons.php")}
-            ${createNavItem("#", "fas fa-receipt", "Receipts", "receipts.php")}
-
+            ${createNavItem("../Customer/order_water_refill.php", "fas fa-tint", "Order Water Refill", "order_water_refill.php")}
+            ${createNavItem("../Customer/browse_products.php", "fas fa-shopping-basket", "Browse Products", "browse_products.php")}
+            ${createNavItem("../Customer/my_orders.php", "fas fa-box", "My Orders", "my_orders.php")}
+            ${createNavItem("../Customer/gallons.php", "fas fa-water", "My Gallons", "gallons.php")}
+            ${createNavItem("../Customer/receipts.php", "fas fa-receipt", "Receipts", "receipts.php")}
         </ul>
     </nav>
 
