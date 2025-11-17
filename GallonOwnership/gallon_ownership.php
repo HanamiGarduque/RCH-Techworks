@@ -60,6 +60,7 @@ $db = $database->getConnect();
                                 style="font-style: italic;"
                                 oninput="this.style.fontStyle = this.value ? 'normal' : 'italic';"
                                 onkeyup="searchTable()">
+
                         </div>
                         <button
                             id="addGallonBtn"
@@ -184,26 +185,6 @@ $db = $database->getConnect();
             </div>
         </div>
         <script>
-            //for smooth page transition
-            document.querySelectorAll('.sidebar-link').forEach(link => {
-                link.addEventListener('click', e => {
-                    e.preventDefault();
-                    const target = e.currentTarget.getAttribute('href');
-                    const content = document.getElementById('page-content');
-
-                    // Fade out
-                    content.classList.add('opacity-0', 'translate-x-2');
-
-                    setTimeout(() => {
-                        window.location.href = target;
-                    }, 300); // same as duration-300
-                });
-            });
-
-            const content = document.getElementById('page-content');
-            content.classList.add('opacity-0');
-            setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
-
             // for sorting table
             function sortTable(columnIndex) {
                 const table = document.getElementById("gallonTable");
@@ -284,11 +265,11 @@ $db = $database->getConnect();
                 statusCells.forEach(cell => {
                     const text = cell.textContent.trim().toLowerCase();
 
-                    if (text === "Available") {
+                    if (text === "available") {
                         cell.className = "bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold";
-                    } else if (text === "In-Use") {
+                    } else if (text === "in-use") {
                         cell.className = "bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold";
-                    } else if (text === "Lost/Damaged") {
+                    } else if (text === "lost/damaged") {
                         cell.className = "bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-semibold";
                     } else {
                         cell.className = "bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-semibold"; // fallback for unknown statuses
@@ -296,7 +277,26 @@ $db = $database->getConnect();
                 });
             });
             // Add Gallon button
-            document.getElementById('addGallonBtn').addEventListener('click', addGallon);
+            // Add this BEFORE the button click handler
+            document.addEventListener("DOMContentLoaded", () => {
+                console.log("[v0] Swal available:", typeof Swal !== 'undefined'); // Debug
+                const addBtn = document.getElementById('addGallonBtn');
+                if (addBtn) {
+                    addBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log("[v0] Add Gallon clicked"); // Debug
+                        if (typeof Swal !== 'undefined') {
+                            addGallon();
+                        } else {
+                            console.error("[v0] Swal is not defined!");
+                            alert('Error: SweetAlert2 library not loaded');
+                        }
+                    });
+                } else {
+                    console.error("[v0] addGallonBtn not found");
+                }
+            });
+
 
             function addGallon() {
                 Swal.fire({

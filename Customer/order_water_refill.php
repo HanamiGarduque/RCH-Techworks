@@ -205,18 +205,23 @@
 
                         <div id="addressDisplay" class="mt-3 text-sm text-gray-700"></div>
 
-                        <div id="addressForm" class="mt-3 hidden">
-                            <div class="grid grid-cols-1 gap-2">
-                                <input id="addrHouse" placeholder="House/Unit No." class="border rounded px-2 py-2" />
-                                <input id="addrStreet" placeholder="Street Name" class="border rounded px-2 py-2" />
-                                <input id="addrBarangay" placeholder="Barangay" class="border rounded px-2 py-2" />
-                                <input id="addrCity" placeholder="City" class="border rounded px-2 py-2" />
-                                <input id="addrProvince" placeholder="Province" class="border rounded px-2 py-2" />
-                                <input id="addrPostal" placeholder="Postal Code" class="border rounded px-2 py-2" />
+                        <div id="addressFormContainer" class="mt-3 hidden flex gap-4">
+                            <div id="addressForm" class="flex-1 ">
+                                <div class="grid grid-cols-1 gap-2">
+                                    <input id="addrHouse" placeholder="House/Unit No." class="border rounded px-2 py-2" />
+                                    <input id="addrStreet" placeholder="Street Name" class="border rounded px-2 py-2" />
+                                    <input id="addrBarangay" placeholder="Barangay" class="border rounded px-2 py-2" />
+                                    <input id="addrCity" placeholder="City" class="border rounded px-2 py-2" />
+                                    <input id="addrProvince" placeholder="Province" class="border rounded px-2 py-2" />
+                                    <input id="addrPostal" placeholder="Postal Code" class="border rounded px-2 py-2" />
+                                </div>
+                                <div class="flex space-x-3 mt-3">
+                                    <button id="saveAddressBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save</button>
+                                    <button id="cancelAddressBtn" class="bg-white border px-4 py-2 rounded hover:bg-blue-600 hover:text-white">Cancel</button>
+                                </div>
                             </div>
-                            <div class="flex space-x-3 mt-3">
-                                <button id="saveAddressBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save</button>
-                                <button id="cancelAddressBtn" class="bg-white border px-4 py-2 rounded hover:bg-blue-600 hover:text-white">Cancel</button>
+                            <div id="mapContainer" class="flex-1 border rounded-lg bg-blue-100" style="height: 300px;">
+                                <!-- The map will be rendered here -->
                             </div>
                         </div>
                     </div>
@@ -309,6 +314,7 @@
 
         // ---------- State (preserved across steps) ----------
         const state = {
+            userId: 4, // TEMPORARY: hardcoded user ID for testing 
             chosenType: null, // 'slim' | 'round'
             chosenSize: null, // 'large' | 'small' | '18.9L'
             chosenPrice: 0,
@@ -419,6 +425,23 @@
             }
             return false;
         }
+
+        function enforceDeliveryMinDate() {
+            if (!pickupDate.value) return;
+
+            // Force delivery date to be >= pickup date
+            deliveryDate.min = pickupDate.value;
+
+            // If user previously selected an invalid delivery date → reset it
+            if (deliveryDate.value < pickupDate.value) {
+                deliveryDate.value = pickupDate.value;
+                state.chosenDeliveryTime = null; // reset time also
+            }
+
+            // Recalculate available time slots
+            updateTimeSlots(deliveryDate, [delTime1, delTime2, delTime3, delTime4]);
+        }
+
 
         function updateTimeSlots(dateInput, timeButtons) {
             const selectedDate = dateInput.value;
@@ -578,9 +601,12 @@
                         showConfirmButton: false
                     });
                 });
+
+
             }
 
         }
+
 
         // ---------- Step navigation & restore logic ----------
         function goToStep(n) {
@@ -920,7 +946,6 @@
             goToStep(4);
         }
 
-
         function onNextFromStep4() {
             const date = pickupDate.value;
             const time = state.chosenPickupTime;
@@ -1050,7 +1075,7 @@
         // ---------- Address edit handlers inside step6 (delegation after rendering step6) ----------
         // We'll attach listeners once (they exist on the page) and toggle visibility
         document.getElementById('editAddressBtn').addEventListener('click', () => {
-            document.getElementById('addressForm').classList.remove('hidden');
+            document.getElementById('addressFormContainer').classList.remove('hidden');
             document.getElementById('addressDisplay').classList.add('hidden');
             document.getElementById('addrHouse').value = state.userAddress.house || '';
             document.getElementById('addrStreet').value = state.userAddress.street || '';
@@ -1097,57 +1122,182 @@
                 return;
             }
 
+            // Collect all orders including the current selection
+            let allOrders = state.orders ? state.orders.slice() : [];
+
+            // If there's a current selection that hasn't been saved yet, add it
+            if (state.chosenType && state.chosenPrice > 0) {
+                const currentOrder = saveCurrentOrder(false);
+                if (currentOrder) {
+                    // Check if this exact item is already in orders
+                    const alreadySaved = allOrders.some(o =>
+                        o.type === currentOrder.type &&
+                        o.size === currentOrder.size &&
+                        o.quantity === currentOrder.quantity &&
+                        o.unitPrice === currentOrder.unitPrice
+                    );
+                    if (!alreadySaved) {
+                        allOrders.push(currentOrder);
+                    }
+                }
+            }
+
+            // Ensure we have at least one order
+            if (!allOrders || allOrders.length === 0) {
+                Swal.fire('Error', 'No items to order', 'error');
+                return;
+            }
+
+            // Calculate total amount from ALL orders
+            const totalAmount = allOrders.reduce((sum, order) => sum + order.subtotal, 0);
+
+            // Generate order number (you might want to get this from backend)
+            const orderNumber = 'ORD' + Date.now();
+
+            // Format datetime strings for MySQL (YYYY-MM-DD HH:MM:SS)
+            const pickupDatetime = formatDateTimeForMySQL(pickupDate.value, state.chosenPickupTime);
+            const deliveryDatetime = formatDateTimeForMySQL(deliveryDate.value, state.chosenDeliveryTime);
+
             // Determine gallon owner
             const gallonOwner = state.hasOwnGallon ? 'customer' : 'station';
 
-            // Example: send order to backend (AJAX/fetch)
+            // Get user_id from the fetched user data (assuming it's available)
+            const userId = state.userId || null;
+
+            if (!userId) {
+                Swal.fire('Error', 'User information not found. Please refresh the page.', 'error');
+                return;
+            }
+
+            // Prepare order data
+            const orderData = {
+                user_id: userId,
+                order_number: orderNumber,
+                total_amount: totalAmount,
+                pickup_datetime: pickupDatetime,
+                delivery_datetime: deliveryDatetime,
+                order_status: 'pending',
+                gallon_owner: gallonOwner,
+                delivery_address: `${addr.house} ${addr.street}, ${addr.barangay}, ${addr.city}, ${addr.province} ${addr.postal}`,
+                orders: allOrders // Send ALL orders
+            };
+
+            console.log('Sending order:', orderData); // Debug log
+            console.log('Total orders:', allOrders.length); // Debug log
+
+            // Send order to backend
             fetch('../Order/water_refill_backend.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        user_id: state.userId,
-                        order_number: state.orderNumber,
-                        total_amount: state.totalAmount,
-                        pickup_datetime: state.pickupDatetime,
-                        delivery_datetime: state.deliveryDatetime,
-                        order_status: 'pending',
-                        gallon_owner: gallonOwner
-                    })
+                    body: JSON.stringify(orderData)
                 })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
+                        // Clear orders after successful placement
+                        state.orders = [];
+                        state.chosenType = null;
+                        state.chosenSize = null;
+                        state.chosenPrice = 0;
+                        state.quantity = 1;
+
                         Swal.fire({
                             title: '<span style="color:#2563eb;font-weight:600;">Pending Payment</span>',
-                            html: `<div class="text-base mb-4">Thank you for your order! Please have your payment ready upon delivery.</div>
-                       <div class="text-center">
-                           <button id='viewOrdersBtn' class='bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'>View My Orders</button>
-                       </div>`,
+                            html: `
+                                        <div class="text-base mb-4">
+                                            Thank you for your order! Please have your payment ready upon delivery.
+                                        </div>
+                                        <div class="text-center">
+                                            <button id='viewOrdersBtn' class='bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'>
+                                                View My Orders
+                                            </button>
+                                        </div>
+                            `,
                             showConfirmButton: false,
-                            showCloseButton: false,
+                            showCloseButton: true,
                             allowOutsideClick: false,
                             customClass: {
                                 popup: 'rounded-lg'
                             },
-                            didRender: () => {
-                                const btn = document.getElementById('viewOrdersBtn');
-                                if (btn) btn.onclick = () => {
-                                    window.location.href = '#'; /* replace with actual link */
-                                };
+
+                            didOpen: () => {
+                                // View Orders button
+                                const viewBtn = document.getElementById('viewOrdersBtn');
+                                if (viewBtn) viewBtn.onclick = () => window.location.href = "#";
+
+                                // Replace Place Order with Order Again
+                                const placeBtn = document.getElementById("placeOrderBtn");
+                                if (placeBtn) {
+                                    // Remove old listeners
+                                    placeBtn.replaceWith(placeBtn.cloneNode(true));
+                                    const newPlaceBtn = document.getElementById("placeOrderBtn");
+
+                                    newPlaceBtn.innerHTML = "Order Again";
+                                    newPlaceBtn.className = "w-40 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700";
+                                    newPlaceBtn.disabled = false;
+                                    newPlaceBtn.addEventListener("click", () => {
+                                        window.location.href = "order_water_refill.php";
+                                    });
+                                }
+
+                                // Disable Back, Start Over, Add More
+                                ["backBtn6", "startOverBtn6", "addMoreOrdersBtn"].forEach(id => {
+                                    const btn = document.getElementById(id);
+                                    if (btn) {
+                                        btn.disabled = true;
+                                        btn.classList.add("opacity-60", "cursor-not-allowed", "pointer-events-none");
+                                    }
+                                });
                             }
+
+
                         });
+
+
                     } else {
-                        Swal.fire('Error', 'Failed to place order. Please try again.', 'error');
+                        console.error('Backend error:', data.message);
+                        Swal.fire('Error', data.message || 'Failed to place order. Please try again.', 'error');
                     }
                 })
                 .catch(err => {
-                    console.error(err);
-                    Swal.fire('Error', 'Something went wrong.', 'error');
+                    console.error('Fetch error:', err);
+                    Swal.fire('Error', 'Something went wrong: ' + err.message, 'error');
                 });
         }
 
+        // Helper function to format datetime for MySQL
+        function formatDateTimeForMySQL(dateStr, timeLabel) {
+            // Parse time from label
+            const timeMap = {
+                'Morning - 7:30 AM': '07:30:00',
+                'Afternoon - 1:00 PM': '13:00:00',
+                'Morning - 9:00 AM': '09:00:00',
+                'Morning - 11:00 AM': '11:00:00',
+                'Afternoon - 2:00 PM': '14:00:00',
+                'Afternoon - 4:00 PM': '16:00:00'
+            };
+
+            const time = timeMap[timeLabel] || '00:00:00';
+            return `${dateStr} ${time}`;
+        }
+
+        // Helper function to format datetime for MySQL
+        function formatDateTimeForMySQL(dateStr, timeLabel) {
+            // Parse time from label
+            const timeMap = {
+                'Morning - 7:30 AM': '07:30:00',
+                'Afternoon - 1:00 PM': '13:00:00',
+                'Morning - 9:00 AM': '09:00:00',
+                'Morning - 11:00 AM': '11:00:00',
+                'Afternoon - 2:00 PM': '14:00:00',
+                'Afternoon - 4:00 PM': '16:00:00'
+            };
+
+            const time = timeMap[timeLabel] || '00:00:00';
+            return `${dateStr} ${time}`;
+        }
 
         // ---------- Date initialization and listeners ----------
         function initializeDateInputs() {
@@ -1158,9 +1308,14 @@
             if (!deliveryDate.value) deliveryDate.value = today;
         }
 
-        pickupDate.addEventListener('change', () => updateTimeSlots(pickupDate, [timeMorning, timeAfternoon]));
-        deliveryDate.addEventListener('change', () => updateTimeSlots(deliveryDate, [delTime1, delTime2, delTime3, delTime4]));
+        pickupDate.addEventListener('change', () => {
+            updateTimeSlots(pickupDate, [timeMorning, timeAfternoon]);
+            enforceDeliveryMinDate();
+        });
 
+        deliveryDate.addEventListener('change', () => {
+            enforceDeliveryMinDate();
+        });
         // ---------- Initial setup ----------
         initializeDateInputs();
         updateTimeSlots(pickupDate, [timeMorning, timeAfternoon]);
