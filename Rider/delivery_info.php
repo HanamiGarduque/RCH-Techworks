@@ -248,10 +248,16 @@ $items = [
         </div>
     <?php endforeach; ?>
 </div>
+<!-- Complete Delivery button -->
+
+
+<script>
+
+</script>
+
 
 <!-- REMOVED SCAN BUTTON -->
 
-<button class="action-btn deliver-btn" onclick="markDelivered()">Mark as Delivered</button>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -302,18 +308,15 @@ if ("geolocation" in navigator) {
 
 
 function goFullMap() {
-    window.location.href = "full_map.php?lat=" + customerLat + "&lng=" + customerLng + "&user_id=<?= $user_id ?>";
+    // Pass the correct latitude, longitude, and user_id to full_map.php
+    window.location.href = "full_map.php?lat=<?= $lat ?>&lng=<?= $lng ?>&user_id=<?= $user_id ?>";
 }
+
 
 
 function callCustomer() { alert("Calling customer..."); }
 function messageCustomer() { alert("Opening messaging app..."); }
 
-function markDelivered() { 
-    if(confirm("Mark this delivery as completed?")) {
-        window.location.href = "delivery_complete.php";
-    }
-}
 </script>
 
 </body>
