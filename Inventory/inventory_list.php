@@ -43,7 +43,7 @@ $db = $database->getConnect();
         <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
             <div class="flex flex-col h-screen">
                 <!-- Header -->
-                 <?php
+                <?php
                 $pageTitle = "Inventory";
                 $pageSubtitle = "View and manage inventory levels and product details.";
                 include '../Admin/includes/header.php';
@@ -81,29 +81,30 @@ $db = $database->getConnect();
                             <button id="allTab"
                                 class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
                                 onclick="filterTab(this)">
-                                <i class="fas fa-list mr-2"></i>All
+                                <i class="fas fa-th-large mr-2"></i>All
                             </button>
                             <button
                                 class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
                                 onclick="filterTab(this)">
-                                <i class="fas fa-building mr-2"></i>Gallons
+                                <i class="fas fa-water mr-2"></i>Gallons
                             </button>
                             <button
                                 class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
                                 onclick="filterTab(this)">
-                                <i class="fas fa-user mr-2"></i>Accessories
+                                <i class="fas fa-box-open mr-2"></i>Accessories
                             </button>
                             <button
                                 class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
                                 onclick="filterTab(this)">
-                                <i class="fas fa-question-circle mr-2"></i>Others
+                                <i class="fas fa-ellipsis-h mr-2"></i>Others
                             </button>
+
                         </div>
 
                         <!-- Cards -->
                         <div class="bg-white rounded-lg overflow-hidden">
                             <!-- Scroll wrapper -->
-                            <div class="overflow-x-auto max-h-[500px]">
+                            <div class="overflow-x-auto max-h-[550px]">
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                     <?php
@@ -117,6 +118,7 @@ $db = $database->getConnect();
                                             i.item_image,
                                             i.price,
                                             i.category,
+                                            i.for_sale,
                                             CASE 
                                                 WHEN i.item_name IN ('18.9L Round Gallon', '20L Slim Gallon', '10L Slim Gallon')
                                                 THEN (
@@ -142,6 +144,7 @@ $db = $database->getConnect();
                                             $category = htmlspecialchars($row['category']);
                                             $price = number_format((float)$row['price'], 2);
                                             $item_image = htmlspecialchars($row['item_image']);
+                                            $forSale = htmlspecialchars($row['for_sale']);
 
                                             // Stock status logic
                                             if ($quantity > 20) {
@@ -156,7 +159,9 @@ $db = $database->getConnect();
                                             }
 
                                             echo '
-                                                <div class="inventory-card bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg transition p-4 flex flex-col items-center" data-category="' . strtolower($category) . '">
+                                            <div class="inventory-card bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg transition p-4 flex flex-col items-center" 
+                                                data-category="' . strtolower($category) . '" 
+                                                data-for-sale="' . $forSale . '">
                                                 <img src="../Assets/' . $item_image . '" alt="' . $item_name . '" class="w-24 h-24 object-cover rounded-lg mb-3">
                                                 <h2 class="text-lg font-semibold text-gray-800 text-center mb-1">' . $item_name . '</h2>
                                                 <p class="text-sm text-gray-600 mb-1">Quantity: <span class="font-medium">' . $quantity . '</span></p>
@@ -193,26 +198,6 @@ $db = $database->getConnect();
     </div>
     </div>
     <script>
-        //for smooth page transition
-        document.querySelectorAll('.sidebar-link').forEach(link => {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                const target = e.currentTarget.getAttribute('href');
-                const content = document.getElementById('page-content');
-
-                // Fade out
-                content.classList.add('opacity-0', 'translate-x-2');
-
-                setTimeout(() => {
-                    window.location.href = target;
-                }, 300); // same as duration-300
-            });
-        });
-
-        const content = document.getElementById('page-content');
-        content.classList.add('opacity-0');
-        setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
-
         function searchCards() {
             const input = document.getElementById("searchInput");
             const filter = input.value.toLowerCase();
@@ -291,6 +276,7 @@ $db = $database->getConnect();
             const quantity = card.querySelector('p:nth-child(3) span').innerText;
             const price = card.querySelector('p:nth-child(4) span').innerText.replace('₱', '').trim();
             const category = card.getAttribute('data-category');
+            const forSale = card.getAttribute('data-for-sale') === "1"; // Assuming you add this attribute to cards
 
             // Create modal container
             const modal = document.createElement('div');
@@ -298,61 +284,76 @@ $db = $database->getConnect();
 
             // Determine if quantity input should be disabled for Gallons
             const qtyField = (category === "gallons") ? `
-    <div class="flex flex-col items-center mb-4 w-full">
-        <span class="self-start font-medium text-blue-500 mr-2 w-full">Quantity:</span>
-        <input type="number" id="editQty${itemId}" value="${quantity}" disabled
-            class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 text-center font-medium bg-gray-100 cursor-not-allowed" />
-        <p class="text-xs text-gray-500 italic mt-2 w-full text-center">Quantity cannot be edited for Gallon items.</p>
-    </div>
-    ` : `
-        <div class="flex items-center gap-3 mb-4 w-full">
-            <span class="text-left font-medium text-blue-500 mr-4">Quantity:</span>
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="changeQty(${itemId}, -1)"
-                    class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">−</button>
-                <input type="number" id="editQty${itemId}" value="${quantity}" min="0"
-                    class="w-20 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
-                <button type="button" onclick="changeQty(${itemId}, 1)"
-                    class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">+</button>
-            </div>
-        </div>
-    `;
+                <div class="flex flex-col items-center mb-4 w-full">
+                    <span class="self-start font-medium text-blue-500 mr-2 w-full">Quantity:</span>
+                    <input type="number" id="editQty${itemId}" value="${quantity}" disabled
+                        class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 text-center font-medium bg-gray-100 cursor-not-allowed" />
+                    <p class="text-xs text-gray-500 italic mt-2 w-full text-center">Quantity cannot be edited for Gallon items.</p>
+                </div>
+            ` : `
+                <div class="flex items-center gap-3 mb-4 w-full">
+                    <span class="text-left font-medium text-blue-500 mr-4">Quantity:</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="changeQty(${itemId}, -1)"
+                            class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">−</button>
+                        <input type="number" id="editQty${itemId}" value="${quantity}" min="0"
+                            class="w-20 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+                        <button type="button" onclick="changeQty(${itemId}, 1)"
+                            class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">+</button>
+                    </div>
+                </div>
+            `;
+
+            // For Sale toggle switch
+            const forSaleSwitch = `
+                <div class="flex items-center gap-3 mb-6 w-full">
+                    <label class="flex items-center gap-2 font-medium text-blue-500">
+                        <input type="checkbox" id="editForSale${itemId}" 
+                            ${forSale == 1 ? 'checked' : ''} 
+                            class="w-5 h-5"/>
+                        For Sale
+                    </label>
+                </div>
+            `;
 
             // Modal content
             modal.innerHTML = `
-        <div class="bg-white rounded-xl shadow-lg w-96 p-6">
-            <h2 class="text-2xl font-semibold text-blue-600 mb-4 text-center">Edit Item</h2>
-            <form onsubmit="saveItem(event, ${itemId}, '${category}')" class="flex flex-col items-center">
-            <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Item Name:</span>
-            <input type="text" id="editName${itemId}" value="${name}" 
-                class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium" />
+            <div class="bg-white rounded-xl shadow-lg w-96 p-6">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4 text-center">Edit Item</h2>
+                <form onsubmit="saveItem(event, ${itemId}, '${category}')" class="flex flex-col items-center">
+                    <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Item Name:</span>
+                    <input type="text" id="editName${itemId}" value="${name}" 
+                        class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium" />
 
-            ${qtyField}
+                    ${qtyField}
 
-            <div class="flex items-center gap-3 mb-6 w-full">
-                <span class="text-left font-medium text-blue-500 mr-2 w-1/3">Item Price:</span>
-                <div class="flex items-center w-2/3">
-                <span class="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700">Php</span>
-                <input type="number" id="editPrice${itemId}" value="${price}" step="0.01"
-                    class="w-full border border-gray-300 rounded-r-md px-3 py-2 focus:ring-2 focus:ring-blue-500 font-medium" />
-                </div>
+                    <div class="flex items-center gap-3 mb-4 w-full">
+                        <span class="text-left font-medium text-blue-500 mr-2 w-1/3">Item Price:</span>
+                        <div class="flex items-center w-2/3">
+                            <span class="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700">Php</span>
+                            <input type="number" id="editPrice${itemId}" value="${price}" step="0.01"
+                                class="w-full border border-gray-300 rounded-r-md px-3 py-2 focus:ring-2 focus:ring-blue-500 font-medium" />
+                        </div>
+                    </div>
+
+                    ${forSaleSwitch}
+
+                    <div class="flex justify-center gap-3">
+                        <button type="submit" 
+                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
+                            <i class="fas fa-save mr-1"></i>Save
+                        </button>
+                        <button type="button" onclick="cancelEdit(this)"
+                            class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
+                            <i class="fas fa-times mr-1"></i>Cancel
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <div class="flex justify-center gap-3">
-                <button type="submit" 
-                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
-                <i class="fas fa-save mr-1"></i>Save
-                </button>
-                <button type="button" onclick="cancelEdit(this)"
-                class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
-                <i class="fas fa-times mr-1"></i>Cancel
-                </button>
-            </div>
-            </form>
-        </div>
-    `;
+            `;
             document.body.appendChild(modal);
         }
+
 
         // Change quantity buttons
         function changeQty(id, delta) {
@@ -369,17 +370,18 @@ $db = $database->getConnect();
             modal.remove();
         }
 
-        // Save item changes
         function saveItem(event, itemId, category) {
             event.preventDefault();
+
             const newName = document.getElementById(`editName${itemId}`).value;
             const newPrice = document.getElementById(`editPrice${itemId}`).value;
-            const newQty = (category === "gallons") ?
-                null // skip sending quantity for gallons
-                :
-                document.getElementById(`editQty${itemId}`).value;
+            const newQty = (category === "gallons") ? null : document.getElementById(`editQty${itemId}`).value;
 
-            let bodyData = `item_id=${itemId}&item_name=${encodeURIComponent(newName)}&price=${newPrice}`;
+            // Get for sale toggle
+            const forSale = document.getElementById(`editForSale${itemId}`).checked ? 1 : 0;
+
+            // Build POST body
+            let bodyData = `item_id=${itemId}&item_name=${encodeURIComponent(newName)}&price=${newPrice}&for_sale=${forSale}`;
             if (newQty !== null) bodyData += `&quantity=${newQty}`;
 
             fetch('update_item.php', {
@@ -397,18 +399,31 @@ $db = $database->getConnect();
                         text: 'The item details have been updated.',
                         confirmButtonColor: '#3085d6',
                     }).then(() => {
+
+                        // Close modal
                         document.querySelector('.fixed.inset-0')?.remove();
-                        // Optionally update values in card dynamically
+
+                        // Update card DOM
                         const card = document.querySelector(`[onclick="editItem(${itemId})"]`).closest('.inventory-card');
                         card.querySelector('h2').innerText = newName;
+
                         if (newQty !== null) {
                             card.querySelector('p:nth-child(3) span').innerText = newQty;
                         }
+
                         card.querySelector('p:nth-child(4) span').innerText = `₱${parseFloat(newPrice).toFixed(2)}`;
+
+                        // Update for_sale attribute on card
+                        card.setAttribute('data-for-sale', forSale);
+
+                        // ❌ REMOVE any opacity-related class (no graying-out)
+                        card.classList.remove('opacity-50');
                     });
                 })
                 .catch(err => console.error(err));
         }
+
+
         // DELETE FUNCTION 
         function deleteItem(id) {
             Swal.fire({
@@ -494,69 +509,75 @@ $db = $database->getConnect();
 
             // Modal content
             modal.innerHTML = `
-        <div class="bg-white rounded-xl shadow-lg w-96 p-6">
-            <h2 class="text-2xl font-semibold text-blue-600 mb-4 text-center">Add New Item</h2>
-            <form id="addItemForm" class="flex flex-col items-center" enctype="multipart/form-data">
-                
-                <!-- Category -->
-                <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Category:</span>
-                <select id="addCategory" name="category" class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500">
-                    <option value="Gallon">Gallon</option>
-                    <option value="Accessories">Accessories</option>
-                    <option value="Others">Others</option>
-                </select>
+                <div class="bg-white rounded-xl shadow-lg w-96 p-6">
+                    <h2 class="text-2xl font-semibold text-blue-600 mb-4 text-center">Add New Item</h2>
+                    <form id="addItemForm" class="flex flex-col items-center" enctype="multipart/form-data">
+                        
+                        <!-- Category -->
+                        <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Category:</span>
+                        <select id="addCategory" name="category" class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500">
+                            <option value="Gallon">Gallon</option>
+                            <option value="Accessories">Accessories</option>
+                            <option value="Others">Others</option>
+                        </select>
 
-                <!-- Item Name -->
-                <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Item Name:</span>
-                <input type="text" id="addItemName" name="item_name" 
-                    class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium" required />
+                        <!-- Item Name -->
+                        <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Item Name:</span>
+                        <input type="text" id="addItemName" name="item_name" 
+                            class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium" required />
 
-                <!-- Quantity -->
-                <div class="flex items-center gap-3 mb-4 w-full">
-                    <span class="text-left font-medium text-blue-500 mr-2 w-1/3">Quantity:</span>
-                    <div class="flex items-center gap-2 w-2/3">
-                        <button type="button" onclick="adjustAddQuantity(-1)"
-                            class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">−</button>
-                        <input type="number" id="addQuantity" name="quantity" value="0" min="0"
-                            class="w-full text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
-                        <button type="button" onclick="adjustAddQuantity(1)"
-                            class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">+</button>
-                    </div>
+                        <!-- Quantity -->
+                        <div class="flex items-center gap-3 mb-4 w-full">
+                            <span class="text-left font-medium text-blue-500 mr-2 w-1/3">Quantity:</span>
+                            <div class="flex items-center gap-2 w-2/3">
+                                <button type="button" onclick="adjustAddQuantity(-1)"
+                                    class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">−</button>
+                                <input type="number" id="addQuantity" name="quantity" value="0" min="0"
+                                    class="w-full text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+                                <button type="button" onclick="adjustAddQuantity(1)"
+                                    class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="flex items-center gap-3 mb-4 w-full">
+                            <span class="text-left font-medium text-blue-500 mr-2 w-1/3">Item Price:</span>
+                            <div class="flex items-center w-2/3">
+                                <span class="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700">Php</span>
+                                <input type="number" id="addPrice" name="price" step="0.01"
+                                    class="w-full border border-gray-300 rounded-r-md px-3 py-2 focus:ring-2 focus:ring-blue-500 font-medium" required />
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Description:</span>
+                        <textarea id="addDescription" name="description" rows="2"
+                            class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium"></textarea>
+
+                        <!-- Item Image -->
+                        <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Item Image:</span>
+                        <input type="file" id="addItemImage" name="item_image" class="w-full border border-gray-300 rounded-md px-3 py-2 mb-4" accept="image/*" />
+
+                        <!-- For Sale Checkbox -->
+                        <div class="flex items-center gap-2 mb-6 w-full">
+                            <input type="checkbox" id="addForSale" name="for_sale" value="1" checked class="w-5 h-5" />
+                            <label for="addForSale" class="font-medium text-blue-500">For Sale</label>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="flex justify-center gap-3">
+                            <button type="submit"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
+                                <i class="fas fa-plus mr-1"></i>Add
+                            </button>
+                            <button type="button" onclick="cancelAdd(this)"
+                                class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
+                                <i class="fas fa-times mr-1"></i>Cancel
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <!-- Price -->
-                <div class="flex items-center gap-3 mb-4 w-full">
-                    <span class="text-left font-medium text-blue-500 mr-2 w-1/3">Item Price:</span>
-                    <div class="flex items-center w-2/3">
-                        <span class="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700">Php</span>
-                        <input type="number" id="addPrice" name="price" step="0.01"
-                            class="w-full border border-gray-300 rounded-r-md px-3 py-2 focus:ring-2 focus:ring-blue-500 font-medium" required />
-                    </div>
-                </div>
-
-                <!-- Description -->
-                <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Description:</span>
-                <textarea id="addDescription" name="description" rows="2"
-                    class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium"></textarea>
-
-                <!-- Item Image -->
-                <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Item Image:</span>
-                <input type="file" id="addItemImage" name="item_image" class="w-full border border-gray-300 rounded-md px-3 py-2 mb-6" accept="image/*" />
-
-                <!-- Buttons -->
-                <div class="flex justify-center gap-3">
-                    <button type="submit"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
-                        <i class="fas fa-plus mr-1"></i>Add
-                    </button>
-                    <button type="button" onclick="cancelAdd(this)"
-                        class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
-                        <i class="fas fa-times mr-1"></i>Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    `;
+            `;
 
             document.body.appendChild(modal);
         }

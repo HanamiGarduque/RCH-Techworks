@@ -5,7 +5,7 @@ $db = $database->getConnect();
 
 //insert session for user
 $user_id = 4; // example user
-$stmt = $db->prepare("SELECT name, phone_number, address FROM users WHERE user_id = :id");
+$stmt = $db->prepare("SELECT user_id, name, phone_number, address FROM users WHERE user_id = :id");
 $stmt->execute([':id' => $user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 

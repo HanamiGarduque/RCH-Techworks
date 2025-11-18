@@ -37,7 +37,7 @@ $db = $database->getConnect();
     <div class="flex h-screen">
         <!-- Sidebar -->
         <script src="../Admin/includes/sidebar.js"></script>
-        <!-- Main Content -->
+       
         <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
             <div class="flex flex-col h-screen">
                 <!-- Header -->
