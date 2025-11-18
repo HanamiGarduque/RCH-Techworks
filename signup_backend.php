@@ -27,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'];
     $confirmPassword = $_POST['confirmPassword'];
 
-    $address = "$house_number, $street_name, $barangay, $city, $province, $postal_code";
+    $address = "$house_number, $street_name, $barangay, $city, $province $postal_code";
     
 
     // Password match check

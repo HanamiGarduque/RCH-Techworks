@@ -74,14 +74,14 @@ try {
     // --- Insert notifications for admin, customer, and riders ---
 
     // Create custom messages for each role
-    $adminTitle   = "New Customer Order";
-    $adminMessage = "A new customer placed an order. Order #{$data['order_number']} — Review details.";
+    $adminTitle   = "New Customer Refill Order";
+    $adminMessage = "A new customer placed a water refill order. Order #{$data['order_number']} — Review details.";
 
-    $riderTitle   = "Order Ready for Delivery";
-    $riderMessage = "A new order is ready for delivery. Order #{$data['order_number']} — Pickup at {$data['pickup_datetime']}.";
+    $riderTitle   = "Refill Order Ready for Delivery";
+    $riderMessage = "A new refill order is ready for delivery. Order #{$data['order_number']} — Pickup at {$data['pickup_datetime']}.";
 
     $customerTitle   = "Order Placed Successfully";
-    $customerMessage = "Your order has been placed successfully! Order #{$data['order_number']} — Total: PHP {$data['total_amount']}.";
+    $customerMessage = "Your water refill order has been placed successfully! Order #{$data['order_number']} — Total: PHP {$data['total_amount']}.";
 
     $orderLink = "order_details.php?order_id={$refill_id}";
 

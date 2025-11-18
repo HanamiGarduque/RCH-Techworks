@@ -79,7 +79,7 @@
 
         <!-- Main Content -->
         <main class="flex-1 ml-20 bg-gray-50 rounded-xl shadow overflow-y-auto">
-            <div class="main-heade  r">
+            <div class="main-header">
                 <?php
                 $pageTitle = "Order Water Refill";
                 $pageSubtitle = "Hydrate made easy—order and we'll handle the rest!";
@@ -203,7 +203,7 @@
                             </div>
                         </div>
 
-                        <div id="addressDisplay" class="mt-3 text-sm text-gray-700"></div>
+                        <div id="addressDisplay" class="text-sm text-gray-700"></div>
 
                         <div id="addressFormContainer" class="mt-3 hidden flex gap-4">
                             <div id="addressForm" class="flex-1 ">
@@ -336,27 +336,60 @@
             orders: [] // saved orders if user adds multiple
         };
 
-        fetch('../Order/get_user.php')
-            .then(res => res.json())
-            .then(user => {
-                const addrParts = user.address.split(',').map(part => part.trim());
+        fetch('../Order/get_user.php').then(res => {
+            if (!res.ok) throw new Error('no user endpoint');
+            return res.json();
+        }).then(user => {
+            if (!user) return;
 
-                // update existing state
-                state.userName = user.name;
-                state.userContact = user.phone_number;
-                state.userAddress = {
-                    house: addrParts[0] || '',
-                    street: addrParts[1] || '',
-                    barangay: addrParts[2] || '',
-                    city: addrParts[3] || '',
-                    province: addrParts[4] || '',
-                    postal: addrParts[5] || ''
-                };
+            // ---- PARSE ADDRESS ----
+            const raw = user.address || '';
+            const parts = raw.split(',').map(p => p.trim());
+            // parts: [house, street, barangay, city, "province postal"]
 
-                console.log(state);
-            });
+            let province = '';
+            let postal = '';
 
+            if (parts[4]) {
+                const lastParts = parts[4].split(' ').map(p => p.trim());
+                province = lastParts.slice(0, -1).join(' ') || ''; // handles multi-word provinces
+                postal = lastParts[lastParts.length - 1] || '';
+            }
 
+            state.userId = user.user_id || state.userId;
+            state.userName = user.name || state.userName;
+            state.userContact = user.phone_number || state.userContact;
+            state.userAddress = {
+                house: parts[0] || '',
+                street: parts[1] || '',
+                barangay: parts[2] || '',
+                city: parts[3] || '',
+                province: province,
+                postal: postal
+            };
+
+            // ---- UPDATE UI ----
+            const dn = $('#deliverName');
+            if (dn) dn.textContent = state.userName || 'User Name';
+
+            const dp = $('#deliverPhone');
+            if (dp) dp.textContent = state.userContact || 'Phone';
+
+            const da = $('#deliverAddress');
+            if (da) {
+                const full = `${state.userAddress.house}${state.userAddress.house ? ', ' : ''}` +
+                    `${state.userAddress.street}${state.userAddress.street ? ', ' : ''}` +
+                    `${state.userAddress.barangay}${state.userAddress.barangay ? ', ' : ''}` +
+                    `${state.userAddress.city}${state.userAddress.city ? ', ' : ''}` +
+                    `${state.userAddress.province}${state.userAddress.province ? ', ' : ''}` +
+                    `${state.userAddress.postal}`;
+
+                da.textContent = full || 'Address';
+            }
+
+        }).catch(() => {
+            // ignore fetch errors
+        });
 
         // ---------- Utility functions ----------
         function hideAllSteps() {
@@ -442,7 +475,6 @@
             updateTimeSlots(deliveryDate, [delTime1, delTime2, delTime3, delTime4]);
         }
 
-
         function updateTimeSlots(dateInput, timeButtons) {
             const selectedDate = dateInput.value;
             const isDelivery = (timeButtons.length === 4);
@@ -472,37 +504,37 @@
                 html = `<div class="flex justify-end space-x-3">
           <div></div>
           <div></div>
-        </div>`;
+                </div>`;
             } else if (step === 2) {
                 html = `<div class="flex justify-start">
-          <button id="backBtn" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
-        </div>`;
+                <button id="backBtn" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+                </div>`;
             } else if (step === 3) {
                 html = `<div class="flex justify-between">
-          <button id="backBtn3" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
-          <button id="nextBtn3" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
-        </div>`;
+                <button id="backBtn3" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+                <button id="nextBtn3" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
+                </div>`;
             } else if (step === 4) {
                 html = `<div class="flex justify-between">
-          <button id="backBtn4" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
-          <button id="nextBtn4" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
-        </div>`;
+                <button id="backBtn4" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+                <button id="nextBtn4" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
+                </div>`;
             } else if (step === 5) {
                 html = `<div class="flex justify-between">
-          <button id="backBtn5" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
-          <button id="nextBtn5" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
-        </div>`;
+                <button id="backBtn5" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+                <button id="nextBtn5" class="w-40 bg-blue-600 text-white py-2 rounded-lg">Next</button>
+                </div>`;
             } else if (step === 6) {
                 html = `<div class="flex justify-between space-x-3">
-        <div class="flex space-x-3">
-            <button id="backBtn6" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
-            <button id="startOverBtn6" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Start Over</button>
-            <button id="addMoreOrdersBtn" class="w-40 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600">Add More Orders</button>
-        </div>
-        <div class="flex space-x-3">
-            <button id="placeOrderBtn" class="w-40 bg-green-600 text-white py-2 rounded-lg">Place Order</button>
-        </div>
-     </div>`;
+                <div class="flex space-x-3">
+                    <button id="backBtn6" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Back</button>
+                    <button id="startOverBtn6" class="w-40 bg-white border py-2 rounded-lg hover:bg-blue-600 hover:text-white">Start Over</button>
+                    <button id="addMoreOrdersBtn" class="w-40 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600">Add More Orders</button>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="placeOrderBtn" class="w-40 bg-green-600 text-white py-2 rounded-lg">Place Order</button>
+                </div>
+            </div>`;
             }
 
 
@@ -741,7 +773,7 @@
                 // fill address and summary placeholders (renderOrders handles the table)
                 document.getElementById('userNameDisplay').textContent = state.userName;
                 document.getElementById('userContactDisplay').textContent = state.userContact;
-                document.getElementById('addressDisplay').innerHTML = `${state.userAddress.house || ''} ${state.userAddress.street || ''}<br>${state.userAddress.barangay || ''}, ${state.userAddress.city || ''}, ${state.userAddress.province || ''} ${state.userAddress.postal || ''}`;
+                document.getElementById('addressDisplay').innerHTML = `${state.userAddress.house || ''}, ${state.userAddress.street || ''}, ${state.userAddress.barangay || ''}, ${state.userAddress.city || ''}, ${state.userAddress.province || ''} ${state.userAddress.postal || ''}`;
                 document.getElementById('pickupSummary').textContent = `${pickupDate.value || ''} ${state.chosenPickupTime || ''}`;
                 document.getElementById('deliverySummary').textContent = `${deliveryDate.value || ''} ${state.chosenDeliveryTime || ''}`;
             }
@@ -1061,11 +1093,15 @@
 
             if (userNameDisplay) userNameDisplay.textContent = state.userName || '';
             if (userContactDisplay) userContactDisplay.textContent = state.userContact || '';
-            if (addressDisplay) addressDisplay.innerHTML = `
-        ${state.userAddress.house || ''} ${state.userAddress.street || ''}<br>
-        ${state.userAddress.barangay || ''}, ${state.userAddress.city || ''}, 
-        ${state.userAddress.province || ''} ${state.userAddress.postal || ''}
-        `;
+            addressDisplay.innerHTML = `
+                ${state.userAddress.house || ''},
+                ${state.userAddress.street || ''},
+                ${state.userAddress.barangay || ''},
+                ${state.userAddress.city || ''},
+                ${state.userAddress.province || ''}
+                ${state.userAddress.postal || ''}
+            `;
+
             if (pickupSummary) pickupSummary.textContent = `${pickupDate?.value || ''} ${state.chosenPickupTime || ''}`;
             if (deliverySummary) deliverySummary.textContent = `${deliveryDate?.value || ''} ${state.chosenDeliveryTime || ''}`;
         }
@@ -1086,31 +1122,71 @@
         });
 
         document.getElementById('cancelAddressBtn').addEventListener('click', () => {
-            document.getElementById('addressForm').classList.add('hidden');
+            document.getElementById('addressFormContainer').classList.add('hidden');
             document.getElementById('addressDisplay').classList.remove('hidden');
         });
 
-        document.getElementById('saveAddressBtn').addEventListener('click', () => {
+        document.getElementById('saveAddressBtn').addEventListener('click', async () => {
             const h = document.getElementById('addrHouse').value.trim();
             const s = document.getElementById('addrStreet').value.trim();
             const b = document.getElementById('addrBarangay').value.trim();
             const c = document.getElementById('addrCity').value.trim();
             const p = document.getElementById('addrProvince').value.trim();
             const pc = document.getElementById('addrPostal').value.trim();
+
             if (!h || !s || !b || !c || !p || !pc) {
                 Swal.fire('Please fill in the full delivery address', '', 'warning');
                 return;
             }
+
+            // update local state
             state.userAddress.house = h;
             state.userAddress.street = s;
             state.userAddress.barangay = b;
             state.userAddress.city = c;
             state.userAddress.province = p;
             state.userAddress.postal = pc;
-            document.getElementById('addressDisplay').innerHTML = `${h} ${s}<br>${b}, ${c}, ${p} ${pc}`;
-            document.getElementById('addressForm').classList.add('hidden');
+
+            // Update display
+            document.getElementById('addressDisplay').innerHTML =
+                `${h}, ${s}, ${b}, ${c}, ${p} ${pc}`;
+            document.getElementById('addressFormContainer').classList.add('hidden');
             document.getElementById('addressDisplay').classList.remove('hidden');
+
+
+            // ----------------- NEW: POST ADDRESS UPDATE -----------------
+            const payload = {
+                user_id: state.userId,
+                house: h,
+                street: s,
+                barangay: b,
+                city: c,
+                province: p,
+                postal: pc
+            };
+
+            try {
+                const res = await fetch('update_address.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                if (!result.success) {
+                    Swal.fire('Error', result.message || 'Failed to update address', 'error');
+                } else {
+                    Swal.fire('Success', 'Address updated successfully!', 'success');
+                }
+
+            } catch (err) {
+                Swal.fire('Error', err.message, 'error');
+            }
         });
+
 
         // ---------- Place order ----------
         function onPlaceOrder() {
@@ -1152,7 +1228,7 @@
             const totalAmount = allOrders.reduce((sum, order) => sum + order.subtotal, 0);
 
             // Generate order number (you might want to get this from backend)
-            const orderNumber = 'ORD' + Date.now();
+            const orderNumber = 'ORD' + Date.now() + state.userId;
 
             // Format datetime strings for MySQL (YYYY-MM-DD HH:MM:SS)
             const pickupDatetime = formatDateTimeForMySQL(pickupDate.value, state.chosenPickupTime);

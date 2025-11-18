@@ -230,7 +230,7 @@
                             <div id="deliveryEdit" class="hidden mt-4 flex gap-3">
                                 <!-- Form section -->
                                 <div class="flex-1 flex flex-col space-y-2">
-                                     <div id="addressForm" class="flex-1">
+                                    <div id="addressForm" class="flex-1">
                                         <div class="grid grid-cols-1 gap-2">
                                             <input id="addrHouse" placeholder="House/Unit No."
                                                 class="border rounded px-2 py-2" />
@@ -330,30 +330,65 @@
                 return res.json();
             }).then(user => {
                 if (!user) return;
-                const addrParts = (user.address || '').split(',').map(p => p.trim());
+
                 state.userId = user.user_id || state.userId;
                 state.userName = user.name || state.userName;
                 state.userContact = user.phone_number || state.userContact;
+
+                // --------------------------
+                // FIXED ADDRESS PARSER
+                // --------------------------
+                const rawAddr = user.address || "";
+                const parts = rawAddr.split(",").map(p => p.trim());
+
+                let house = parts[0] || "";
+                let street = parts[1] || "";
+                let barangay = parts[2] || "";
+                let city = parts[3] || "";
+
+                // province + postal (last part)
+                let province = "";
+                let postal = "";
+
+                if (parts[4]) {
+                    const lastParts = parts[4].split(" ");
+                    postal = lastParts.pop(); // last value
+                    province = lastParts.join(" "); // remaining words
+                }
+
                 state.userAddress = {
-                    house: addrParts[0] || '',
-                    street: addrParts[1] || '',
-                    barangay: addrParts[2] || '',
-                    city: addrParts[3] || '',
-                    province: addrParts[4] || '',
-                    postal: addrParts[5] || ''
+                    house: house,
+                    street: street,
+                    barangay: barangay,
+                    city: city,
+                    province: province,
+                    postal: postal
                 };
-                // update UI
+
+                // --------------------------
+                // UPDATE UI
+                // --------------------------
                 const dn = $('#deliverName');
                 if (dn) dn.textContent = state.userName || 'User Name';
+
                 const dp = $('#deliverPhone');
                 if (dp) dp.textContent = state.userContact || 'Phone';
+
                 const da = $('#deliverAddress');
                 if (da) {
-                    const full = `${state.userAddress.house}${state.userAddress.house ? ', ' : ''}${state.userAddress.street}${state.userAddress.street ? ', ' : ''}${state.userAddress.barangay}${state.userAddress.barangay ? ', ' : ''}${state.userAddress.city}${state.userAddress.city ? ', ' : ''}${state.userAddress.province}${state.userAddress.province ? ', ' : ''}${state.userAddress.postal}`;
+                    const full =
+                        `${state.userAddress.house ? state.userAddress.house + ", " : ""}` +
+                        `${state.userAddress.street ? state.userAddress.street + ", " : ""}` +
+                        `${state.userAddress.barangay ? state.userAddress.barangay + ", " : ""}` +
+                        `${state.userAddress.city ? state.userAddress.city + ", " : ""}` +
+                        `${state.userAddress.province ? state.userAddress.province + " " : ""}` +
+                        `${state.userAddress.postal || ""}`;
+
                     da.textContent = full || 'Address';
                 }
+
             }).catch(() => {
-                // ignore fetch errors (page should still work)
+                // ignore failures
             });
 
             // Quantity buttons: event delegation (works for dynamically generated cards)
@@ -562,7 +597,6 @@
             });
 
             // Save address: compose full address from individual fields
-            // Save address: compose full address from individual fields
             $('#saveAddressBtn')?.addEventListener('click', async () => {
                 const house = ($('#addrHouse')?.value || '').trim();
                 const street = ($('#addrStreet')?.value || '').trim();
@@ -621,7 +655,7 @@
                         };
 
                         // Update UI
-                        const full = `${house}, ${street}, ${barangay}, ${city}, ${province}, ${postal}`;
+                        const full = `${house}, ${street}, ${barangay}, ${city}, ${province} ${postal}`;
                         $('#deliverAddress') && ($('#deliverAddress').textContent = full);
 
                         $('#deliveryEdit')?.classList.add('hidden');
