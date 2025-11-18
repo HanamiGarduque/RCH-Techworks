@@ -18,6 +18,7 @@ try {
     $description = $_POST['description'] ?? '';
     $price = $_POST['price'] ?? '';
     $quantity = $_POST['quantity'] ?? '';
+    $for_sale = isset($_POST['for_sale']) ? 1 : 0;
     $image = $_FILES['item_image'] ?? null;
 
     // Validate
@@ -41,9 +42,12 @@ try {
         exit;
     }
 
-    // Insert into inventory table
-    $query = "INSERT INTO inventory (category, item_name, description, price, total_quantity, item_image) 
-              VALUES (:category, :item_name, :description, :price, :quantity, :item_image)";
+    // Insert into inventory table (added for_sale column)
+    $query = "INSERT INTO inventory 
+                (category, item_name, description, price, total_quantity, item_image, for_sale) 
+              VALUES 
+                (:category, :item_name, :description, :price, :quantity, :item_image, :for_sale)";
+    
     $stmt = $db->prepare($query);
     $stmt->bindParam(':category', $category);
     $stmt->bindParam(':item_name', $item_name);
@@ -51,6 +55,7 @@ try {
     $stmt->bindParam(':price', $price);
     $stmt->bindParam(':quantity', $quantity, PDO::PARAM_INT);
     $stmt->bindParam(':item_image', $relativePath);
+    $stmt->bindParam(':for_sale', $for_sale, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         echo json_encode(["success" => true, "message" => "Item added successfully!"]);
