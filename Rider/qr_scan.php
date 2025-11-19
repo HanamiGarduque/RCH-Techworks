@@ -1,85 +1,99 @@
 <?php
 session_start();
-require_once '../Database/db_connection.php';
 
-if (!isset($_GET['id'])) {
+// get user_id or order_id (depends on your workflow)
+$user_id = $_GET['id'] ?? null;
+if (!$user_id) {
     echo "Customer ID not provided.";
     exit;
 }
-
-$user_id = intval($_GET['id']']);
-
-// Fetch customer info
-$db = new Database();
-$conn = $db->getConnect();
-
-try {
-    $stmt = $conn->prepare("SELECT name, address FROM users WHERE user_id = :id");
-    $stmt->bindParam(':id', $user_id, PDO::PARAM_INT);
-    $stmt->execute();
-    $customer = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$customer) {
-        echo "Customer not found.";
-        exit;
-    }
-
-    $customer_name = $customer['name'];
-    $address = $customer['address'];
-} catch (PDOException $e) {
-    echo "Database error: " . $e->getMessage();
-    exit;
-}
 ?>
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scan QR | RCH Water</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-body { font-family:'Poppins',sans-serif; background:#f4f6fa; margin:0; padding:0; color:#333; text-align:center;}
-.header { background-color:#2196F3; color:white; padding:30px 20px; }
-#reader { width: 100%; max-width: 400px; margin: 20px auto; }
-button { padding:10px 20px; border:none; border-radius:10px; background:#4CAF50; color:white; font-size:16px; cursor:pointer; }
-button:hover { background:#45a049; }
-</style>
+    <title>QR Scanner</title>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #reader {
+            width: 300px;
+            margin: auto;
+        }
+
+        .popup {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .popup-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 300px;
+            text-align: center;
+            font-size: 20px;
+        }
+        .ok-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            background: #007bff;
+            color: white;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="header">
-    <h3>Scan QR for <?= htmlspecialchars($customer_name) ?></h3>
-    <p>Delivery Address: <?= htmlspecialchars($address) ?></p>
-</div>
+<h2>Scan QR Code</h2>
 
 <div id="reader"></div>
-<p id="result"></p>
-<button id="okBtn" style="display:none;" onclick="goDashboard()">OK</button>
 
-<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<!-- SUCCESS POPUP -->
+<div class="popup" id="successPopup">
+    <div class="popup-box">
+        <strong>Delivery Successful!</strong><br><br>
+        <button class="ok-btn" onclick="window.location.href='dashboard.php'">OK</button>
+    </div>
+</div>
+
 <script>
-const userId = <?= $user_id ?>;
-function goDashboard() {
-    window.location.href = "dashboard_backend.php";
-}
+// START QR SCANNER
+const html5QrCode = new Html5Qrcode("reader");
 
-// Initialize QR scanner
-function onScanSuccess(decodedText, decodedResult) {
-    // Stop scanning after successful scan
-    html5QrcodeScanner.clear().then(_ => {
-        document.getElementById("result").innerHTML = "✅ Delivery Successful!";
-        document.getElementById("okBtn").style.display = "inline-block";
-    }).catch(error => {
-        console.error("Failed to clear QR scanner", error);
-    });
-}
+html5QrCode.start(
+    { facingMode: "environment" }, 
+    { fps: 10, qrbox: 250 },
+    qrCodeMessage => {
 
-var html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader", { fps: 10, qrbox: 250 });
+        console.log("QR Scanned:", qrCodeMessage);
 
-html5QrcodeScanner.render(onScanSuccess);
+        html5QrCode.stop();
+
+        // you can validate QR content here if needed
+        document.getElementById("successPopup").style.display = "flex";
+
+        // Optional: send to backend for updating delivery
+        fetch("delivery_complete_backend.php?id=<?= $user_id ?>")
+    },
+    errorMessage => {}
+)
+.catch(err => {
+    console.error("Camera error:", err);
+});
 </script>
 
 </body>

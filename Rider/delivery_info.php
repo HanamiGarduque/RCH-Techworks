@@ -246,8 +246,10 @@ $items = [
             </div>
             <div class="item-status"><?= htmlspecialchars($item['status']) ?></div>
         </div>
+        
     <?php endforeach; ?>
 </div>
+
 <!-- Complete Delivery button -->
 
 
