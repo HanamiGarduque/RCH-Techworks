@@ -14,7 +14,7 @@ $db = new Database();
 $conn = $db->getConnect();
 
 try {
-    $stmt = $conn->prepare("SELECT name, address, latitude, longitude FROM users WHERE user_id = :id");
+    $stmt = $conn->prepare("SELECT name, address, phone_number, latitude, longitude FROM users WHERE user_id = :id");
     $stmt->bindParam(':id', $user_id, PDO::PARAM_INT);
     $stmt->execute();
     $customer = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -28,6 +28,7 @@ try {
     $address = $customer['address'];
     $lat = $customer['latitude'];
     $lng = $customer['longitude'];
+    $phone = $customer['phone_number'];
 
 } catch (PDOException $e) {
     echo "Database error: " . $e->getMessage();
@@ -224,6 +225,8 @@ $items = [
 <div class="card">
     <strong>Delivery Address</strong>
     <p style="font-size:13px;">📍 <?= htmlspecialchars($address) ?></p>
+    <p style="font-size:13px;">📞 <?= htmlspecialchars($phone) ?></p>
+
 
     <div id="map" onclick="goFullMap()"></div>
 
@@ -246,12 +249,20 @@ $items = [
             </div>
             <div class="item-status"><?= htmlspecialchars($item['status']) ?></div>
         </div>
+        
     <?php endforeach; ?>
 </div>
 
+<!-- Complete Delivery button -->
+
+
+<script>
+
+</script>
+
+
 <!-- REMOVED SCAN BUTTON -->
 
-<button class="action-btn deliver-btn" onclick="markDelivered()">Mark as Delivered</button>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -302,18 +313,15 @@ if ("geolocation" in navigator) {
 
 
 function goFullMap() {
-    window.location.href = "full_map.php?lat=" + customerLat + "&lng=" + customerLng + "&user_id=<?= $user_id ?>";
+    // Pass the correct latitude, longitude, and user_id to full_map.php
+    window.location.href = "full_map.php?lat=<?= $lat ?>&lng=<?= $lng ?>&user_id=<?= $user_id ?>";
 }
+
 
 
 function callCustomer() { alert("Calling customer..."); }
 function messageCustomer() { alert("Opening messaging app..."); }
 
-function markDelivered() { 
-    if(confirm("Mark this delivery as completed?")) {
-        window.location.href = "delivery_complete.php";
-    }
-}
 </script>
 
 </body>

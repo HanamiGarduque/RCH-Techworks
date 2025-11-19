@@ -178,15 +178,16 @@ body {
             <span>1.4 km Distance</span>
             <span>10 min ETA</span>
         </div>
-        <button class="start-btn" onclick="window.location.href='delivery_info.php?id=2'">
-            Start Route
+        <button class="start-btn" onclick="window.location.href='order_pickup.php?id=2'">
+            Start Delivery
         </button>
     </div>
 
     <div class="delivery-card">
         <div class="delivery-header">
             <h4>Juan Dela Cruz</h4>
-            <span class="status ontheway">On the Way</span>
+            <span class="status ready">Ready for Pickup</span>
+
         </div>
         <div class="delivery-info">📍 Purok 1, Lodlod, Lipa City, Batangas</div>
         <div class="details">
@@ -194,8 +195,8 @@ body {
             <span>2.2 km Distance</span>
             <span>17 min ETA</span>
         </div>
-        <button class="start-btn" onclick="window.location.href='delivery_info.php?id=5'">
-            Start Route
+        <button class="start-btn" onclick="window.location.href='order_pickup.php?id=5'">
+            Start Delivery
         </button>
     </div>
 </div>

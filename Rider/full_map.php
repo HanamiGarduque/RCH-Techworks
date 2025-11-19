@@ -7,6 +7,8 @@ $customer_name = isset($_GET['customer']) ? $_GET['customer'] : "Christine May P
 $destLat = isset($_GET['lat']) ? floatval($_GET['lat']) : 13.9434;
 $destLng = isset($_GET['lng']) ? floatval($_GET['lng']) : 121.1279;
 $order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 1;
+$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+
 ?>
 
 <!DOCTYPE html>
@@ -23,7 +25,7 @@ $order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 1;
 body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#333; overflow:hidden; }
 
 /* Map styling */
-#map { height:80vh; width:95%; margin:10px auto; border-radius:10px; }
+#map { height:70vh; width:95%; margin:10px auto; border-radius:10px; }
 
 /* Turn direction control */
 .direction-control {
@@ -37,6 +39,24 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
     left:50%;
     transform:translateX(-50%);
     z-index:1000;
+}
+
+.back-btn {
+    position: absolute;
+    top: 10px;
+    left: 80px;
+    background: rgba(255,255,255,0.9);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    user-select: none;
+}
+.back-btn:hover {
+    background: rgba(255,255,255,1);
 }
 
 /* Bottom bar */
@@ -69,11 +89,12 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
 </head>
 <body>
 
+<div class="back-btn" onclick="history.back()">←</div>
 <div id="map"></div>
 <div class="direction-control" id="eta">Calculating route...</div>
 
 <div class="bottom-bar">
-    <button class="btn btn-green" onclick="markDelivered()">Mark as Delivered</button><br>
+    <button class="btn btn-green" onclick="markDelivered()">Order Arrived</button><br>
     <button class="btn btn-outline" onclick="callCustomer()">📞 Call</button>
     <button class="btn btn-outline" onclick="messageCustomer()">💬 Message</button>
 </div>
@@ -143,8 +164,15 @@ navigator.geolocation.watchPosition(function(pos){
     });
 },function(err){console.error(err);},{enableHighAccuracy:true, maximumAge:0});
 
+
 // Bottom buttons
-function markDelivered(){ if(confirm("Mark this delivery as completed?")){ window.location.href="delivery_complete.php?order_id="+orderId; } }
+function markDelivered() {
+    if (confirm("Order Arrived?")) {
+        window.location.href = "delivery_complete.php?id=<?= $user_id ?>";
+
+    }
+}
+
 function callCustomer(){ alert("Calling customer..."); }
 function messageCustomer(){ alert("Opening messaging app..."); }
 </script>
