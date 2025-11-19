@@ -14,7 +14,7 @@ $db = new Database();
 $conn = $db->getConnect();
 
 try {
-    $stmt = $conn->prepare("SELECT name, address FROM users WHERE user_id = :id");
+    $stmt = $conn->prepare("SELECT name, address, phone_number FROM users WHERE user_id = :id");
     $stmt->bindParam(':id', $user_id, PDO::PARAM_INT);
     $stmt->execute();
     $customer = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -26,6 +26,7 @@ try {
 
     $customer_name = $customer['name'];
     $address = $customer['address'];
+    $phone = $customer['phone_number'];
 
 } catch (PDOException $e) {
     echo "Database error: " . $e->getMessage();
@@ -87,6 +88,7 @@ body { font-family:'Poppins',sans-serif; background:#f4f6fa; margin:0; padding:0
 <div class="card">
     <strong>Delivery Address</strong>
     <p style="font-size:13px;">📍 <?= htmlspecialchars($address) ?></p>
+    <p style="font-size:13px;">📞 <?= htmlspecialchars($phone) ?></p>
 </div>
 
 <div class="items">
