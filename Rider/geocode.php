@@ -1,6 +1,6 @@
 <?php
 // Sample address
-$address = "116 Purok 1, Sico, Lipa City, Batangas";
+$address = urlencode($customer['address']);
 
 // URL encode
 $encodedAddress = urlencode($address);

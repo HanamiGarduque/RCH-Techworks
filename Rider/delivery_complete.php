@@ -32,14 +32,12 @@ try {
     exit;
 }
 
-// Hardcoded sample items
 $items = [
     ["name" => "Slim Box type Gallon (20L)", "code" => "SP-204-021", "status" => "Ready"],
     ["name" => "Slim Box type Gallon (20L)", "code" => "SP-204-022", "status" => "Ready"]
 ];
 
 $order_id = isset($_GET['id']) ? $_GET['id'] : "Unknown";
-
 $status = "Completed";
 ?>
 
@@ -49,28 +47,102 @@ $status = "Completed";
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Delivery Complete | RCH Water</title>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
-body { font-family:'Poppins',sans-serif; background:#f4f6fa; margin:0; padding:0; color:#333; }
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #f4f6fa;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+.header {
+    background-color: #2196F3;
+    color: white;
+    padding: 30px 20px 60px;
+    border-radius: 0 0 40px 40px;
+    position: relative;
+}
+.back-btn {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    font-size: 22px;
+    cursor: pointer;
+}
+.header h3 { margin: 10px 0 0; font-weight: 600; font-size: 18px; }
+.header p { margin: 5px 0 0; font-size: 14px; }
+.status-badge {
+    position: absolute;
+    top: 30px;
+    right: 20px;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+.card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 20px;
+    padding: 15px;
+}
+.step { display: flex; align-items: center; margin: 10px 0; }
+.circle {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ccc;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    margin-right: 10px;
+}
+.active-step { background-color: #4CAF50; }
 
-.header { background-color:#2196F3; color:white; padding:30px 20px 60px; border-radius:0 0 40px 40px; position:relative; }
-.back-btn { position:absolute; top:10px; left:20px; font-size:22px; cursor:pointer; }
-.header h3 { margin:10px 0 0; font-weight:600; font-size:18px; }
-.header p { margin:5px 0 0; font-size:14px; }
-.status-badge { position:absolute; top:30px; right:20px; background-color:#4CAF50; color:white; font-size:12px; padding:5px 12px; border-radius:20px; }
+.items {
+    background: white;
+    border-radius: 15px;
+    margin: 20px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f4f6fa;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.item-status {
+    background: #8BC34A;
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+}
 
-.card { background:white; border-radius:15px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin:20px; padding:15px; }
-.step { display:flex; align-items:center; margin:10px 0; }
-.circle { width:22px; height:22px; border-radius:50%; background:#ccc; color:white; display:flex; justify-content:center; align-items:center; font-size:12px; margin-right:10px; }
-.active-step { background-color:#4CAF50; }
-
-.items { background:white; border-radius:15px; margin:20px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.item { display:flex; justify-content:space-between; align-items:center; background:#f4f6fa; border-radius:10px; padding:10px; margin-bottom:10px; }
-.item-status { background:#8BC34A; color:white; border-radius:12px; padding:2px 8px; font-size:11px; }
-
-.scan-btn { display:block; width:90%; margin:20px auto; padding:12px 0; border:none; border-radius:25px; font-size:16px; background:#1E90FF; color:white; cursor:pointer; }
-.scan-btn:hover { background:#0b7dda; text-align:center; }
+.scan-btn {
+    display: block;
+    width: 90%;
+    margin: 20px auto;
+    padding: 12px 0;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    background: #1E90FF;
+    color: white;
+    cursor: pointer;
+}
+.scan-btn:hover { background: #0b7dda; }
 
 #notification {
     display: none;
@@ -86,7 +158,6 @@ body { font-family:'Poppins',sans-serif; background:#f4f6fa; margin:0; padding:0
     z-index: 999;
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-
 #notification button {
     margin-top: 15px;
     padding: 8px 20px;
@@ -132,22 +203,84 @@ body { font-family:'Poppins',sans-serif; background:#f4f6fa; margin:0; padding:0
     <?php endforeach; ?>
 </div>
 
-<button class="scan-btn" onclick="scanQR()">Scan QR</button>
+<button class="scan-btn" onclick="openScanner()">Scan QR</button>
+
 
 <div id="notification">
     <div>Delivery Successful ✅</div>
     <button onclick="goDashboard()">OK</button>
 </div>
 
+<!-- QR Scanner Popup -->
+<div id="qrModal" style="
+    display:none;
+    position:fixed; 
+    top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.6);
+    z-index:1000;
+    justify-content:center; 
+    align-items:center;">
+    
+    <div style="background:white; padding:20px; border-radius:15px; width:90%; max-width:400px; text-align:center;">
+        <h3 style="margin-top:0;">Scan QR Code</h3>
+
+        <div id="qr-reader" style="width:100%;"></div>
+        <br>
+
+        <button onclick="closeQR()" style="
+            padding:10px 20px;
+            background:#f44336;
+            color:white;
+            border:none;
+            border-radius:10px;
+            cursor:pointer;
+        ">Cancel</button>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 <script>
-function scanQR() {
+let qrScanner;
+
+// OPEN SCAN POPUP
+function openScanner() {
+    document.getElementById("qrModal").style.display = "flex";
+
+    qrScanner = new Html5Qrcode("qr-reader");
+
+    qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        qrText => {
+            qrScanner.stop();
+            document.getElementById("qrModal").style.display = "none";
+            showSuccess();
+        }
+    ).catch(err => {
+        alert("Camera Error: " + err);
+    });
+}
+
+// CLOSE QR POPUP
+function closeQR() {
+    if (qrScanner) {
+        qrScanner.stop().catch(() => {});
+    }
+    document.getElementById("qrModal").style.display = "none";
+}
+
+// SHOW SUCCESS POPUP
+function showSuccess() {
     document.getElementById('notification').style.display = 'block';
 }
 
+// REDIRECT
 function goDashboard() {
     window.location.href = 'dashboard.php';
 }
 </script>
+
 
 </body>
 </html>
