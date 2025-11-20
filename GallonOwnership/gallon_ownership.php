@@ -115,7 +115,7 @@ $db = $database->getConnect();
                                         <tr>
                                             <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[80px]" onclick="sortTable(0)" title="Gallon ID">Gallon ID ⬍</th>
                                             <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[110px]" onclick="sortTable(1)" title="Gallon Type">Gallon Type ⬍</th>
-                                            <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[220px]" onclick="sortTable(2)" title="Owner">Owner ⬍</th>
+                                            <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[220px]" onclick="sortTable(2)" title="Current Owner">Owner ⬍</th>
                                             <th class="px-6 py-4 font-semibold text-center min-w-[120px]" title="Code Value">Code Value</th>
                                             <th class="px-6 py-4 font-semibold text-center min-w-[100px]" title="Status">Status</th>
                                             <th class="px-6 py-4 font-semibold text-center min-w-[120px]" title="Actions">Actions</th>

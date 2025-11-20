@@ -276,93 +276,130 @@ $db = $database->getConnect();
             const quantity = card.querySelector('p:nth-child(3) span').innerText;
             const price = card.querySelector('p:nth-child(4) span').innerText.replace('₱', '').trim();
             const category = card.getAttribute('data-category');
-            const forSale = card.getAttribute('data-for-sale') === "1"; // Assuming you add this attribute to cards
+            const forSale = card.getAttribute('data-for-sale') === "1";
 
-            // Create modal container
             const modal = document.createElement('div');
             modal.className = "fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50";
 
-            // Determine if quantity input should be disabled for Gallons
-            const qtyField = (category === "gallons") ? `
-                <div class="flex flex-col items-center mb-4 w-full">
-                    <span class="self-start font-medium text-blue-500 mr-2 w-full">Quantity:</span>
-                    <input type="number" id="editQty${itemId}" value="${quantity}" disabled
-                        class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 text-center font-medium bg-gray-100 cursor-not-allowed" />
-                    <p class="text-xs text-gray-500 italic mt-2 w-full text-center">Quantity cannot be edited for Gallon items.</p>
-                </div>
-            ` : `
-                <div class="flex items-center gap-3 mb-4 w-full">
-                    <span class="text-left font-medium text-blue-500 mr-4">Quantity:</span>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="changeQty(${itemId}, -1)"
-                            class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">−</button>
-                        <input type="number" id="editQty${itemId}" value="${quantity}" min="0"
-                            class="w-20 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
-                        <button type="button" onclick="changeQty(${itemId}, 1)"
-                            class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">+</button>
-                    </div>
-                </div>
-            `;
+           const qtyField = (category === "gallons") ? `
+    <div class="flex flex-col items-start mb-4 w-full">
+        <span class="font-medium text-blue-500 mb-1">Quantity:</span>
 
-            // For Sale toggle switch
-            const forSaleSwitch = `
-                <div class="flex items-center gap-3 mb-6 w-full">
-                    <label class="flex items-center gap-2 font-medium text-blue-500">
-                        <input type="checkbox" id="editForSale${itemId}" 
-                            ${forSale == 1 ? 'checked' : ''} 
-                            class="w-5 h-5"/>
-                        For Sale
-                    </label>
-                </div>
-            `;
+        <input type="number" id="editQty${itemId}" value="${quantity}" disabled
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-center font-medium bg-gray-100 cursor-not-allowed" />
 
-            // Modal content
-            modal.innerHTML = `
-            <div class="bg-white rounded-xl shadow-lg w-96 p-6">
-                <h2 class="text-2xl font-semibold text-blue-600 mb-4 text-center">Edit Item</h2>
-                <form onsubmit="saveItem(event, ${itemId}, '${category}')" class="flex flex-col items-center">
-                    <span class="self-start text-left font-medium text-blue-500 mr-2 w-full">Item Name:</span>
-                    <input type="text" id="editName${itemId}" value="${name}" 
-                        class="w-full mx-auto border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium" />
+        <p class="text-xs text-gray-500 italic mt-2">Quantity cannot be edited for Gallon items.</p>
+    </div>
+` : `
+    <div class="w-full mb-4">
 
-                    ${qtyField}
+        <!-- Top row: Quantity label + current qty -->
+        <div class="flex items-center justify-between mb-3">
+            <span class="font-medium text-blue-500">Quantity:</span>
+            <p class="text-sm text-gray-700">
+                Current: 
+                <span id="currentQty${itemId}" class="font-semibold text-blue-500">${quantity}</span>
+            </p>
+        </div>
 
-                    <div class="flex items-center gap-3 mb-4 w-full">
-                        <span class="text-left font-medium text-blue-500 mr-2 w-1/3">Item Price:</span>
-                        <div class="flex items-center w-2/3">
-                            <span class="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700">Php</span>
-                            <input type="number" id="editPrice${itemId}" value="${price}" step="0.01"
-                                class="w-full border border-gray-300 rounded-r-md px-3 py-2 focus:ring-2 focus:ring-blue-500 font-medium" />
-                        </div>
-                    </div>
+        <!-- Beautiful centered - + controls -->
+        <div class="flex justify-center mb-3">
+            <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                <button type="button" onclick="changeQtyToAdd(${itemId}, -1)"
+                    class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">−</button>
 
-                    ${forSaleSwitch}
+                <input type="number" id="qtyToAdd${itemId}" value="0" min="0"
+                    class="w-20 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-medium"
+                    oninput="updateTotalQty(${itemId})" />
 
-                    <div class="flex justify-center gap-3">
-                        <button type="submit" 
-                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
-                            <i class="fas fa-save mr-1"></i>Save
-                        </button>
-                        <button type="button" onclick="cancelEdit(this)"
-                            class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
-                            <i class="fas fa-times mr-1"></i>Cancel
-                        </button>
-                    </div>
-                </form>
+                <button type="button" onclick="changeQtyToAdd(${itemId}, 1)"
+                    class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">+</button>
             </div>
-            `;
+        </div>
+
+        <!-- New Total Qty -->
+        <p class="text-center text-sm text-gray-700 font-medium">
+            New Total: 
+            <span id="totalQty${itemId}" class="text-blue-600 font-semibold">${quantity}</span>
+        </p>
+
+        <input type="hidden" id="editQty${itemId}" value="${quantity}">
+    </div>
+`;
+
+
+            const forSaleSwitch = `
+        <div class="flex items-center gap-3 mb-6 w-full">
+            <label class="flex items-center gap-2 font-medium text-blue-500">
+                <input type="checkbox" id="editForSale${itemId}" 
+                    ${forSale ? 'checked' : ''} 
+                    class="w-5 h-5"/>
+                For Sale
+            </label>
+        </div>
+    `;
+
+            modal.innerHTML = `
+        <div class="bg-white rounded-xl shadow-lg w-96 p-6">
+            <h2 class="text-2xl font-semibold text-blue-600 mb-4 text-center">Edit Item</h2>
+            <form onsubmit="saveItem(event, ${itemId}, '${category}')" class="flex flex-col items-center">
+                <span class="self-start font-medium text-blue-500 w-full mb-1">Item Name:</span>
+                <input type="text" id="editName${itemId}" value="${name}"
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 font-medium" />
+
+                ${qtyField}
+
+                <div class="flex items-center gap-3 mb-4 w-full">
+                    <span class="text-left font-medium text-blue-500 mr-2 w-1/3">Item Price:</span>
+                    <div class="flex items-center w-2/3">
+                        <span class="px-3 py-2 bg-gray-100 border border-r-0 border-gray-300 rounded-l-md text-gray-700">Php</span>
+                        <input type="number" id="editPrice${itemId}" value="${price}" step="0.01"
+                            class="w-full border border-gray-300 rounded-r-md px-3 py-2 focus:ring-2 focus:ring-blue-500 font-medium" />
+                    </div>
+                </div>
+
+                ${forSaleSwitch}
+
+                <div class="flex justify-center gap-3">
+                    <button type="submit" 
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
+                        <i class="fas fa-save mr-1"></i>Save
+                    </button>
+                    <button type="button" onclick="cancelEdit(this)"
+                        class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md shadow text-sm font-medium">
+                        <i class="fas fa-times mr-1"></i>Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+
             document.body.appendChild(modal);
         }
 
 
         // Change quantity buttons
-        function changeQty(id, delta) {
-            const qtyInput = document.getElementById(`editQty${id}`);
-            if (!qtyInput.disabled) {
-                let newValue = parseInt(qtyInput.value || 0) + delta;
-                qtyInput.value = Math.max(newValue, 0);
-            }
+        function changeQtyToAdd(id, amount) {
+            const addField = document.getElementById(`qtyToAdd${id}`);
+            let newValue = parseInt(addField.value || 0) + amount;
+
+            if (newValue < 0) newValue = 0;
+            addField.value = newValue;
+
+            updateTotalQty(id);
         }
+
+        function updateTotalQty(id) {
+            const current = parseInt(document.getElementById(`currentQty${id}`).innerText);
+            const toAdd = parseInt(document.getElementById(`qtyToAdd${id}`).value || 0);
+            const total = current + toAdd;
+
+            document.getElementById(`totalQty${id}`).innerText = total;
+
+            // update hidden final quantity sent to backend
+            document.getElementById(`editQty${id}`).value = total;
+        }
+
 
         // Cancel edit (close modal)
         function cancelEdit(button) {
@@ -375,7 +412,11 @@ $db = $database->getConnect();
 
             const newName = document.getElementById(`editName${itemId}`).value;
             const newPrice = document.getElementById(`editPrice${itemId}`).value;
-            const newQty = (category === "gallons") ? null : document.getElementById(`editQty${itemId}`).value;
+
+            // This is now the *final quantity* after calculation (current + toAdd)
+            const newQty = (category === "gallons") ?
+                null :
+                document.getElementById(`editQty${itemId}`).value;
 
             // Get for sale toggle
             const forSale = document.getElementById(`editForSale${itemId}`).checked ? 1 : 0;
@@ -405,18 +446,22 @@ $db = $database->getConnect();
 
                         // Update card DOM
                         const card = document.querySelector(`[onclick="editItem(${itemId})"]`).closest('.inventory-card');
+
+                        // Update name
                         card.querySelector('h2').innerText = newName;
 
+                        // Update quantity (only for non-gallons)
                         if (newQty !== null) {
                             card.querySelector('p:nth-child(3) span').innerText = newQty;
                         }
 
+                        // Update price
                         card.querySelector('p:nth-child(4) span').innerText = `₱${parseFloat(newPrice).toFixed(2)}`;
 
-                        // Update for_sale attribute on card
+                        // Update for sale attribute on card
                         card.setAttribute('data-for-sale', forSale);
 
-                        // ❌ REMOVE any opacity-related class (no graying-out)
+                        // Remove grayed-out effect if any
                         card.classList.remove('opacity-50');
                     });
                 })

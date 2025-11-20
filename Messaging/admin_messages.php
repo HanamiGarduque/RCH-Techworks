@@ -122,8 +122,8 @@ $db = $database->getConnect();
     </div>
 
     <script>
-        const currentUserId = 3;
-        const currentUserType = 'rider';
+        const currentUserId = 1;
+        const currentUserType = 'admin';
         let activeReceiverId = null;
         let activeReceiverName = '';
         let allContacts = [];

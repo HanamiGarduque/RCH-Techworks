@@ -3,7 +3,7 @@ require_once '../Database/db_connection.php';
 session_start();
 
 // Get current user from session (fallback to hardcoded for testing)
-$current_user = $_SESSION['user_id'] ?? 3;
+$current_user = $_SESSION['user_id'] ?? 4;
 
 $contact_id = isset($_POST['contact_id']) ? intval($_POST['contact_id']) : null;
 
