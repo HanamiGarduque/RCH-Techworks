@@ -41,7 +41,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </a>
 
             <!-- Cart -->
-            <a href="../Orders/cart.php"
+            <a href="../Order/cart.php"
                title="Cart"
                class="w-10 h-10 flex items-center justify-center rounded-full transition
                <?= $currentPage === 'cart.php' ? 'bg-blue-100' : 'hover:bg-blue-100' ?>">
