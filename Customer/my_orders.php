@@ -55,6 +55,9 @@ $currentPage = 'my_orders.php';
             min-height: 100vh;
         }
     </style>
+
+
+
 </head>
 
 <body class="bg-gray-100">
@@ -172,6 +175,8 @@ $currentPage = 'my_orders.php';
                     <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="topay">To Pay</button>
                     <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="toreceive">To Recieve</button>
                     <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="completed">Completed</button>
+                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="cancelled">Cancelled</button>
+
                 </div>
 
 
@@ -215,7 +220,7 @@ $currentPage = 'my_orders.php';
                             <button class="cancel-order bg-red-500 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-red-600">
                                 Cancel Order
                             </button>
-                            <a href="order_details.php?order_id=ORD-110325001"
+                            <a href="order_details.php?order=ORD-110325001&status=pending"
                                 class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
                                 View Details
                             </a>
@@ -225,14 +230,14 @@ $currentPage = 'my_orders.php';
 
 
                 <!-- --------------------------------------------- -->
-                <!-- TO RECEIVE TAB (In Delivery Orders) -->
+                <!-- TO RECEIVE TAB (On Delivery Orders) -->
                 <!-- --------------------------------------------- -->
                 <div id="toreceive" class="tab-content space-y-6 hidden">
 
                     <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
                         <div class="flex justify-between items-center mb-3">
                             <span class="font-semibold text-gray-800">ORD-110325001</span>
-                            <span class="text-blue-500 font-medium">In Delivery</span>
+                            <span class="text-blue-500 font-medium">On Delivery</span>
                         </div>
                         <hr class="mb-3">
 
@@ -257,12 +262,10 @@ $currentPage = 'my_orders.php';
                         </div>
 
                         <div class="flex justify-end space-x-3">
-                            <button class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200">
-                                Track Order
-                            </button>
-                            <button class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white transition-colors duration-200">
+                            <a href="order_details.php?order=ORD-110325001&status=on_delivery"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
                                 View Details
-                            </button>
+                            </a>
                         </div>
                     </div>
 
@@ -270,7 +273,7 @@ $currentPage = 'my_orders.php';
                     <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
                         <div class="flex justify-between items-center mb-3">
                             <span class="font-semibold text-gray-800">ORD-110325002</span>
-                            <span class="text-blue-500 font-medium">In Delivery</span>
+                            <span class="text-blue-500 font-medium">On Delivery</span>
                         </div>
                         <hr class="mb-3">
 
@@ -295,12 +298,10 @@ $currentPage = 'my_orders.php';
                         </div>
 
                         <div class="flex justify-end space-x-3">
-                            <button class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200">
-                                Track Order
-                            </button>
-                            <button class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white transition-colors duration-200">
+                            <a href="order_details.php?order=ORD-110325002&status=on_delivery"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
                                 View Details
-                            </button>
+                            </a>
                         </div>
                     </div>
 
@@ -346,9 +347,10 @@ $currentPage = 'my_orders.php';
                                 <i class="bi bi-arrow-repeat text-white"></i>
                                 <span>Reorder</span>
                             </button>
-                            <button class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white transition-colors duration-200">
-                                View Receipt
-                            </button>
+                            <a href="order_details.php?order=ORD-110325001&status=completed"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
                         </div>
                     </div>
 
@@ -385,10 +387,77 @@ $currentPage = 'my_orders.php';
                                 <i class="bi bi-arrow-repeat text-white"></i>
                                 <span>Reorder</span>
                             </button>
-                            <button class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white transition-colors duration-200">
-                                View Receipt
-                            </button>
+                            <a href="order_details.php?order=ORD-110325002&status=completed"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
                         </div>
+                    </div>
+
+                </div>
+
+                <!-- --------------------------------------------- -->
+                <!-- CANCELED TAB (Delivered Orders) -->
+                <!-- --------------------------------------------- -->
+                <div id="cancelled" class="tab-content space-y-6 hidden">
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325001</span>
+                            <span class="text-red-600 font-medium">Cancelled</span>
+                        </div>
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">20L Slim Container Gallon</div>
+                            <div class="col-span-1 text-center">2</div>
+
+                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
+                            <div class="col-span-1 text-center">10</div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325002</span>
+                            <span class="text-red-600 font-medium">Cancelled</span>
+                        </div>
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">Refill - Slim Gallon 20L</div>
+                            <div class="col-span-1 text-center">3</div>
+
+                            <div class="col-span-2">Refill - Round Gallon 18.9L</div>
+                            <div class="col-span-1 text-center">2</div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 5 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱150.00</span>
+                        </div>
+
                     </div>
 
                 </div>
