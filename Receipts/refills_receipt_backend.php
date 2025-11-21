@@ -16,13 +16,12 @@ try {
 
     // ---- FETCH ORDER + USER ----
     $sqlOrder = "
-        SELECT r.*, u.name, u.phone_number, u.address
-        FROM water_refills r
-        JOIN users u ON r.user_id = u.user_id
-        WHERE r.refill_id = :order_id AND r.order_status = 'delivered'
-        LIMIT 1
-    ";
-
+    SELECT r.*, u.name, u.phone_number, u.address
+    FROM water_refills r
+    JOIN users u ON r.user_id = u.user_id
+    WHERE r.refill_id = :order_id AND r.order_status = 'delivered'
+    LIMIT 1
+";
     $stmt = $db->prepare($sqlOrder);
     $stmt->execute(['order_id' => $order_id]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -34,21 +33,21 @@ try {
 
     // ---- FETCH ORDER ITEMS ----
     $sqlItems = "
-        SELECT w.*, i.item_name
+        SELECT 
+           w.*, i.item_name
         FROM water_refill_items w
-        JOIN inventory i ON w.item_id = i.item_id
-        WHERE w.refill_id = :order_id
+        JOIN inventory i ON w.product_id = i.item_id
+        WHERE w.refill_id = ?
     ";
 
     $stmt2 = $db->prepare($sqlItems);
-    $stmt2->execute(['order_id' => $order_id]);
+    $stmt2->execute([$order_id]); // positional array
     $items = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
         "order" => $order,
         "items" => $items
     ]);
-
 } catch (Exception $e) {
     echo json_encode(["error" => $e->getMessage()]);
 }

@@ -132,7 +132,7 @@
                     const mm = String(today.getMonth() + 1).padStart(2, '0'); // month with leading 0
                     const dd = String(today.getDate()).padStart(2, '0'); // day with leading 0
 
-                    const receiptNo = `RCPT-${yy}${mm}${dd}${order.order_id}`;
+                    const receiptNo = `RCPT-${yy}${mm}${dd}${order.refill_id}`;
                     document.getElementById("receiptNo").innerText = receiptNo;
                     document.getElementById("orderNo").innerText = order.order_number;
                     document.getElementById("custName").innerText = order.name;
