@@ -76,7 +76,7 @@ $pending_orders = [
         .header {
             background-color: #2196F3;
             color: white;
-            padding: 40px 20px 40px;
+            padding: 10px 20px 40px;
             border-radius: 0 0 40px 40px;
             position: sticky;
             top: 0;
@@ -93,7 +93,7 @@ $pending_orders = [
 
         .card {
             width: 150px;
-            height: 70px;
+            height: 80px;
             padding: 15px 10px;
             background-color: rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(10px);
