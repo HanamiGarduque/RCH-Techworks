@@ -308,8 +308,6 @@ $currentPage = 'my_orders.php';
                 </div>
 
 
-
-
                 <!-- --------------------------------------------- -->
                 <!-- COMPLETED TAB (Delivered Orders) -->
                 <!-- --------------------------------------------- -->
@@ -343,10 +341,11 @@ $currentPage = 'my_orders.php';
                         </div>
 
                         <div class="flex justify-end space-x-3">
-                            <button class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
+                            <a href="reorder.php?order=ORD-110325001"
+                                class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
                                 <i class="bi bi-arrow-repeat text-white"></i>
                                 <span>Reorder</span>
-                            </button>
+                            </a>
                             <a href="order_details.php?order=ORD-110325001&status=completed"
                                 class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
                                 View Details
@@ -383,10 +382,11 @@ $currentPage = 'my_orders.php';
                         </div>
 
                         <div class="flex justify-end space-x-3">
-                            <button class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
+                            <a href="reorder.php?order=ORD-110325001"
+                                class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
                                 <i class="bi bi-arrow-repeat text-white"></i>
                                 <span>Reorder</span>
-                            </button>
+                            </a>
                             <a href="order_details.php?order=ORD-110325002&status=completed"
                                 class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
                                 View Details
@@ -427,9 +427,14 @@ $currentPage = 'my_orders.php';
                             <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
                             <span class="text-lg font-bold text-gray-800">₱677.20</span>
                         </div>
-
+                        <div class="flex justify-end space-x-3">
+                            </a>
+                            <a href="order_details.php?order=ORD-110325002&status=cancelled"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
+                        </div>
                     </div>
-
 
                     <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
                         <div class="flex justify-between items-center mb-3">
@@ -456,6 +461,14 @@ $currentPage = 'my_orders.php';
                         <div class="flex justify-end items-center mb-4">
                             <span class="text-sm text-gray-600 mr-2">Total 5 Item:</span>
                             <span class="text-lg font-bold text-gray-800">₱150.00</span>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            </a>
+                            <a href="order_details.php?order=ORD-110325002&status=cancelled"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
                         </div>
 
                     </div>

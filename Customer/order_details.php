@@ -17,7 +17,7 @@ switch ($rawStatus) {
         $orderStatus = "Delivered"; // Completed
         break;
     default:
-        $orderStatus = "Pending";
+        $orderStatus = "Cancelled"; // Cancelled
         break;
 }
 
@@ -190,6 +190,30 @@ if ($orderStatus === 'Pending') {
 
                         <h1 class="text-2xl text-gray-700 font-semibold">Order Details</h1>
                     </div>
+
+                    <!-- REAL-TIME RIDER LOCATION + RIDER INFO (MOVE THIS TO TOP) -->
+                    <div class="border rounded-xl p-5 mb-6">
+
+                        <div class="flex items-center gap-2 text-blue-600 font-semibold mb-3">
+                            <i class="fas fa-location-arrow"></i> Real-Time Rider Location
+                        </div>
+
+                        <!-- MAP CONTAINER ONLY (NO IMAGE) -->
+                        <div class="w-full h-[300px] bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 mb-4">
+                            <span>Map will be displayed here</span>
+                        </div>
+
+                        <div class="border rounded-xl p-4 bg-gray-50">
+                            <div class="font-semibold text-gray-700 mb-1">Rider Information</div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="font-medium">Ramon Fontelera</span>
+                                <span><i class="fa fa-phone mr-1"></i>09123456789</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+
 
 
                     <!-- DELIVERY INFORMATION -->
