@@ -1,7 +1,11 @@
 <?php
-require_once '../Database/db_connection.php';
 
 header('Content-Type: application/json');
+error_reporting(0); // hide warnings
+
+
+require_once '../Database/db_connection.php';
+
 
 $response = ['success' => false, 'message' => 'Unknown error'];
 

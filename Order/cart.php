@@ -67,7 +67,6 @@
                         <div class="space-y-4 overflow-auto pb-28 flex-1">
 
                             <?php
-                            // TODO: replace with session user id. This is example placeholder.
                             $userId = 4; // replace with session user_id
                             require_once '../Database/db_connection.php';
 
@@ -114,7 +113,10 @@
                                         <input type="checkbox"
                                             class="w-5 h-5 accent-blue-600 cursor-pointer selectItem"
                                             data-id="<?= htmlspecialchars($item['cart_id']) ?>"
+                                            data-product-id="<?= htmlspecialchars($item['product_id']) ?>"
                                             data-subtotal="<?= htmlspecialchars($item['subtotal']) ?>">
+
+
                                     </div>
 
                                     <!-- PRODUCT IMAGE + NAME -->
@@ -361,7 +363,14 @@
                         province = lastParts.join(" "); // remaining words
                     }
 
-                    state.userAddress = { house, street, barangay, city, province, postal };
+                    state.userAddress = {
+                        house,
+                        street,
+                        barangay,
+                        city,
+                        province,
+                        postal
+                    };
 
                     // Update UI
                     const dn = $('#deliverName');
@@ -406,7 +415,12 @@
             });
             const tax = subtotal * TAX_RATE;
             const total = subtotal + tax + DELIVERY_FEE;
-            return { subtotal, tax, delivery: DELIVERY_FEE, total };
+            return {
+                subtotal,
+                tax,
+                delivery: DELIVERY_FEE,
+                total
+            };
         }
 
         /* ---------------------------
@@ -434,7 +448,7 @@
         }
 
         // Select All functionality
-        $('#selectAllCheckbox') && $('#selectAllCheckbox').addEventListener("change", function () {
+        $('#selectAllCheckbox') && $('#selectAllCheckbox').addEventListener("change", function() {
             const checkboxes = document.querySelectorAll(".selectItem");
             checkboxes.forEach(cb => cb.checked = this.checked);
             updateCheckoutSummary();
@@ -442,7 +456,7 @@
 
         // Individual checkbox change (attach to existing checkboxes)
         $$(".selectItem").forEach(checkbox => {
-            checkbox.addEventListener("change", function () {
+            checkbox.addEventListener("change", function() {
                 const allCheckboxes = document.querySelectorAll(".selectItem");
                 const checkedBoxes = document.querySelectorAll(".selectItem:checked");
                 $('#selectAllCheckbox') && ($('#selectAllCheckbox').checked = allCheckboxes.length === checkedBoxes.length);
@@ -455,7 +469,7 @@
            --------------------------- */
         const deleteSelectedBtn = $('#deleteSelectedBtn');
         if (deleteSelectedBtn) {
-            deleteSelectedBtn.addEventListener("click", function () {
+            deleteSelectedBtn.addEventListener("click", function() {
                 const selectedCheckboxes = document.querySelectorAll(".selectItem:checked");
 
                 if (selectedCheckboxes.length === 0) {
@@ -487,7 +501,9 @@
 
                             const promise = fetch("remove_cart.php", {
                                 method: "POST",
-                                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                headers: {
+                                    "Content-Type": "application/x-www-form-urlencoded"
+                                },
                                 body: "cart_id=" + cartId
                             }).then(res => res.json()).then(data => {
                                 if (data.success) {
@@ -523,7 +539,7 @@
            Individual Delete Button
            --------------------------- */
         $$(".deleteItemBtn").forEach(btn => {
-            btn.addEventListener("click", function () {
+            btn.addEventListener("click", function() {
                 let cartId = this.dataset.id;
                 let itemDiv = document.getElementById("cart-item-" + cartId);
 
@@ -538,10 +554,12 @@
                 }).then(result => {
                     if (result.isConfirmed) {
                         fetch("remove_cart.php", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                            body: "cart_id=" + cartId
-                        })
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/x-www-form-urlencoded"
+                                },
+                                body: "cart_id=" + cartId
+                            })
                             .then(res => res.json())
                             .then(data => {
                                 if (data.success) {
@@ -573,7 +591,7 @@
            - when quantity changes, update the row subtotal and checkbox data-subtotal
            --------------------------- */
         $$(".update-cart-form").forEach(form => {
-            form.addEventListener("submit", function (e) {
+            form.addEventListener("submit", function(e) {
                 e.preventDefault();
 
                 const formData = new FormData(this);
@@ -584,38 +602,38 @@
                 }
 
                 fetch("update_cart.php", {
-                    method: "POST",
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (!data.success) return;
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.success) return;
 
-                    // Update quantity input
-                    this.querySelector("input[name='quantity']").value = data.quantity;
+                        // Update quantity input
+                        this.querySelector("input[name='quantity']").value = data.quantity;
 
-                    // Update subtotal text
-                    const itemRow = this.closest("[id^='cart-item-']");
-                    const subtotalEl = itemRow.querySelector(".item-subtotal");
-                    subtotalEl.textContent = "₱" + parseFloat(data.subtotal).toFixed(2);
+                        // Update subtotal text
+                        const itemRow = this.closest("[id^='cart-item-']");
+                        const subtotalEl = itemRow.querySelector(".item-subtotal");
+                        subtotalEl.textContent = "₱" + parseFloat(data.subtotal).toFixed(2);
 
-                    // Update data attributes
-                    itemRow.dataset.subtotal = data.subtotal;
-                    const checkbox = itemRow.querySelector(".selectItem");
-                    if (checkbox) checkbox.dataset.subtotal = data.subtotal;
+                        // Update data attributes
+                        itemRow.dataset.subtotal = data.subtotal;
+                        const checkbox = itemRow.querySelector(".selectItem");
+                        if (checkbox) checkbox.dataset.subtotal = data.subtotal;
 
-                    // Update summary if this item is selected
-                    if (checkbox && checkbox.checked) {
-                        updateCheckoutSummary();
-                    }
-                });
+                        // Update summary if this item is selected
+                        if (checkbox && checkbox.checked) {
+                            updateCheckoutSummary();
+                        }
+                    });
             });
         });
 
         /* ---------------------------
            Check Out Button: Collect selected items, populate checkout view and compute totals (Option A)
            --------------------------- */
-        $('#checkOutBtn') && $('#checkOutBtn').addEventListener("click", function () {
+        $('#checkOutBtn') && $('#checkOutBtn').addEventListener("click", function() {
             const selectedCheckboxes = document.querySelectorAll(".selectItem:checked");
 
             if (selectedCheckboxes.length === 0) {
@@ -676,7 +694,13 @@
             $('#checkoutSubtotal') && ($('#checkoutSubtotal').textContent = formatPHP(subtotal));
 
             // Save selection to state (useful for placing order)
-            state.cartSelection = selectedItems;
+            state.cartSelection = Array.from(
+                document.querySelectorAll('.selectItem:checked')
+            ).map(cb => ({
+                id: cb.dataset.id,
+                productId: cb.dataset.productId, // <-- you were missing this
+                quantity: cb.closest(".w-full").querySelector("input[name='quantity']").value
+            }));
 
             // Switch views
             $('#browseView') && $('#browseView').classList.add("hidden");
@@ -684,13 +708,13 @@
         });
 
         // Back to Cart Button
-        $('#backToCartBtn') && $('#backToCartBtn').addEventListener("click", function () {
+        $('#backToCartBtn') && $('#backToCartBtn').addEventListener("click", function() {
             $('#checkoutView') && $('#checkoutView').classList.add("hidden");
             $('#browseView') && $('#browseView').classList.remove("hidden");
         });
 
         // Cancel Order (just return to browse)
-        $('#cancelOrderBtn') && $('#cancelOrderBtn').addEventListener("click", function () {
+        $('#cancelOrderBtn') && $('#cancelOrderBtn').addEventListener("click", function() {
             $('#checkoutView') && $('#checkoutView').classList.add("hidden");
             $('#browseView') && $('#browseView').classList.remove("hidden");
         });
@@ -700,7 +724,7 @@
            - This makes a POST to ../Order/order_backend.php with a payload.
            - Ensure your backend expects the structure used here or adjust accordingly.
            --------------------------- */
-        $('#placeOrderBtn') && $('#placeOrderBtn').addEventListener("click", async function () {
+        $('#placeOrderBtn') && $('#placeOrderBtn').addEventListener("click", async function() {
             if (!state.cartSelection || state.cartSelection.length === 0) {
                 return Swal.fire('Error', 'No items to place order.', 'error');
             }
@@ -708,8 +732,13 @@
             // Prepare cart payload
             const cartPayload = state.cartSelection.map(item => ({
                 cart_id: Number(item.id),
-                quantity: Number(item.quantity)
+                product_id: Number(item.productId),
+                quantity: Number(item.quantity),
+                unit_price: Number(item.price) || 0, // ADD THIS
+                total_price: Number(item.price) * Number(item.quantity) || 0
             }));
+
+
 
             const subtotal = Number($('#coSubtotal').textContent.replace('₱', '')) || 0;
             const tax = Number($('#coTax').textContent.replace('₱', '')) || 0;
@@ -742,7 +771,9 @@
 
                 const res = await fetch('../Order/order_backend.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify(payload)
                 });
 
@@ -751,12 +782,30 @@
                 Swal.close();
 
                 if (result.success) {
+                    // Remove items from cart table
+                    state.cartSelection.forEach(item => {
+                        fetch('remove_cart.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: `cart_id=${item.id}`
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    const itemDiv = document.getElementById("cart-item-" + item.id);
+                                    if (itemDiv) itemDiv.remove();
+                                }
+                            });
+                    });
+
                     Swal.fire({
                         title: 'Order Placed!',
                         text: 'Thank you for your order! Please have your payment ready upon delivery.',
                         icon: 'success'
                     }).then(() => {
-                        // Reset UI
+                        // Reset checkout view totals
                         $('#checkoutView') && $('#checkoutView').classList.add("hidden");
                         $('#browseView') && $('#browseView').classList.remove("hidden");
                         $('#checkoutItemsList') && ($('#checkoutItemsList').innerHTML = '');
@@ -764,9 +813,11 @@
                         $('#coTax') && ($('#coTax').textContent = '₱0.00');
                         $('#coDelivery') && ($('#coDelivery').textContent = formatPHP(DELIVERY_FEE));
                         $('#checkoutTotalDisplay') && ($('#checkoutTotalDisplay').textContent = '₱0.00');
+                        $('#selectAllCheckbox') && ($('#selectAllCheckbox').checked = false);
 
-                        // Optionally reload page or remove placed items from DOM
-                        // location.reload();
+                        // Clear selection
+                        state.cartSelection = [];
+                        updateCheckoutSummary();
                     });
                 } else {
                     Swal.fire('Error', result.message || 'Failed to place order', 'error');
@@ -804,7 +855,14 @@
             }
 
             // Update local state and UI immediately
-            state.userAddress = { house, street, barangay, city, province, postal };
+            state.userAddress = {
+                house,
+                street,
+                barangay,
+                city,
+                province,
+                postal
+            };
             const full = `${house}, ${street}, ${barangay}, ${city}, ${province} ${postal}`;
             $('#deliverAddress') && ($('#deliverAddress').textContent = full);
 
@@ -816,7 +874,9 @@
             try {
                 const res = await fetch('../Order/update_address.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({
                         user_id: state.userId,
                         address: full,
@@ -828,12 +888,22 @@
                     // it's okay if backend isn't present—just inform
                     console.warn('Address save response:', json);
                 } else {
-                    Swal.fire({ icon: 'success', title: 'Address saved', timer: 1200, showConfirmButton: false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Address saved',
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
                 }
             } catch (err) {
                 // backend not present or failed: ignore but inform user it's saved locally
                 console.warn('Address save failed (server may be missing).', err);
-                Swal.fire({ icon: 'success', title: 'Address updated locally', timer: 1200, showConfirmButton: false });
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Address updated locally',
+                    timer: 1200,
+                    showConfirmButton: false
+                });
             }
         });
 
@@ -841,7 +911,6 @@
            Initialize small summary on load
            --------------------------- */
         updateCheckoutSummary();
-
     </script>
 
 </body>
