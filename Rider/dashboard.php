@@ -75,50 +75,66 @@ $pending_orders = [
 
         .header {
             background-color: #2196F3;
-            color: white;
-            padding: 10px 20px 40px;
-            border-radius: 0 0 40px 40px;
+            color: white; 
+            padding: 10px 20px 20px;
+            border-radius: 0 0 10px 10px;
             position: sticky;
             top: 0;
             z-index: 1000;
-            overflow: hidden;
         }
 
-        .stats {
+        .rider-name {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .current-datetime {
+            font-size: 14px;
+            font-weight: 400;
+            margin-top: 5px;
+        }
+
+        .header-cards {
             display: flex;
-            justify-content: space-around;
-            margin-top: 40px;
-            gap: 20px;
+            gap: 15px;
+            margin-top: 15px;
         }
 
-        .card {
-            width: 150px;
+        .dashboard-card {
+            flex: 1;
             height: 80px;
             padding: 15px 10px;
-            background-color: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
+            background-color: #FFFFFF4D;
+            border-radius: 10px;
             text-align: center;
             color: white;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
         }
 
-        .card h3 {
+        .dashboard-card:hover {
+            transform: scale(1.05);
+        }
+
+        .dashboard-card h3 {
             margin: 0;
             font-size: 14px;
         }
 
-        .card p {
-            margin: 5px 0 0;
+        .dashboard-card p {
+            margin: 0;
             font-size: 18px;
             font-weight: 600;
+            display: none;
         }
 
         .deliveries {
-            margin: 30px 20px;
+            margin: 20px;
         }
 
         .deliveries h3 {
@@ -198,17 +214,6 @@ $pending_orders = [
             background-color: rgb(246, 249, 252);
             color: gray;
         }
-
-        .rider-name {
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .current-datetime {
-            font-size: 14px;
-            font-weight: 400;
-            margin-top: 5px;
-        }
     </style>
 </head>
 
@@ -225,16 +230,23 @@ $pending_orders = [
                 <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
             </button>
         </div>
-        <div class="stats">
-            <div class="card" onclick="scrollToTop()">Today's Delivery<p><?= count($active_orders) ?></p>
+
+        <!-- Cards inside header -->
+        <div class="header-cards">
+            <div class="dashboard-card" onclick="scrollToTop()">Today's Delivery
+                <p></p>
             </div>
-            <div class="card">Completed<p>0</p>
+            <div class="dashboard-card" onclick="scrollToPending()">Pending Delivery
+                <p></p>
+            </div>
+            <div class="dashboard-card">Completed
+                <p></p>
             </div>
         </div>
     </div>
 
     <!-- ACTIVE DELIVERIES -->
-    <div class="deliveries">
+    <div class="deliveries" id="active-deliveries">
         <h3>Active Deliveries</h3>
         <?php foreach ($active_orders as $row): ?>
             <div class="delivery-card">
@@ -254,7 +266,7 @@ $pending_orders = [
     </div>
 
     <!-- PENDING DELIVERIES -->
-    <div class="deliveries">
+    <div class="deliveries" id="pending-deliveries">
         <h3>Pending Deliveries</h3>
         <?php foreach ($pending_orders as $row): ?>
             <div class="delivery-card">
@@ -285,6 +297,14 @@ $pending_orders = [
             });
         }
 
+        function scrollToPending() {
+            const yOffset = -180; // adjust this value to move scroll position up/down
+const element = document.getElementById('pending-deliveries');
+const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+window.scrollTo({ top: y, behavior: 'smooth' });
+
+        }
+
         function updateDateTime() {
             const now = new Date();
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -293,8 +313,8 @@ $pending_orders = [
             document.getElementById('datetime').innerText = `${month}/${day}/${year}`;
         }
 
-        setInterval(updateDateTime, 60000); // update every minute
-        updateDateTime(); // initial call
+        setInterval(updateDateTime, 60000);
+        updateDateTime();
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
