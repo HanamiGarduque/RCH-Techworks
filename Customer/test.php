@@ -1,165 +1,493 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Orders - RCH Water</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RCH Water - <?= htmlspecialchars($pageTitle) ?></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            /* Add padding to the body to account for the fixed, collapsed sidebar (w-20) */
+            padding-left: 5rem;
+            /* 5rem = 80px (w-20 in tailwind) */
+            transition: padding-left 0.5s ease-in-out;
+        }
+
+        /* Adjust padding when the sidebar is hovered/expanded (w-64) */
+        .group:hover+.content-area {
+            padding-left: 16rem;
+            /* 16rem = 256px (w-64 in tailwind) */
+        }
+
+        /* Custom style for the active tab (To Pay) */
+        .tab-button.active {
+            background-color: #2563eb;
+            /* Blue 600 */
+            color: white;
+            border-radius: 0.375rem;
+        }
+
+        /* Ensures the sidebar is at the beginning of the body and main content pushes right */
+        .content-area {
+            min-height: 100vh;
+        }
+    </style>
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-gray-100 overflow-hidden">
+    <div class="content-area flex h-screen">
+        <main class="bg-white rounded-xl shadow-lg overflow-y-auto">
+            <!-- Sidebar -->
+            <script src="includes/sidebar.js"></script>
 
-  <div class="flex">
 
-    <!-- SIDEBAR -->
-    <div class="w-64 bg-gradient-to-b from-blue-500 to-blue-600 text-white min-h-screen p-6 rounded-r-2xl shadow-lg">
-      <h1 class="text-2xl font-semibold mb-10 flex items-center gap-2">
-        <i class="bi bi-droplet"></i> RCH Water
-      </h1>
+            <div class="flex flex-col h-screen p-6">
+              <?php
+                $pageTitle = "Browse Products";
+                $pageSubtitle = "Shop for gallon containers and accessories!";
+                include 'includes/header.php';
+                ?>
 
-      <nav class="space-y-2">
-        <a href="#" class="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-700 transition">
-          <i class="bi bi-droplet-half"></i> Order Water Refill
-        </a>
-        <a href="#" class="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-700 transition">
-          <i class="bi bi-cart"></i> Browse Products
-        </a>
-        <a href="#" class="flex items-center gap-2 p-3 rounded-lg bg-blue-800 rounded-lg">
-          <i class="bi bi-box-seam"></i> My Orders
-        </a>
-        <a href="#" class="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-700 transition">
-          <i class="bi bi-droplet"></i> My Gallons
-        </a>
-        <a href="#" class="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-700 transition">
-          <i class="bi bi-receipt"></i> Receipts
-        </a>
-      </nav>
+                <div class="flex space-x-2 p-1 bg-gray-100 rounded-lg w-full mb-6">
+                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="topay">To Pay</button>
+                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="toreceive">To Recieve</button>
+                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="completed">Completed</button>
+                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="cancelled">Cancelled</button>
 
-      <button class="mt-16 w-full bg-blue-700 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-800 transition">
-        <i class="bi bi-box-arrow-left text-lg"></i> Logout
-      </button>
+                </div>
+
+
+                <!-- --------------------------------------------- -->
+                <!-- TO PAY TAB (Pending Orders) -->
+                <!-- --------------------------------------------- -->
+                <div id="topay" class="tab-content space-y-6 overflow-x-auto">
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325001</span>
+                            <span class="text-red-500 font-medium">Pending</span>
+                        </div>
+
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <!-- PRODUCT LIST -->
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">20L Slim Container Gallon</div>
+                            <div class="text-center">2</div>
+                            <div></div>
+
+                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
+                            <div class="text-center">10</div>
+                            <div></div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <button class="cancel-order bg-red-500 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-red-600">
+                                Cancel Order
+                            </button>
+                            <a href="order_details.php?order=ORD-110325001&status=pending"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <!-- --------------------------------------------- -->
+                <!-- TO RECEIVE TAB (On Delivery Orders) -->
+                <!-- --------------------------------------------- -->
+                <div id="toreceive" class="tab-content space-y-6 hidden overflow-x-auto">
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325001</span>
+                            <span class="text-blue-500 font-medium">On Delivery</span>
+                        </div>
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">20L Slim Container Gallon</div>
+                            <div class="col-span-1 text-center">2</div>
+
+                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
+                            <div class="col-span-1 text-center">10</div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <a href="order_details.php?order=ORD-110325001&status=on_delivery"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325002</span>
+                            <span class="text-blue-500 font-medium">On Delivery</span>
+                        </div>
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">Refill - Slim Gallon 20L</div>
+                            <div class="col-span-1 text-center">3</div>
+
+                            <div class="col-span-2">Refill - Round Gallon 18.9L</div>
+                            <div class="col-span-1 text-center">2</div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 5 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱150.00</span>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <a href="order_details.php?order=ORD-110325002&status=on_delivery"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+
+                <!-- --------------------------------------------- -->
+                <!-- COMPLETED TAB (Delivered Orders) -->
+                <!-- --------------------------------------------- -->
+                <div id="completed" class="tab-content space-y-6 hidden overflow-x-auto">
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325001</span>
+                            <span class="text-green-600 font-medium">Delivered</span>
+                        </div>
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">20L Slim Container Gallon</div>
+                            <div class="col-span-1 text-center">2</div>
+
+                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
+                            <div class="col-span-1 text-center">10</div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <button class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
+                                <i class="bi bi-arrow-repeat text-white"></i>
+                                <span>Reorder</span>
+                            </button>
+                            <a href="order_details.php?order=ORD-110325001&status=completed"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325002</span>
+                            <span class="text-green-600 font-medium">Delivered</span>
+                        </div>
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">Refill - Slim Gallon 20L</div>
+                            <div class="col-span-1 text-center">3</div>
+
+                            <div class="col-span-2">Refill - Round Gallon 18.9L</div>
+                            <div class="col-span-1 text-center">2</div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 5 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱150.00</span>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <button class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
+                                <i class="bi bi-arrow-repeat text-white"></i>
+                                <span>Reorder</span>
+                            </button>
+                            <a href="order_details.php?order=ORD-110325002&status=completed"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- --------------------------------------------- -->
+                <!-- CANCELED TAB (Delivered Orders) -->
+                <!-- --------------------------------------------- -->
+                <div id="cancelled" class="tab-content space-y-6 hidden overflow-x-auto">
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325001</span>
+                            <span class="text-red-600 font-medium">Cancelled</span>
+                        </div>
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">20L Slim Container Gallon</div>
+                            <div class="col-span-1 text-center">2</div>
+
+                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
+                            <div class="col-span-1 text-center">10</div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">ORD-110325002</span>
+                            <span class="text-red-600 font-medium">Cancelled</span>
+                        </div>
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            <div class="col-span-2">Refill - Slim Gallon 20L</div>
+                            <div class="col-span-1 text-center">3</div>
+
+                            <div class="col-span-2">Refill - Round Gallon 18.9L</div>
+                            <div class="col-span-1 text-center">2</div>
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total 5 Item:</span>
+                            <span class="text-lg font-bold text-gray-800">₱150.00</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </main>
     </div>
 
-    <!-- MAIN CONTENT -->
-    <div class="flex-1 p-10">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
 
-      <!-- TOP BAR -->
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h1 class="text-3xl font-bold text-blue-700">My Orders</h1>
-          <p class="text-gray-500 text-sm">View and track your orders and deliveries in real time.</p>
-        </div>
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTab = button.getAttribute('data-tab');
 
-        <!-- Notifications / Profile -->
-        <div class="flex items-center gap-6">
-          <div class="relative cursor-pointer">
-            <i class="bi bi-bell text-2xl text-blue-700"></i>
-            <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1 rounded-full">3</span>
-          </div>
-          <div class="relative cursor-pointer">
-            <i class="bi bi-chat-left-text text-2xl text-blue-700"></i>
-            <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-1 rounded-full">8</span>
-          </div>
-          <button class="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full border border-blue-300">
-            <i class="bi bi-person-circle text-xl"></i> Profile
-          </button>
-        </div>
-      </div>
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.add('hidden'));
 
-      <!-- ORDER DETAILS CARD -->
-      <div class="bg-white shadow-md rounded-2xl p-8">
+                    button.classList.add('active');
+                    document.getElementById(targetTab).classList.remove('hidden');
+                });
+            });
 
-        <!-- Delivery Info -->
-        <div class="mb-6">
-          <h2 class="font-semibold mb-3 flex items-center gap-2 text-blue-700">
-            <i class="bi bi-geo-alt"></i> Delivery Information
-          </h2>
+            // Set the initial active tab to 'To Pay'
+            const initialTabButton = document.querySelector('[data-tab="topay"]');
+            if (initialTabButton) {
+                initialTabButton.click();
+            }
+        });
 
-          <p class="font-semibold">Christine May Padua</p>
-          <p>116 Purok 1, Tibig, Lipa City, Batangas 4217</p>
-          <p class="text-sm mt-1">09161891555</p>
-        </div>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll(".cancel-order").forEach(button => {
+                button.addEventListener("click", function() {
 
-        <!-- Order Items -->
-        <div class="border rounded-xl p-5 mb-6">
+                    Swal.fire({
+                        title: "Are you sure you want to cancel this order?",
+                        text: "Once cancelled, you won’t be able to restore it.",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#dc2626", // red-600
+                        cancelButtonColor: "#6b7280", // gray-500
+                        confirmButtonText: "Yes, cancel it"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
 
-          <span class="text-red-600 font-semibold text-sm">Pending</span>
+                            // OPTIONAL: Call your backend PHP cancel API here
+                            // fetch('cancel_order.php?id=ORDER_ID')
 
-          <table class="w-full mt-3 text-sm">
-            <thead class="border-b">
-              <tr class="text-left">
-                <th class="py-2">Product</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Total Price</th>
-              </tr>
-            </thead>
+                            Swal.fire({
+                                title: "Cancelled!",
+                                text: "Order cancelled successfully.",
+                                icon: "success",
+                                confirmButtonColor: "#2563eb"
+                            });
+                        }
+                    });
 
-            <tbody>
-              <tr class="border-b">
-                <td class="py-2">20L Slim Container Gallon</td>
-                <td>2</td>
-                <td>₱170.00</td>
-                <td>₱340.00</td>
-              </tr>
-              <tr class="border-b">
-                <td class="py-2">Slim Gallon Faucet - Press</td>
-                <td>10</td>
-                <td>₱25.00</td>
-                <td>₱250.00</td>
-              </tr>
-            </tbody>
-          </table>
+                });
+            });
+        });
+        document.addEventListener("DOMContentLoaded", function() {
+            const topayContainer = document.getElementById("topay");
 
-          <div class="mt-4 space-y-1 text-sm">
-            <p class="flex justify-between"><span>Subtotal</span><span>₱590.00</span></p>
-            <p class="flex justify-between"><span>Tax (8%)</span><span>₱47.20</span></p>
-            <p class="flex justify-between"><span>Delivery Fee</span><span>₱40.00</span></p>
+            fetch("../Order/pending_deliveries.php")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error(data.error);
+                        return;
+                    }
 
-            <p class="flex justify-between font-bold text-lg mt-3">
-              <span>Total Cost</span>
-              <span class="text-blue-700">₱677.20</span>
-            </p>
-          </div>
-        </div>
+                    topayContainer.innerHTML = ""; // clear existing content
 
-        <!-- Order ID -->
-        <div class="border rounded-xl p-5 mb-6 text-sm">
-          <div class="flex justify-between mb-2">
-            <span class="font-semibold">Order ID</span>
-            <span>ORD-110325001</span>
-          </div>
-          <div class="flex justify-between mb-2">
-            <span>Paid by</span>
-            <span>Cash on Delivery</span>
-          </div>
-          <div class="flex justify-between mb-2">
-            <span>Order Date & Time</span>
-            <span>03-11-2025 | 8:38</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Ship Date & Time</span>
-            <span>05-11-2025 | 11:00</span>
-          </div>
-        </div>
+                    data.forEach(entry => {
+                        const order = entry.order;
+                        const items = entry.items;
 
-        <!-- Track Order Button -->
-        <div class="text-right">
-          <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
-            Track Order
-          </button>
-        </div>
+                        // Calculate total items and total amount
+                        let totalQty = 0;
+                        let totalAmount = 0;
+                        items.forEach(item => {
+                            totalQty += parseInt(item.quantity);
+                            totalAmount += parseFloat(item.quantity) * parseFloat(item.unit_price);
+                        });
 
-      </div>
+                        // Generate HTML for order
+                        let itemsHtml = "";
+                        items.forEach(item => {
+                            itemsHtml += `
+                        <div class="col-span-2">${item.item_name}</div>
+                        <div class="text-center">${item.quantity}</div>
+                        <div></div>
+                    `;
+                        });
 
-    </div>
-  </div>
+                        const orderHtml = `
+                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm mb-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-semibold text-gray-800">${order.order_number}</span>
+                            <span class="text-red-500 font-medium">${order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}</span>
+                        </div>
+
+                        <hr class="mb-3">
+
+                        <!-- COLUMN LABELS -->
+                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
+                            <div class="col-span-2">Product</div>
+                            <div class="text-center">Quantity</div>
+                            <div></div>
+                        </div>
+
+                        <!-- PRODUCT LIST -->
+                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
+                            ${itemsHtml}
+                        </div>
+
+                        <div class="flex justify-end items-center mb-4">
+                            <span class="text-sm text-gray-600 mr-2">Total ${totalQty} Item${totalQty > 1 ? 's' : ''}:</span>
+                            <span class="text-lg font-bold text-gray-800">₱${totalAmount.toFixed(2)}</span>
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <button class="cancel-order bg-red-500 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-red-600">
+                                Cancel Order
+                            </button>
+                            <a href="order_details.php?order=${order.order_number}&status=${order.order_status}"
+                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                `;
+
+                        topayContainer.innerHTML += orderHtml;
+                    });
+                })
+                .catch(err => console.error("Fetch error:", err));
+        });
+    </script>
+
 
 </body>
+
 </html>

@@ -160,6 +160,7 @@
                                                 data-name="' . strtolower($item_name) . '"
                                                 data-price="' . $price . '"
                                                 data-item-id="' . $item_id . '"
+                                                
                                                 data-item-name="' . htmlspecialchars($item_name, ENT_QUOTES) . '"
                                                 data-item-price="' . $row['price'] . '"
                                                 data-stock="' . $quantity . '">
@@ -539,15 +540,19 @@
                 // Fill checkout products section
                 const checkoutProducts = $('#checkoutProducts');
                 if (checkoutProducts) {
-                    checkoutProducts.innerHTML = `
-          <div class="flex items-center gap-3 mb-2">
-            <div class="flex-1">
-              <div class="font-semibold">${escapeHtml(itemName)}</div>
-              <div class="text-xs text-gray-500">x ${quantity}</div>
-            </div>
-            <div class="font-semibold">${formatPHP(price * quantity)}</div>
-          </div>
-        `;
+                   checkoutProducts.innerHTML = `
+    <div class="checkout-item flex items-center gap-3 mb-2"
+         data-product-id="${itemId}"
+         data-quantity="${quantity}"
+         data-unit-price="${price}">
+
+                        <div class="flex-1">
+                        <div class="font-semibold">${escapeHtml(itemName)}</div>
+                        <div class="text-xs text-gray-500">x ${quantity}</div>
+                        </div>
+                        <div class="font-semibold">${formatPHP(price * quantity)}</div>
+                    </div>
+                    `;
                 }
 
                 // Costs
@@ -684,55 +689,60 @@
 
             // Place order 
             $('#placeOrderBtn')?.addEventListener('click', async () => {
-                const cart = [{
-                    product_id: Number($$('.qty-input')[0].dataset.id), // example for 1 item
-                    quantity: Number($$('.qty-input')[0].value),
-                    unit_price: Number($$('.inventory-card')[0].dataset.itemPrice)
-                }];
+    // Collect all items currently in checkout
+    const checkoutProducts = Array.from($('#checkoutProducts').children);
+    const cart = checkoutProducts.map((div) => {
+        const productId = Number(div.dataset.productId); // set data-product-id on each checkout item
+        const quantity = Number(div.dataset.quantity || 1);
+        const unitPrice = Number(div.dataset.unitPrice || 0);
+        return { product_id: productId, quantity, unit_price: unitPrice };
+    });
 
-                const total_amount = Number($('#coTotal').textContent.replace('₱', '')) || 0;
-                const orderNumber = 'ORD' + Date.now() + state.userId;
+    if (cart.length === 0) {
+        Swal.fire('Error', 'Your cart is empty!', 'error');
+        return;
+    }
 
+    const total_amount = Number($('#coTotal').textContent.replace('₱', '')) || 0;
+    const orderNumber = 'ORD' + Date.now() + state.userId;
 
-                const payload = {
-                    user_id: 1, // replace with actual logged-in user ID
-                    delivery_datetime: new Date().toISOString().slice(0, 19).replace('T', ' '),
-                    cart: cart,
-                    total_amount: total_amount,
-                    order_number: orderNumber
-                };
+    const payload = {
+        user_id: state.userId || 4,
+        delivery_datetime: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        cart: cart,
+        total_amount: total_amount,
+        order_number: orderNumber
+    };
 
-                try {
-                    const res = await fetch('../Order/order_backend.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
+    try {
+        const res = await fetch('../Order/order_backend.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-                    const result = await res.json();
-                    if (result.success) {
-                        Swal.fire({
-                            title: 'Order Placed!',
-                            text: 'Thank you for your order! Please have your payment ready upon delivery.',
-                            icon: 'success'
-                        }).then(() => {
-                            $('#checkoutView')?.classList.add('hidden');
-                            $('#browseView')?.classList.remove('hidden');
-                            $('#checkoutProducts').innerHTML = '';
-                            $('#coSubtotal').textContent = '₱0.00';
-                            $('#coTax').textContent = '₱0.00';
-                            $('#coDelivery').textContent = '₱40.00';
-                            $('#coTotal').textContent = '₱0.00';
-                        });
-                    } else {
-                        Swal.fire('Error', result.message, 'error');
-                    }
-                } catch (err) {
-                    Swal.fire('Error', err.message, 'error');
-                }
+        const result = await res.json();
+        if (result.success) {
+            Swal.fire({
+                title: 'Order Placed!',
+                text: 'Thank you for your order! Please have your payment ready upon delivery.',
+                icon: 'success'
+            }).then(() => {
+                $('#checkoutView')?.classList.add('hidden');
+                $('#browseView')?.classList.remove('hidden');
+                $('#checkoutProducts').innerHTML = '';
+                $('#coSubtotal').textContent = '₱0.00';
+                $('#coTax').textContent = '₱0.00';
+                $('#coDelivery').textContent = '₱40.00';
+                $('#coTotal').textContent = '₱0.00';
             });
+        } else {
+            Swal.fire('Error', result.message, 'error');
+        }
+    } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+    }
+});
 
 
             // Convenience: if user presses Enter in search, run search
