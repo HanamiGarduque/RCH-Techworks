@@ -2,12 +2,38 @@
 session_start();
 require_once '../Database/db_connection.php';
 
-// Destination info
-$customer_name = isset($_GET['customer']) ? $_GET['customer'] : "Christine May Padua";
-$destLat = isset($_GET['lat']) ? floatval($_GET['lat']) : 13.9434;
-$destLng = isset($_GET['lng']) ? floatval($_GET['lng']) : 121.1279;
-$order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 1;
-$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+// Validate user_id
+$user_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+if ($user_id <= 0) {
+    echo "Invalid user.";
+    exit;
+}
+
+// Database connection
+$db = new Database();
+$conn = $db->getConnect();
+
+// Fetch customer details
+$customer_stmt = $conn->prepare("SELECT name, address FROM users WHERE user_id = :id");
+$customer_stmt->bindParam(':id', $user_id);
+$customer_stmt->execute();
+$customer = $customer_stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$customer) {
+    echo "Customer not found.";
+    exit;
+}
+
+// Fetch customer's map coordinates
+$map_stmt = $conn->prepare("SELECT latitude, longitude FROM map_location WHERE user_id = :id LIMIT 1");
+$map_stmt->bindParam(':id', $user_id);
+$map_stmt->execute();
+$map = $map_stmt->fetch(PDO::FETCH_ASSOC);
+
+$destLat = $map['latitude'] ?? 13.88;   // fallback coordinates
+$destLng = $map['longitude'] ?? 121.11;
+$customer_name = $customer['name'];
+$address = $customer['address'];
 ?>
 
 <!DOCTYPE html>
@@ -15,7 +41,7 @@ $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live GPS | RCH Water</title>
+<title>Live GPS | <?= htmlspecialchars($customer_name) ?></title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 
@@ -41,7 +67,7 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
 .back-btn {
     position: absolute;
     top: 10px;
-    left: 60px;
+    left: 20px;
     background: rgba(255,255,255,0.9);
     padding: 6px 12px;
     border-radius: 8px;
@@ -53,7 +79,6 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
     user-select: none;
 }
 
-/* Bottom buttons */
 .bottom-bar {
     position:absolute;
     bottom:70px;
@@ -81,16 +106,8 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
     transition:0.2s;
 }
 
-.btn-green {
-    background-color:#1E90FF;
-    color:white;
-}
-
-.btn-outline {
-    background:#fff;
-    color:#1E90FF;
-    border:1px solid #1E90FF;
-}
+.btn-green { background-color:#1E90FF; color:white; }
+.btn-outline { background:#fff; color:#1E90FF; border:1px solid #1E90FF; }
 
 @media (max-width:480px){
     #map { height:75vh; width:95%; }
@@ -105,11 +122,9 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
 <div class="direction-control" id="eta">Calculating route...</div>
 
 <div class="bottom-bar">
-    <!-- Redirect to qr_scanner.php instead of opening modal -->
-    <button class="btn btn-green" onclick="window.location.href='qr_scan.php?order_id=<?= $order_id ?>&customer=<?= urlencode($customer_name) ?>&lat=<?= $destLat ?>&lng=<?= $destLng ?>'">Scan QR</button>
+    <button class="btn btn-green" onclick="window.location.href='qr_scan.php?user_id=<?= $user_id ?>&customer=<?= urlencode($customer_name) ?>&lat=<?= $destLat ?>&lng=<?= $destLng ?>'">Scan QR</button>
     <button class="btn btn-outline" onclick="messageCustomer()">💬 Message</button>
 </div>
-
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -125,7 +140,6 @@ const destMarker = L.marker([<?= $destLat ?>, <?= $destLng ?>]).addTo(map)
 let riderMarker = null;
 let routingControl = null;
 
-// Route update
 function updateRoute(lat,lng){
     if(routingControl) map.removeControl(routingControl);
 
