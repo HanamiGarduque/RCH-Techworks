@@ -33,7 +33,7 @@ $db = $database->getConnect();
 </head>
 
 
-<body class="bg-gray-50 overflow-hidden">
+<body class="bg-gray-50 overflow-auto">
     <div class="flex h-screen">
         <!-- Sidebar -->
         <script src="../Admin/includes/sidebar.js"></script>
@@ -49,7 +49,7 @@ $db = $database->getConnect();
                 include '../Admin/includes/header.php';
                 ?>
 
-                <div class="m-3 flex flex-col flex-1 overflow-hidden">
+                <div class="m-3 flex flex-col flex-1 overflow-auto">
                     <!-- insert main content here -->
 
                     <!DOCTYPE html>
@@ -84,7 +84,7 @@ $db = $database->getConnect();
 
                                 <!-- Date Range -->
                                 <div class="bg-white rounded-lg border border-gray-200 p-6">
-                                    <h3 class="text-gray-800 font-semibold mb-4">Date Range</h3>
+                                    <h3 class="text-gray-600 font-semibold mb-4">Date Range</h3>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
                                             <label class="text-gray-600 text-sm block mb-2">From:</label>
@@ -103,6 +103,11 @@ $db = $database->getConnect();
                                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                         </div>
                                     </div>
+                                    <button
+                                        id="applyDateRange"
+                                        class="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg transition">
+                                        Done
+                                    </button>
                                 </div>
                             </div>
 
@@ -111,14 +116,13 @@ $db = $database->getConnect();
                                 <table class="w-full" id="ordersTableWrapper">
                                     <thead>
                                         <tr class="border-b-2 border-gray-200">
-                                            <th class="py-4 px-6 font-semibold text-gray-800 text-left w-32">
+                                            <th class="py-4 px-6 font-semibold text-gray-600 text-center w-32">
                                                 Refill ID
                                             </th>
-                                            <th class="py-4 px-6 font-semibold text-gray-800 text-left w-64">
+                                            <th class="py-4 px-6 font-semibold text-gray-600 text-center w-64">
                                                 Order Number
                                             </th>
-                                            <th class="py-4 px-6 font-semibold text-gray-800 text-right">
-                                                Actions
+                                            <th class="py-4 px-6 font-semibold text-gray-800 text-right-aligned w-40">
                                             </th>
                                         </tr>
                                     </thead>
@@ -127,65 +131,70 @@ $db = $database->getConnect();
 
                                         <!-- ROW 1 -->
                                         <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
-                                            <td class="py-4 px-6 text-gray-800">
+                                            <td class="py-4 px-6 text-center text-gray-800">
                                                 1
                                             </td>
-                                            <td class="py-4 px-6 text-gray-800 font-semibold">
+                                            <td class="py-4 px-6 text-center text-gray-800 font-semibold">
                                                 ORD-110325001
                                             </td>
                                             <td class="py-4 px-6 text-right">
-                                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
+                                                <a href="order_details.php?order_id=ORD-110325001&status=pending"
+                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
                                                     <i class="bi bi-eye"></i>
                                                     View Details
-                                                </button>
+                                                </a>
+
                                             </td>
                                         </tr>
 
                                         <!-- ROW 2 -->
                                         <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
-                                            <td class="py-4 px-6 text-gray-800">
+                                            <td class="py-4 px-6 text-center text-center text-gray-800">
                                                 2
                                             </td>
-                                            <td class="py-4 px-6 text-gray-800 font-semibold">
+                                            <td class="py-4 px-6 text-center text-gray-800 font-semibold">
                                                 ORD-110325002
                                             </td>
                                             <td class="py-4 px-6 text-right">
-                                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
+                                                <a href="order_details.php?order_id=ORD-110325001&status=pending"
+                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
                                                     <i class="bi bi-eye"></i>
                                                     View Details
-                                                </button>
+                                                </a>
                                             </td>
                                         </tr>
 
                                         <!-- ROW 3 -->
                                         <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
-                                            <td class="py-4 px-6 text-gray-800">
+                                            <td class="py-4 px-6 text-center text-gray-800">
                                                 3
                                             </td>
-                                            <td class="py-4 px-6 text-gray-800 font-semibold">
+                                            <td class="py-4 px-6 text-center text-gray-800 font-semibold">
                                                 ORD-110325003
                                             </td>
                                             <td class="py-4 px-6 text-right">
-                                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
+                                                <a href="order_details.php?order_id=ORD-110325001&status=pending"
+                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
                                                     <i class="bi bi-eye"></i>
                                                     View Details
-                                                </button>
+                                                </a>
                                             </td>
                                         </tr>
 
                                         <!-- ROW 4 -->
                                         <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
-                                            <td class="py-4 px-6 text-gray-800">
+                                            <td class="py-4 px-6 text-center text-gray-800">
                                                 4
                                             </td>
-                                            <td class="py-4 px-6 text-gray-800 font-semibold">
+                                            <td class="py-4 px-6 text-center text-gray-800 font-semibold">
                                                 ORD-110325004
                                             </td>
                                             <td class="py-4 px-6 text-right">
-                                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
+                                                <a href="order_details.php?order_id=ORD-110325001&status=pending"
+                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2">
                                                     <i class="bi bi-eye"></i>
                                                     View Details
-                                                </button>
+                                                </a>
                                             </td>
                                         </tr>
 
@@ -198,7 +207,7 @@ $db = $database->getConnect();
                             <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                                 <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
                                     <div class="flex justify-between items-center mb-4">
-                                        <h2 class="text-2xl font-bold text-gray-800">Order Details</h2>
+                                        <h2 class="text-2xl font-semi-bold text-gray-600">Order Details</h2>
                                         <button id="closeModal" class="text-gray-500 hover:text-gray-800">
                                             <i class="bi bi-x-lg text-2xl"></i>
                                         </button>
