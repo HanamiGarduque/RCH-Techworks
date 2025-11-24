@@ -274,7 +274,7 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
             hours = hours ? hours : 12; // Convert 0 to 12
             const hoursFormatted = String(hours).padStart(2, '0');
 
-            document.getElementById('datetime').innerText = ${month} ${day}, ${year} • ${hoursFormatted}:${minutes} ${ampm};
+            document.getElementById('datetime').innerText = `${month} ${day}, ${year} • ${hoursFormatted}:${minutes} ${ampm}`;
         }
 
         updateDateTime();
@@ -478,7 +478,7 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
         }
 
         function startDelivery(refillId) {
-            window.location.href = order_details.php?refill_id=${refill_id};
+            window.location.href = `order_details.php?refill_id=${refill_id}`;
         }
 
 
@@ -717,4 +717,3 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
 </body>
 
 </html>
-
