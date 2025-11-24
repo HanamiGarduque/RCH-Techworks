@@ -57,12 +57,11 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
             left: 15px;
             top: 24px;
             width: 2px;
-            height: 24px;
+            height: calc(100% + 24px);
             background-color: #e5e7eb;
         }
-        .timeline-item.active ~ .timeline-item .timeline-connector,
         .timeline-item.completed .timeline-connector {
-            background-color: #2563eb;
+            background-color: #10b981;
         }
         .modal-overlay {
             display: none;
@@ -104,7 +103,6 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
             font-size: 12px;
             font-weight: 600;
         }
-        /* Added phone-frame styles for proper scrolling */
         .phone-frame {
             display: flex;
             flex-direction: column;
@@ -162,12 +160,14 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
                 <div class="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <p class="text-xs text-gray-600 font-semibold mb-1">PICKUP TIME</p>
-                            <p class="text-sm font-bold text-gray-900" id="pickup-time">--:--</p>
+                            <p class="text-xs text-gray-600 font-semibold mb-1">PICKUP</p>
+                            <p class="text-xs font-bold text-gray-900" id="pickup-date">--/--/----</p>
+                            <p class="text-sm font-bold text-blue-600" id="pickup-time">--:--</p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-600 font-semibold mb-1">DELIVERY TIME</p>
-                            <p class="text-sm font-bold text-gray-900" id="delivery-time">--:--</p>
+                            <p class="text-xs text-gray-600 font-semibold mb-1">DELIVERY</p>
+                            <p class="text-xs font-bold text-gray-900" id="delivery-date">--/--/----</p>
+                            <p class="text-sm font-bold text-blue-600" id="delivery-time">--:--</p>
                         </div>
                     </div>
                 </div>
@@ -202,12 +202,22 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
             </div>
 
             <!-- ITEMS CARD -->
-            <div class="px-6 pb-32">
+            <div class="px-6 pb-4">
                 <h3 class="text-md font-semibold text-blue-600 mb-3 flex items-center gap-2">
                     <i class="bi bi-box2 text-blue-600"></i> Order Items
                 </h3>
                 <div id="items-list" class="space-y-3"></div>
+                
+                <!-- SUBTOTAL -->
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-semibold text-gray-700">Total Amount:</span>
+                        <span class="text-lg font-bold text-blue-600" id="total-amount">₱0.00</span>
+                    </div>
+                </div>
             </div>
+
+            <div class="pb-32"></div>
 
         </div>
 
@@ -315,7 +325,7 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
                     populateAddressInfo();
                     populateTimings();
                     populateTimeline();
-                    populateItems(items);
+                    populateItems(items, data.total_subtotal);
                     populateActionButtons();
                     initMap();
                 })
@@ -341,30 +351,50 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
         }
 
         function populateTimings() {
-            const pickupTime = new Date(currentOrder.pickup_datetime).toLocaleTimeString('en-US', {
+            const pickupDateTime = new Date(currentOrder.pickup_datetime);
+            const deliveryDateTime = new Date(currentOrder.delivery_datetime);
+            
+            // Format date as MM/DD/YYYY
+            const pickupDate = pickupDateTime.toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            });
+            const deliveryDate = deliveryDateTime.toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            });
+            
+            // Format time
+            const pickupTime = pickupDateTime.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true
             });
-            const deliveryTime = new Date(currentOrder.delivery_datetime).toLocaleTimeString('en-US', {
+            const deliveryTime = deliveryDateTime.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true
             });
+            
+            document.getElementById("pickup-date").textContent = pickupDate;
             document.getElementById("pickup-time").textContent = pickupTime;
+            document.getElementById("delivery-date").textContent = deliveryDate;
             document.getElementById("delivery-time").textContent = deliveryTime;
         }
 
         function populateTimeline() {
             const steps = [
-                { step: 1, label: "Order Placed", status: "pending" },
-                { step: 2, label: "Pickup In Progress", status: "pickup_in_progress" },
-                { step: 3, label: "Picked Up", status: "picked_up" },
-                { step: 4, label: "On Delivery", status: "on_delivery" },
-                { step: 5, label: "Delivered", status: "delivered" }
+                { step: 1, label: "Order Placed", statuses: ["pending", "assigned"] },
+                { step: 2, label: "Pickup In Progress", statuses: ["pickup_in_progress", "pickup_delayed"] },
+                { step: 3, label: "Picked Up", statuses: ["picked_up"] },
+                { step: 4, label: "On Delivery", statuses: ["on_delivery", "delivery_delayed"] },
+                { step: 5, label: "Delivered", statuses: ["delivered"] }
             ];
 
-            const currentStep = STATUS_CONFIG[currentOrder.order_status].step;
+            const currentStatus = currentOrder.order_status;
+            const currentStep = STATUS_CONFIG[currentStatus].step;
             let html = '';
 
             steps.forEach((item, index) => {
@@ -376,7 +406,7 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
                     <div class="timeline-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">
                         ${hasConnector ? '<div class="timeline-connector"></div>' : ''}
                         <div class="flex flex-col">
-                            <p class="text-sm font-semibold text-gray-900">${item.label}</p>
+                            <p class="text-sm font-semibold ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-900'}">${item.label}</p>
                             <p class="text-xs text-gray-600 mt-1">Step ${item.step} of 5</p>
                         </div>
                     </div>
@@ -386,8 +416,10 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
             document.getElementById("timeline-container").innerHTML = html;
         }
 
-        function populateItems(items) {
+        function populateItems(items, totalSubtotal) {
             const itemsList = document.getElementById("items-list");
+            const totalAmountEl = document.getElementById("total-amount");
+            
             itemsList.innerHTML = '';
 
             if (items.length === 0) {
@@ -396,18 +428,26 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
             }
 
             items.forEach(item => {
+                // Use item_name from inventory if available, otherwise fall back to gallon_type
+                const itemName = item.item_name || item.gallon_type;
+                const itemSize = item.gallon_size;
+                
                 itemsList.innerHTML += `
                     <div class="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between hover:border-blue-300 transition">
                         <div class="flex-1">
-                            <p class="text-sm font-semibold text-gray-900">${item.gallon_type}</p>
-                            <p class="text-xs text-gray-600">${item.gallon_size} • Qty: ${item.quantity}</p>
+                            <p class="text-sm font-semibold text-gray-900">${itemName}</p>
+                            <p class="text-xs text-gray-600">${itemSize} • Qty: ${item.quantity}</p>
                         </div>
-                        <span class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
-                            ₱${parseFloat(item.unit_price).toFixed(2)}
-                        </span>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-600">₱${parseFloat(item.unit_price).toFixed(2)} each</p>
+                            <p class="text-sm font-bold text-blue-600">₱${parseFloat(item.subtotal).toFixed(2)}</p>
+                        </div>
                     </div>
                 `;
             });
+            
+            // Display total amount
+            totalAmountEl.textContent = `₱${parseFloat(totalSubtotal || currentOrder.total_amount).toFixed(2)}`;
         }
 
         function populateActionButtons() {

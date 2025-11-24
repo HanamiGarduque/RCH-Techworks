@@ -5,7 +5,7 @@ date_default_timezone_set('Asia/Manila');
 
 header('Content-Type: application/json');
 $db = new Database();
-    $conn = $db->getConnect();
+$conn = $db->getConnect();
 // Get the logged-in rider ID from session
 // $rider_id = $_SESSION['rider_id'] ?? null;
 $rider_id = 7;
@@ -50,7 +50,9 @@ try {
             w.order_status,
             u.user_id,
             u.name,
-            u.address
+            u.address,
+            u.latitude,
+            u.longitude
         FROM water_refills w
         JOIN users u ON w.user_id = u.user_id
         WHERE w.rider_id = :rider_id 
@@ -72,7 +74,9 @@ try {
             'user' => [
                 'user_id' => $row['user_id'],
                 'name' => $row['name'],
-                'address' => $row['address']
+                'address' => $row['address'],
+                'latitude' => $row['latitude'],
+                'longitude' => $row['longitude']
             ]
         ];
     }
