@@ -55,13 +55,14 @@ try {
     if (isset($data['orders']) && is_array($data['orders'])) {
         $itemStmt = $db->prepare("
             INSERT INTO water_refill_items 
-            (refill_id, gallon_type, gallon_size, quantity, unit_price, subtotal)
-            VALUES (:refill_id, :type, :size, :quantity, :unit_price, :subtotal)
+            (refill_id, product_id, gallon_type, gallon_size, quantity, unit_price, subtotal)
+            VALUES (:refill_id, :product_id, :type, :size, :quantity, :unit_price, :subtotal)
         ");
 
         foreach ($data['orders'] as $item) {
             $itemStmt->execute([
                 ':refill_id' => $refill_id,
+                ':product_id' => $item['productId'],
                 ':type' => $item['type'],
                 ':size' => $item['size'],
                 ':quantity' => $item['quantity'],

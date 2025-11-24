@@ -1,193 +1,145 @@
-<?php
-require_once '../Database/db_connection.php';
-session_start();
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username']; // This can be name or email depending on your login design
-    $password = $_POST['password'];
-
-    $db = new Database();
-    $conn = $db->getConnect();
-
-    // Use prepared statement to fetch the rider
-    $query = "SELECT * FROM users WHERE (name = :username OR email = :username) AND role = 'rider' AND status = 'active' LIMIT 1";
-    $stmt = $conn->prepare($query);
-    $stmt->bindParam(':username', $username);
-    $stmt->execute();
-
-    $rider = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($rider && hash('sha256', $password) === $rider['password_hash']) {
-        // Login successful
-        $_SESSION['rider_id'] = $rider['user_id'];
-        $_SESSION['rider_name'] = $rider['name'];
-        header("Location: dashboard.php");
-        exit();
-    } else {
-        $error = "Invalid username or password";
-    }
-}
-?>
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCH Water | Rider Login</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #2196F3;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #333;
-        }
-
-        @media (max-width: 480px) {
-    body {
-        height: auto;              /* allow body to expand */
-        padding: 20px 0;           /* top/bottom spacing */
-        align-items: flex-start; 
-    }
-}
-    
-
-        .container {
-            width: 500px;
-            max-width: 360px;
-            background-color: white;
-            border-radius: 25px;
-            padding: 20px 15px;
-            box-shadow: 0px 4px 20px rgba(0,0,0,0.2);
-            text-align: center;
-        }
-
-        h2 {
-            margin-bottom: 25px;
-            color: #000;
-        }
-
-        input[type="text"], input[type="password"] {
-            width: 85%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            outline: none;
-            font-size: 14px;
-        }
-
-        button {
-            background-color: #1E90FF;
-            color: white;
-            border: none;
-            padding: 10px 40px;
-            border-radius: 20px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: #0b7dda;
-        }
-
-        .social-login {
-            display: flex;
-            justify-content: center;
-            margin-top: 15px;
-            gap: 20px;
-        }
-
-        .social-login img {
-            width: 30px;
-            cursor: pointer;
-        }
-
-        .header {
-            position: absolute;
-            top: 20px;
-            text-align: center;
-            color: white;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-weight: 600;
-        }
-
-        .footer {
-            position: absolute;
-            bottom: 10px;
-            color: white;
-            font-size: 12px;
-            text-align: center;
-        }
-
-        .error {
-            color: red;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        /* Decorative circles */
-        .circle1, .circle2 {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            z-index: -1;
-        }
-
-        .circle1 {
-            width:  300px;
-            height: 300px;
-            top: 70px;
-            left: 40px;
-        }
-
-        .circle2 {
-            width: 200px;
-            height: 200px;
-            bottom: 60px;
-            right: 30px;
         }
     </style>
 </head>
-<body>
 
-<div class="circle1"></div>
-<div class="circle2"></div>
+<body class="bg-white min-h-screen flex justify-center items-center relative">
 
-<div class="header">
-    <h1>💧RCH Water</h1>
-    <p>Join us today and enjoy fresh, clean water delivered right at your doorstep.</p>
-</div>
+    <!-- Fixed-width container wrapper -->
+    <div class="bg-blue-500 w-[375px] h-[750px] mx-auto relative rounded-3xl px-4 overflow-hidden border shadow-lg">
 
-<div class="container">
-    <h2>Login Account</h2>
-    <form method="POST" action="">
-        <input type="text" name="username" placeholder="Enter your username" required><br>
-        <input type="password" name="password" placeholder="Enter your password" required><br>
-        <button type="submit">Login</button>
-    </form>
+        <!-- Decorative circles -->
+        <div class="absolute w-[250px] h-[250px] bg-white/20 rounded-full top-20 left-4 z-10"></div>
+        <div class="absolute w-[180px] h-[180px] bg-white/20 rounded-full bottom-20 right-4 z-10"></div>
 
-    <div class="error">
-        <?php if (!empty($error)) echo $error; ?>
-    </div>
+        <div class="mt-20 flex flex-col justify-center items-center bg-blue-500 mt-10 px-4">
+            <!-- Header -->
+            <div class="text-center text-white mb-6">
+                <div class="items-center justify-center mb-2 p-3 text-5xl">
+                    <i class="fas fa-tint text-white"></i>
+                </div>
 
-  
-</div>
+                <h1 class="text-2xl font-semibold flex items-center justify-center gap-2 mb-3">
+                    RCH Water
+                </h1>
 
-<div class="footer">
-    © RCH Water Refilling System
-</div>
+                <p class="text-sm mt-2">Join us today and enjoy fresh, clean water delivered right at your doorstep.</p>
+            </div>
+            <!-- Login Box -->
+            <div class="relative z-10 bg-white w-full max-w-[375px] rounded-[25px] shadow-xl p-7 text-center">
+
+                <h2 class="text-xl font-semibold mb-5 text-black">Sign in as Rider</h2>
+
+                <form id="loginForm" class="flex flex-col items-center gap-3">
+
+                    <!-- Username Field with Icon -->
+                    <div class="flex items-center w-5/6 border border-gray-300 rounded-lg px-3 py-2 bg-gray-50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5.121 17.804A13.937 13.937 0 0112 15c2.45 0 4.747.586 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <input
+                            type="text"
+                            name="username"
+                            placeholder="Username or Email"
+                            required
+                            class="w-full bg-transparent text-sm focus:outline-none">
+                    </div>
+
+                    <!-- Password Field with Icon -->
+                    <div class="flex items-center w-5/6 border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15c.828 0 1.5-.672 1.5-1.5V11A1.5 1.5 0 0012 9.5 1.5 1.5 0 0010.5 11v2.5c0 .828.672 1.5 1.5 1.5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.25 11V8.25A5.25 5.25 0 006.75 8.25V11M6 19h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z" />
+                        </svg>
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="Password"
+                            required
+                            id="password"
+                            class="w-full bg-transparent text-sm focus:outline-none pr-8">
+
+                        <!-- Eye icon button -->
+                        <button type="button" class="absolute right-3 text-gray-400" onclick="togglePassword()">
+                            <i id="eyeIcon" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+
+                    <!-- Login Button -->
+                    <button
+                        type="submit"
+                        class="bg-blue-600 w-5/6 py-2.5 rounded-full text-white font-medium text-base mt-2 shadow-md hover:bg-blue-700 transition">
+                        Login
+                    </button>
+                </form>
+
+                <!-- Error -->
+                <div id="errorMsg" class="text-red-600 text-sm mt-3 min-h-[18px]"></div>
+
+
+                <!-- Footer -->
+                <div class="text-blue-500 text-xs text-center mt-5">
+                    © RCH Water Refilling System
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function togglePassword() {
+                const passwordInput = document.getElementById('password');
+                const eyeIcon = document.getElementById('eyeIcon');
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeIcon.classList.remove('fa-eye');
+                    eyeIcon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    eyeIcon.classList.remove('fa-eye-slash');
+                    eyeIcon.classList.add('fa-eye');
+                }
+            }
+            const form = document.getElementById('loginForm');
+            const errorDiv = document.getElementById('errorMsg');
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // prevent page reload
+
+                const formData = new FormData(form);
+
+                fetch('login_backend.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.href = 'dashboard.php'; // redirect on success
+                        } else {
+                            errorDiv.textContent = data.message; // show error
+                            // Hide error after 3 seconds
+                            setTimeout(() => {
+                                errorDiv.textContent = '';
+                            }, 3000);
+                        }
+                    })
+                    .catch(err => console.error(err));
+            });
+        </script>
 
 </body>
+
 </html>
