@@ -1,339 +1,284 @@
+<?php
+session_start();
+require_once '../Database/db_connection.php';
+date_default_timezone_set('Asia/Manila');
+
+$rider_name = $_SESSION['rider_name'] ?? "Rider";
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rider Dashboard | RCH Water</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'Poppins', sans-serif;
         }
 
-        /* Updated header styling to match design - brighter blue gradient */
-        .header {
-            background: linear-gradient(135deg, #2B6FD9 0%, #1E5FBD 100%);
-            color: white;
-            padding: 1.25rem;
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-        }
-
-        .header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-
-        .header p {
-            font-size: 0.875rem;
-            opacity: 0.95;
-            font-weight: 500;
-        }
-
-        /* Updated tabs styling - pill-shaped buttons with light blue inactive state */
-        .tabs {
-            background-color: white;
-            position: sticky;
-            top: 70px;
-            z-index: 40;
-            padding: 1rem;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
-
-        .tabs button {
-            background-color: #E3F2FD;
-            color: #1E5FBD;
-            font-weight: 600;
-            padding: 0.625rem 1.25rem;
-            border: none;
-            border-radius: 2rem;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .tabs button.active {
-            background-color: #2B6FD9;
-            color: white;
-        }
-
-        .tabs button:hover:not(.active) {
-            background-color: #BBDEFB;
-        }
-
-        .section-content {
-            padding: 1.5rem;
-            padding-bottom: 2rem;
-            background-color: #f5f5f5;
-            min-height: calc(100vh - 150px);
-        }
-
-        /* Updated heading styling to match design - blue color */
-        .section-content h3 {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: #1E5FBD;
-            margin-bottom: 1.25rem;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Updated map container styling with dashed border like design */
-        #active-map {
-            background-color: #E8E8E8;
-            border-radius: 0.75rem;
-            height: 300px;
-            margin-bottom: 1.5rem;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-            border: 2px dashed #BDBDBD;
-            z-index: 10;
-            overflow: hidden;
-        }
-
-        .delivery-list {
-            background-color: white;
-            padding: 0.75rem;
-            border-radius: 0.75rem;
-            height: 400px;
-            overflow-y: auto;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
-
-        .delivery-card {
-            background-color: white;
-            border: 1px solid #EEEEEE;
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            margin-bottom: 1rem;
-            transition: box-shadow 0.2s ease;
-        }
-
-        .delivery-card:hover {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-        }
-
-        .delivery-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .delivery-name {
-            font-weight: 700;
-            color: #212121;
-            font-size: 1rem;
-        }
-
-        .delivery-order {
-            font-size: 0.75rem;
-            color: #757575;
-            margin-top: 0.25rem;
-        }
-
-        .delivery-status {
-            font-size: 0.75rem;
-            background-color: #DCFCE7;
-            color: #166534;
-            padding: 0.5rem 0.75rem;
-            border-radius: 9999px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .delivery-details {
-            font-size: 0.875rem;
-            color: #616161;
-            margin-bottom: 1rem;
-        }
-
-        .delivery-detail-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            margin-bottom: 0.625rem;
-        }
-
-        .address-icon {
-            color: #2B6FD9;
-            font-size: 0.95rem;
-            margin-top: 0.125rem;
-        }
-
-        .time-icon {
-            color: #F57C00;
-            font-size: 0.95rem;
-            margin-top: 0.125rem;
-        }
-
-        .delivery-btn {
-            width: 100%;
-            padding: 0.75rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 0.5rem;
-            background-color: #E3F2FD;
-            color: #1E5FBD;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .delivery-btn:hover {
-            background-color: #BBDEFB;
-        }
-
+        /* Custom scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f5f5f5;
+            background: #f1f1f1;
             border-radius: 10px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #BDBDBD;
+            background: #cbd5e1;
             border-radius: 10px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #9E9E9E;
-        }
-
-        .no-deliveries {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 2rem;
-        }
-
-        .no-deliveries p {
-            text-align: center;
-            color: #9E9E9E;
-            font-size: 0.875rem;
-        }
-
-        .pending-tabs {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        /* Updated pending tab styling - pill-shaped buttons with better spacing */
-        .pending-tab {
-            padding: 0.625rem 1.5rem;
-            background-color: #E3F2FD;
-            color: #1E5FBD;
-            border: none;
-            border-radius: 2rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .pending-tab.active {
-            background-color: #2B6FD9;
-            color: white;
-        }
-
-        .pending-tab:hover:not(.active) {
-            background-color: #BBDEFB;
-        }
-
-        .pending-content {
-            display: none;
-        }
-
-        .pending-content.active {
-            display: block;
+            background: #94a3b8;
         }
     </style>
 </head>
-<body>
-    <!-- Updated header with dynamic date/time display -->
-    <div class="header">
-        <h1>Welcome, Rider</h1>
-        <p id="header-date-time"></p>
+
+<body class="bg-white min-h-screen flex justify-center items-center relative">
+
+    <!-- Fixed-width container wrapper -->
+    <div class="bg-white w-[375px] h-[750px] mx-auto relative rounded-3xl overflow-hidden border shadow-lg">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-br from-blue-400 to-blue-600 text-white sticky top-0 z-50 w-full px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight">Welcome, Rider</h2>
+                    <div id="datetime" class="text-sm text-blue-100 font-medium"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Notification Button -->
+                    <button onclick="window.location.href='notification.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-bell"></i>
+                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                    </button>
+
+                    <!-- Messages Button -->
+                    <button onclick="window.location.href='messages.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-chat-dots"></i>
+                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Buttons Container -->
+        <div class="bg-white sticky top-16 z-40 w-full px-5 py-4">
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="showSection('active-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Active</button>
+                <button onclick="showSection('pending-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Pending</button>
+                <button onclick="showSection('completed-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Completed</button>
+            </div>
+        </div>
+
+        <!-- ACTIVE DELIVERIES -->
+        <div class="px-5 pb-5" id="active-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Active Deliveries</h3>
+
+            <!-- Map Placeholder -->
+            <div class="bg-gray-200 rounded-xl h-40 mb-4 flex items-center justify-center border-2 border-dashed border-gray-400">
+                <div class="text-center text-gray-500">
+                    <i class="bi bi-map text-4xl mb-2"></i>
+                    <p class="text-sm font-medium">Map View</p>
+                    <p class="text-xs">Route tracking will appear here</p>
+                </div>
+            </div>
+
+            <div id="active-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[330px] pb-5 pr-2"></div>
+        </div>
+
+        <!-- PENDING DELIVERIES -->
+        <div class="px-5 pb-20 hidden relative" id="pending-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Pending Deliveries</h3>
+
+            <!-- TABS - No gap between buttons -->
+            <div class="flex mb-4 bg-gray-200 rounded-lg overflow-hidden">
+                <button id="pending-tab-pickup"
+                    class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200"
+                    onclick="showPendingTab('pickup')">
+                    For Pickup
+                </button>
+
+                <button id="pending-tab-delivery"
+                    class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200"
+                    onclick="showPendingTab('delivery')">
+                    For Delivery
+                </button>
+            </div>
+
+            <!-- PICKUP LIST -->
+            <div id="pickup-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2"></div>
+
+            <!-- DELIVERY LIST -->
+            <div id="delivery-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden"></div>
+
+            <!-- Floating Period Switcher for Pickup -->
+            <div id="time-switcher-pickup"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                       flex items-center space-x-6 z-50 border">
+                <button id="prev-period-pickup"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-pickup" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-pickup"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+
+            <!-- Floating Period Switcher for Delivery -->
+            <div id="time-switcher-delivery"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                       flex items-center space-x-6 z-50 border hidden">
+                <button id="prev-period-delivery"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-delivery" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-delivery"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+        </div>
+
+        <!-- HISTORY SECTION (previously COMPLETED DELIVERIES) -->
+        <div class="px-5 pb-20 hidden relative" id="completed-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Order History</h3>
+
+            <!-- TABS - Delayed and Completed -->
+            <div class="flex mb-4 bg-gray-200 rounded-lg overflow-hidden">
+                <button id="history-tab-delayed"
+                    class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200"
+                    onclick="showHistoryTab('delayed')">
+                    Delayed
+                </button>
+
+                <button id="history-tab-completed"
+                    class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200"
+                    onclick="showHistoryTab('completed')">
+                    Completed
+                </button>
+            </div>
+
+            <!-- DELAYED LIST -->
+            <div id="delayed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2"></div>
+
+            <!-- COMPLETED LIST -->
+            <div id="completed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden"></div>
+
+            <!-- Floating Period Switcher for Delayed -->
+            <div id="time-switcher-delayed"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+               flex items-center space-x-6 z-50 border">
+                <button id="prev-period-delayed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-delayed" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-delayed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+
+            <!-- Floating Period Switcher for Completed -->
+            <div id="time-switcher-completed"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+               flex items-center space-x-6 z-50 border hidden">
+                <button id="prev-period-completed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-completed" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-completed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+        </div>
+
     </div>
-
-    <!-- Navigation Tabs -->
-    <div class="tabs">
-        <button class="section-btn active" onclick="showSection('active-deliveries', this)">Active</button>
-        <button class="section-btn" onclick="showSection('pending-deliveries', this)">Pending</button>
-        <button class="section-btn" onclick="showSection('completed-deliveries', this)">Completed</button>
-    </div>
-
-    <!-- ACTIVE DELIVERIES SECTION -->
-    <div id="active-deliveries" class="section-content">
-        <h3>Active Deliveries</h3>
-        
-        <!-- Map View Card - displays all active delivery customer locations as pins -->
-        <div id="active-map"></div>
-
-        <div class="delivery-list custom-scrollbar" id="active-list"></div>
-    </div>
-
-    <!-- PENDING DELIVERIES SECTION -->
-    <div id="pending-deliveries" class="section-content hidden">
-        <h3>Pending Deliveries</h3>
-
-        <!-- Pickup Pending Tabs -->
-        <div class="pending-tabs" id="pickup-tabs"></div>
-        <div id="pickup-content" class="pending-content active"></div>
-
-        <!-- Delivery Pending Tabs -->
-        <div class="pending-tabs" id="delivery-tabs"></div>
-        <div id="delivery-content" class="pending-content active"></div>
-    </div>
-
-    <!-- COMPLETED DELIVERIES SECTION -->
-    <div id="completed-deliveries" class="section-content hidden">
-        <h3>Order History</h3>
-
-        <!-- Delayed Tabs -->
-        <div class="pending-tabs" id="delayed-tabs"></div>
-        <div id="delayed-content" class="pending-content active"></div>
-
-        <!-- Completed Tabs -->
-        <div class="pending-tabs" id="completed-tabs"></div>
-        <div id="completed-content" class="pending-content active"></div>
-    </div>
-
-    <!-- Added Leaflet JS library for map functionality -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script>
-        let deliveryData = {};
-        let map = null;
-        let markers = [];
+        // Global variables
+        let currentPeriodPickup = "morning";
+        let currentPeriodDelivery = "morning";
+        let currentPeriodDelayed = "morning";
+        let currentPeriodCompleted = "morning";
+        let deliveryData = null;
+
+        // Month names
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // Initialize periods based on current time
+        function initializePeriods() {
+            const now = new Date();
+            const hour = now.getHours();
+
+            // If it's 12 PM (noon) or later, set to afternoon
+            if (hour >= 12) {
+                currentPeriodPickup = "afternoon";
+                currentPeriodDelivery = "afternoon";
+                currentPeriodDelayed = "afternoon";
+                currentPeriodCompleted = "afternoon";
+            } else {
+                currentPeriodPickup = "morning";
+                currentPeriodDelivery = "morning";
+                currentPeriodDelayed = "morning";
+                currentPeriodCompleted = "morning";
+            }
+        }
 
         function updateDateTime() {
             const now = new Date();
-            const options = { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-            const dateTimeString = now.toLocaleDateString('en-US', options);
-            document.getElementById('header-date-time').textContent = dateTimeString;
+            const month = monthNames[now.getMonth()];
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            // Convert to 12-hour format with AM/PM
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // Convert 0 to 12
+            const hoursFormatted = String(hours).padStart(2, '0');
+
+            document.getElementById('datetime').innerText = ${month} ${day}, ${year} • ${hoursFormatted}:${minutes} ${ampm};
         }
+
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
 
         function showSection(sectionId, button) {
             const sections = ['active-deliveries', 'pending-deliveries', 'completed-deliveries'];
@@ -343,78 +288,351 @@
             document.getElementById(sectionId).classList.remove('hidden');
 
             document.querySelectorAll('.section-btn').forEach(btn => {
-                btn.classList.remove('active');
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-blue-100', 'text-blue-600');
             });
-            button.classList.add('active');
+            button.classList.remove('bg-blue-100', 'text-blue-600');
+            button.classList.add('bg-blue-600', 'text-white');
+        }
 
-            if (sectionId === 'active-deliveries') {
-                setTimeout(() => {
-                    if (!map) {
-                        initializeMap();
-                    } else {
-                        map.invalidateSize();
-                        updateMapMarkers();
-                    }
-                }, 100);
+        showSection('active-deliveries', document.querySelector('.section-btn'));
+
+        function showPendingTab(tab) {
+            const pickupTab = document.getElementById('pending-tab-pickup');
+            const deliveryTab = document.getElementById('pending-tab-delivery');
+            const pickupList = document.getElementById('pickup-list');
+            const deliveryList = document.getElementById('delivery-list');
+            const timeSwitcherPickup = document.getElementById('time-switcher-pickup');
+            const timeSwitcherDelivery = document.getElementById('time-switcher-delivery');
+
+            if (tab === 'pickup') {
+                pickupTab.classList.add("bg-blue-500", "text-white");
+                pickupTab.classList.remove("bg-gray-200", "text-gray-700");
+                deliveryTab.classList.add("bg-gray-200", "text-gray-700");
+                deliveryTab.classList.remove("bg-blue-500", "text-white");
+
+                pickupList.classList.remove("hidden");
+                deliveryList.classList.add("hidden");
+                timeSwitcherPickup.classList.remove("hidden");
+                timeSwitcherDelivery.classList.add("hidden");
+            } else {
+                deliveryTab.classList.add("bg-blue-500", "text-white");
+                deliveryTab.classList.remove("bg-gray-200", "text-gray-700");
+                pickupTab.classList.add("bg-gray-200", "text-gray-700");
+                pickupTab.classList.remove("bg-blue-500", "text-white");
+
+                deliveryList.classList.remove("hidden");
+                pickupList.classList.add("hidden");
+                timeSwitcherDelivery.classList.remove("hidden");
+                timeSwitcherPickup.classList.add("hidden");
             }
         }
 
-        function initializeMap() {
-            const mapContainer = document.getElementById('active-map');
-            if (!mapContainer) return;
+        function showHistoryTab(tab) {
+            const delayedTab = document.getElementById('history-tab-delayed');
+            const completedTab = document.getElementById('history-tab-completed');
+            const delayedList = document.getElementById('delayed-list');
+            const completedList = document.getElementById('completed-list');
+            const timeSwitcherDelayed = document.getElementById('time-switcher-delayed');
+            const timeSwitcherCompleted = document.getElementById('time-switcher-completed');
 
-            const defaultLat = 14.5994;
-            const defaultLng = 120.9842;
+            if (tab === 'delayed') {
+                delayedTab.classList.add("bg-blue-500", "text-white");
+                delayedTab.classList.remove("bg-gray-200", "text-gray-700");
+                completedTab.classList.add("bg-gray-200", "text-gray-700");
+                completedTab.classList.remove("bg-blue-500", "text-white");
 
-            if (!map) {
-                map = L.map('active-map').setView([defaultLat, defaultLng], 13);
+                delayedList.classList.remove("hidden");
+                completedList.classList.add("hidden");
+                timeSwitcherDelayed.classList.remove("hidden");
+                timeSwitcherCompleted.classList.add("hidden");
+            } else {
+                completedTab.classList.add("bg-blue-500", "text-white");
+                completedTab.classList.remove("bg-gray-200", "text-gray-700");
+                delayedTab.classList.add("bg-gray-200", "text-gray-700");
+                delayedTab.classList.remove("bg-blue-500", "text-white");
 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors',
-                    maxZoom: 19
-                }).addTo(map);
+                completedList.classList.remove("hidden");
+                delayedList.classList.add("hidden");
+                timeSwitcherCompleted.classList.remove("hidden");
+                timeSwitcherDelayed.classList.add("hidden");
             }
-
-            updateMapMarkers();
         }
 
-        function updateMapMarkers() {
-            markers.forEach(marker => map.removeLayer(marker));
-            markers = [];
+        function updatePickupPeriodDisplay() {
+            document.getElementById("current-period-pickup").textContent =
+                currentPeriodPickup.charAt(0).toUpperCase() + currentPeriodPickup.slice(1);
+            renderPickupList();
+        }
 
+        function updateDeliveryPeriodDisplay() {
+            document.getElementById("current-period-delivery").textContent =
+                currentPeriodDelivery.charAt(0).toUpperCase() + currentPeriodDelivery.slice(1);
+            renderDeliveryList();
+        }
+
+        function updateDelayedPeriodDisplay() {
+            document.getElementById("current-period-delayed").textContent =
+                currentPeriodDelayed.charAt(0).toUpperCase() + currentPeriodDelayed.slice(1);
+            renderDelayedList();
+        }
+
+        function updateCompletedPeriodDisplay() {
+            document.getElementById("current-period-completed").textContent =
+                currentPeriodCompleted.charAt(0).toUpperCase() + currentPeriodCompleted.slice(1);
+            renderCompletedList();
+        }
+
+        // Period switchers for pickup/delivery
+        document.getElementById("prev-period-pickup").addEventListener("click", () => {
+            currentPeriodPickup = currentPeriodPickup === "morning" ? "afternoon" : "morning";
+            updatePickupPeriodDisplay();
+        });
+
+        document.getElementById("next-period-pickup").addEventListener("click", () => {
+            currentPeriodPickup = currentPeriodPickup === "morning" ? "afternoon" : "morning";
+            updatePickupPeriodDisplay();
+        });
+
+        document.getElementById("prev-period-delivery").addEventListener("click", () => {
+            currentPeriodDelivery = currentPeriodDelivery === "morning" ? "afternoon" : "morning";
+            updateDeliveryPeriodDisplay();
+        });
+
+        document.getElementById("next-period-delivery").addEventListener("click", () => {
+            currentPeriodDelivery = currentPeriodDelivery === "morning" ? "afternoon" : "morning";
+            updateDeliveryPeriodDisplay();
+        });
+
+        // Period switchers for delayed/completed
+        document.getElementById("prev-period-delayed").addEventListener("click", () => {
+            currentPeriodDelayed = currentPeriodDelayed === "morning" ? "afternoon" : "morning";
+            updateDelayedPeriodDisplay();
+        });
+
+        document.getElementById("next-period-delayed").addEventListener("click", () => {
+            currentPeriodDelayed = currentPeriodDelayed === "morning" ? "afternoon" : "morning";
+            updateDelayedPeriodDisplay();
+        });
+
+        document.getElementById("prev-period-completed").addEventListener("click", () => {
+            currentPeriodCompleted = currentPeriodCompleted === "morning" ? "afternoon" : "morning";
+            updateCompletedPeriodDisplay();
+        });
+
+        document.getElementById("next-period-completed").addEventListener("click", () => {
+            currentPeriodCompleted = currentPeriodCompleted === "morning" ? "afternoon" : "morning";
+            updateCompletedPeriodDisplay();
+        });
+
+        function renderPickupList() {
+            if (!deliveryData) return;
+
+            const pickupList = document.getElementById('pickup-list');
             const today = new Date().toISOString().split('T')[0];
-            const activeOrders = (deliveryData.active || []).filter(order =>
-                order.pickup_datetime.startsWith(today) || order.delivery_datetime.startsWith(today)
+
+            pickupList.innerHTML = '';
+
+            const orders = deliveryData.pending.pickup[currentPeriodPickup].filter(order =>
+                order.pickup_datetime.startsWith(today)
             );
 
-            if (activeOrders.length === 0) {
-                map.setView([14.5994, 120.9842], 13);
+            if (!orders.length) {
+                pickupList.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <p class="text-center text-gray-400 text-sm">No ${currentPeriodPickup} pickups for today</p>
+            </div>
+        `;
                 return;
             }
 
-            activeOrders.forEach((order) => {
-                if (order.user.latitude && order.user.longitude) {
-                    const marker = L.marker([order.user.latitude, order.user.longitude], {
-                        title: order.user.name
-                    }).addTo(map);
+            orders.forEach(order => {
+                pickupList.innerHTML += `
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                    </div>
+                    <span class="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-semibold">Pickup</span>
+                </div>
 
-                    const popupContent = `
-                        <div style="font-size: 12px; width: 200px;">
-                            <strong>${order.user.name}</strong><br>
-                            Order #${order.order_number}<br>
-                            <strong>Address:</strong> ${order.user.address}<br>
-                            <strong>Time:</strong> ${new Date(order.pickup_datetime || order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </div>
-                    `;
-                    marker.bindPopup(popupContent);
-                    markers.push(marker);
-                }
+                <div class="space-y-2 mb-3">
+                    <div class="flex items-start text-sm text-gray-600">
+                        <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                        <span class="flex-1">${order.user.address}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                        <span class="font-medium">${new Date(order.pickup_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                </div>
+
+                <button onclick="startDelivery(${order.refill_id})"
+                    class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                    Start Delivery
+                </button>
+            </div>
+        `;
             });
+        }
 
-            if (markers.length > 0) {
-                const group = new L.featureGroup(markers);
-                map.fitBounds(group.getBounds().pad(0.1));
+        function startDelivery(refillId) {
+            window.location.href = order_details.php?refill_id=${refill_id};
+        }
+
+
+
+        function renderDeliveryList() {
+            if (!deliveryData) return;
+
+            const deliveryList = document.getElementById('delivery-list');
+            const today = new Date().toISOString().split('T')[0];
+
+            deliveryList.innerHTML = '';
+
+            const orders = deliveryData.pending.delivery[currentPeriodDelivery].filter(order =>
+                order.delivery_datetime.startsWith(today)
+            );
+
+            if (!orders.length) {
+                deliveryList.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <p class="text-center text-gray-400 text-sm">No ${currentPeriodDelivery} deliveries for today</p>
+            </div>
+        `;
+                return;
             }
+
+            orders.forEach(order => {
+                deliveryList.innerHTML += `
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                    </div>
+                    <span class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold">Delivery</span>
+                </div>
+
+                <div class="space-y-2 mb-3">
+                    <div class="flex items-start text-sm text-gray-600">
+                        <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                        <span class="flex-1">${order.user.address}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                        <span class="font-medium">${new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                </div>
+
+                <button onclick="startDelivery(${order.refill_id})"
+                    class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                    Start Delivery
+                </button>
+            </div>
+        `;
+            });
+        }
+
+        function renderDelayedList() {
+            if (!deliveryData) return;
+
+            const delayedList = document.getElementById('delayed-list');
+            delayedList.innerHTML = '';
+
+            // Removed date filtering
+            const orders = deliveryData.history.delayed[currentPeriodDelayed];
+
+            if (!orders.length) {
+                delayedList.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+            <p class="text-center text-gray-400 text-sm">No ${currentPeriodDelayed} delayed orders</p>
+        </div>
+    `;
+                return;
+            }
+
+            orders.forEach(order => {
+                delayedList.innerHTML += `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                </div>
+                <span class="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                    <i class="bi bi-clock-history mr-1"></i> Delayed
+                </span>
+            </div>
+
+            <div class="space-y-2 mb-3">
+                <div class="flex items-start text-sm text-gray-600">
+                    <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                    <span class="flex-1">${order.user.address}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="bi bi-clock-fill text-yellow-500 mr-2"></i>
+                    <span class="font-medium">${new Date(order.delivery_datetime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+            </div>
+
+            <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-yellow-50 text-yellow-700 cursor-default">
+                <i class="bi bi-exclamation-triangle mr-1"></i> Delivery Delayed
+            </button>
+        </div>
+    `;
+            });
+        }
+
+        function renderCompletedList() {
+            if (!deliveryData) return;
+
+            const completedList = document.getElementById('completed-list');
+            completedList.innerHTML = '';
+
+            // Removed date filtering
+            const orders = deliveryData.history.completed[currentPeriodCompleted];
+
+            if (!orders.length) {
+                completedList.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+            <p class="text-center text-gray-400 text-sm">No ${currentPeriodCompleted} completed orders</p>
+        </div>
+    `;
+                return;
+            }
+
+            orders.forEach(order => {
+                completedList.innerHTML += `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                </div>
+                <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                    <i class="bi bi-check-circle-fill mr-1"></i> Completed
+                </span>
+            </div>
+
+            <div class="space-y-2 mb-3">
+                <div class="flex items-start text-sm text-gray-600">
+                    <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                    <span class="flex-1">${order.user.address}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="bi bi-clock-fill text-gray-500 mr-2"></i>
+                    <span class="font-medium">${new Date(order.delivery_datetime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+            </div>
+
+            <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-green-50 text-green-700 cursor-default">
+                <i class="bi bi-check-circle mr-1"></i> Delivery Completed
+            </button>
+        </div>
+    `;
+            });
         }
 
         function fetchDeliveries() {
@@ -425,57 +643,50 @@
                     const activeList = document.getElementById('active-list');
                     const today = new Date().toISOString().split('T')[0];
 
+                    // --- Active ---
                     const activeOrders = data.active.filter(order =>
                         order.pickup_datetime.startsWith(today) || order.delivery_datetime.startsWith(today)
                     );
 
                     if (!activeOrders.length) {
                         activeList.innerHTML = `
-                            <div class="no-deliveries">
-                                <p>No active deliveries for today</p>
-                            </div>
-                        `;
+                    <div class="flex items-center justify-center h-full">
+                        <p class="text-center text-gray-400 text-sm">No active deliveries for today</p>
+                    </div>
+                `;
                     } else {
                         activeList.innerHTML = activeOrders.map(order => `
-                            <div class="delivery-card">
-                                <div class="delivery-header">
-                                    <div>
-                                        <div class="delivery-name">${order.user.name}</div>
-                                        <div class="delivery-order">Order #${order.order_number}</div>
-                                    </div>
-                                    <span class="delivery-status">
-                                        <i class="bi bi-truck"></i> On the Way
-                                    </span>
-                                </div>
-
-                                <div class="delivery-details">
-                                    <div class="delivery-detail-item">
-                                        <i class="bi bi-geo-alt-fill address-icon"></i>
-                                        <span>${order.user.address}</span>
-                                    </div>
-                                    <div class="delivery-detail-item">
-                                        <i class="bi bi-clock-fill time-icon"></i>
-                                        <span><strong>${new Date(order.pickup_datetime || order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></span>
-                                    </div>
-                                </div>
-
-                                <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'" class="delivery-btn">
-                                    View Details
-                                </button>
+                    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
                             </div>
-                        `).join('');
+                            <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                                <i class="bi bi-truck mr-1"></i> On the Way
+                            </span>
+                        </div>
+
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-start text-sm text-gray-600">
+                                <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                                <span class="flex-1">${order.user.address}</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                                <span class="font-medium">${order.pickup_datetime ? new Date(order.pickup_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        </div>
+
+                        <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'"
+                            class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
+                            View Details
+                        </button>
+                    </div>
+                `).join('');
                     }
 
-                    if (document.getElementById('active-deliveries').classList.contains('hidden') === false) {
-                        setTimeout(() => {
-                            if (!map) {
-                                initializeMap();
-                            } else {
-                                updateMapMarkers();
-                            }
-                        }, 100);
-                    }
-
+                    // Render pickup, delivery, delayed, and completed lists
                     renderPickupList();
                     renderDeliveryList();
                     renderDelayedList();
@@ -484,239 +695,26 @@
                 .catch(console.error);
         }
 
-        function renderPickupList() {
-            const pickupTabs = document.getElementById('pickup-tabs');
-            const pickupContent = document.getElementById('pickup-content');
-            
-            const pickupData = deliveryData.pending?.pickup || {};
-            const periods = Object.keys(pickupData);
-
-            pickupTabs.innerHTML = periods.map(period => `
-                <button class="pending-tab ${period === 'morning' ? 'active' : ''}" onclick="switchPendingTab(this, '${period}', 'pickup')">
-                    ${period.charAt(0).toUpperCase() + period.slice(1)}
-                </button>
-            `).join('');
-
-            const firstPeriod = periods[0] || 'morning';
-            const ordersToShow = pickupData[firstPeriod] || [];
-
-            pickupContent.innerHTML = ordersToShow.length ? ordersToShow.map(order => `
-                <div class="delivery-card">
-                    <div class="delivery-header">
-                        <div>
-                            <div class="delivery-name">${order.user.name}</div>
-                            <div class="delivery-order">Order #${order.order_number}</div>
-                        </div>
-                        <span class="delivery-status" style="background-color: #fef3c7; color: #92400e;">
-                            <i class="bi bi-hourglass-split"></i> Pickup
-                        </span>
-                    </div>
-
-                    <div class="delivery-details">
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-geo-alt-fill address-icon"></i>
-                            <span>${order.user.address}</span>
-                        </div>
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-clock-fill time-icon"></i>
-                            <span><strong>${new Date(order.pickup_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></span>
-                        </div>
-                    </div>
-
-                    <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'" class="delivery-btn">
-                        View Details
-                    </button>
-                </div>
-            `).join('') : '<div class="no-deliveries"><p>No pickups scheduled</p></div>';
-        }
-
-        function renderDeliveryList() {
-            const deliveryTabs = document.getElementById('delivery-tabs');
-            const deliveryContent = document.getElementById('delivery-content');
-            
-            const deliveryData_ = deliveryData.pending?.delivery || {};
-            const periods = Object.keys(deliveryData_);
-
-            deliveryTabs.innerHTML = periods.map(period => `
-                <button class="pending-tab ${period === 'morning' ? 'active' : ''}" onclick="switchPendingTab(this, '${period}', 'delivery')">
-                    ${period.charAt(0).toUpperCase() + period.slice(1)}
-                </button>
-            `).join('');
-
-            const firstPeriod = periods[0] || 'morning';
-            const ordersToShow = deliveryData_[firstPeriod] || [];
-
-            deliveryContent.innerHTML = ordersToShow.length ? ordersToShow.map(order => `
-                <div class="delivery-card">
-                    <div class="delivery-header">
-                        <div>
-                            <div class="delivery-name">${order.user.name}</div>
-                            <div class="delivery-order">Order #${order.order_number}</div>
-                        </div>
-                        <span class="delivery-status" style="background-color: #dbeafe; color: #1e40af;">
-                            <i class="bi bi-hourglass-split"></i> Ready
-                        </span>
-                    </div>
-
-                    <div class="delivery-details">
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-geo-alt-fill address-icon"></i>
-                            <span>${order.user.address}</span>
-                        </div>
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-clock-fill time-icon"></i>
-                            <span><strong>${new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></span>
-                        </div>
-                    </div>
-
-                    <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'" class="delivery-btn">
-                        View Details
-                    </button>
-                </div>
-            `).join('') : '<div class="no-deliveries"><p>No deliveries ready</p></div>';
-        }
-
-        function renderDelayedList() {
-            const delayedTabs = document.getElementById('delayed-tabs');
-            const delayedContent = document.getElementById('delayed-content');
-            
-            const delayedData = deliveryData.history?.delayed || {};
-            const periods = Object.keys(delayedData);
-
-            delayedTabs.innerHTML = periods.map(period => `
-                <button class="pending-tab ${period === 'morning' ? 'active' : ''}" onclick="switchPendingTab(this, '${period}', 'delayed')">
-                    ${period.charAt(0).toUpperCase() + period.slice(1)}
-                </button>
-            `).join('');
-
-            const firstPeriod = periods[0] || 'morning';
-            const ordersToShow = delayedData[firstPeriod] || [];
-
-            delayedContent.innerHTML = ordersToShow.length ? ordersToShow.map(order => `
-                <div class="delivery-card">
-                    <div class="delivery-header">
-                        <div>
-                            <div class="delivery-name">${order.user.name}</div>
-                            <div class="delivery-order">Order #${order.order_number}</div>
-                        </div>
-                        <span class="delivery-status" style="background-color: #fee2e2; color: #991b1b;">
-                            <i class="bi bi-exclamation-triangle"></i> Delayed
-                        </span>
-                    </div>
-
-                    <div class="delivery-details">
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-geo-alt-fill address-icon"></i>
-                            <span>${order.user.address}</span>
-                        </div>
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-clock-fill time-icon"></i>
-                            <span><strong>${new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></span>
-                        </div>
-                    </div>
-
-                    <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'" class="delivery-btn">
-                        View Details
-                    </button>
-                </div>
-            `).join('') : '<div class="no-deliveries"><p>No delayed deliveries</p></div>';
-        }
-
-        function renderCompletedList() {
-            const completedTabs = document.getElementById('completed-tabs');
-            const completedContent = document.getElementById('completed-content');
-            
-            const completedData = deliveryData.history?.completed || {};
-            const periods = Object.keys(completedData);
-
-            completedTabs.innerHTML = periods.map(period => `
-                <button class="pending-tab ${period === 'morning' ? 'active' : ''}" onclick="switchPendingTab(this, '${period}', 'completed')">
-                    ${period.charAt(0).toUpperCase() + period.slice(1)}
-                </button>
-            `).join('');
-
-            const firstPeriod = periods[0] || 'morning';
-            const ordersToShow = completedData[firstPeriod] || [];
-
-            completedContent.innerHTML = ordersToShow.length ? ordersToShow.map(order => `
-                <div class="delivery-card">
-                    <div class="delivery-header">
-                        <div>
-                            <div class="delivery-name">${order.user.name}</div>
-                            <div class="delivery-order">Order #${order.order_number}</div>
-                        </div>
-                        <span class="delivery-status" style="background-color: #dcfce7; color: #166534;">
-                            <i class="bi bi-check-circle"></i> Completed
-                        </span>
-                    </div>
-
-                    <div class="delivery-details">
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-geo-alt-fill address-icon"></i>
-                            <span>${order.user.address}</span>
-                        </div>
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-clock-fill time-icon"></i>
-                            <span><strong>${new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></span>
-                        </div>
-                    </div>
-
-                    <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'" class="delivery-btn">
-                        View Details
-                    </button>
-                </div>
-            `).join('') : '<div class="no-deliveries"><p>No completed deliveries</p></div>';
-        }
-
-        function switchPendingTab(button, period, type) {
-            const parentId = type === 'pickup' ? 'pickup-tabs' : type === 'delivery' ? 'delivery-tabs' : type === 'delayed' ? 'delayed-tabs' : 'completed-tabs';
-            const contentId = type === 'pickup' ? 'pickup-content' : type === 'delivery' ? 'delivery-content' : type === 'delayed' ? 'delayed-content' : 'completed-content';
-            
-            document.querySelectorAll(`#${parentId} .pending-tab`).forEach(btn => {
-                btn.classList.remove('active');
-            });
-            button.classList.add('active');
-
-            const dataType = type === 'pickup' ? deliveryData.pending.pickup : type === 'delivery' ? deliveryData.pending.delivery : type === 'delayed' ? deliveryData.history.delayed : deliveryData.history.completed;
-            const orders = dataType[period] || [];
-
-            const contentElement = document.getElementById(contentId);
-            contentElement.innerHTML = orders.length ? orders.map(order => `
-                <div class="delivery-card">
-                    <div class="delivery-header">
-                        <div>
-                            <div class="delivery-name">${order.user.name}</div>
-                            <div class="delivery-order">Order #${order.order_number}</div>
-                        </div>
-                        <span class="delivery-status" style="background-color: ${type === 'completed' ? '#dcfce7' : type === 'delayed' ? '#fee2e2' : '#fef3c7'}; color: ${type === 'completed' ? '#166534' : type === 'delayed' ? '#991b1b' : '#92400e'};">
-                            <i class="bi bi-${type === 'completed' ? 'check-circle' : type === 'delayed' ? 'exclamation-triangle' : 'hourglass-split'}"></i> ${type === 'completed' ? 'Completed' : type === 'delayed' ? 'Delayed' : 'Pickup'}
-                        </span>
-                    </div>
-
-                    <div class="delivery-details">
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-geo-alt-fill address-icon"></i>
-                            <span>${order.user.address}</span>
-                        </div>
-                        <div class="delivery-detail-item">
-                            <i class="bi bi-clock-fill time-icon"></i>
-                            <span><strong>${new Date(type === 'pickup' ? order.pickup_datetime : order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong></span>
-                        </div>
-                    </div>
-
-                    <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'" class="delivery-btn">
-                        View Details
-                    </button>
-                </div>
-            `).join('') : `<div class="no-deliveries"><p>No deliveries for this period</p></div>`;
-        }
-
-        // Initialize on page load
+        // Initialize periods based on current time when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            updateDateTime();
+            initializePeriods();
+            // Update the display labels after setting the periods
+            updatePickupPeriodDisplay();
+            updateDeliveryPeriodDisplay();
+            updateDelayedPeriodDisplay();
+            updateCompletedPeriodDisplay();
             fetchDeliveries();
             setInterval(fetchDeliveries, 30000);
+
         });
+
+        function startDelivery(id) {
+            window.location.href = "order_details.php?refill_id=" + id;
+        }
     </script>
+
+
 </body>
+
 </html>
+
