@@ -9,7 +9,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $email = $_POST["email"];
     $password = $_POST["password"];
-    $remember = isset($_POST['remember']); 
+    $remember = isset($_POST['remember']);
 
     // Hash input password for comparison
     $password_hash = hash('sha256', $password);
@@ -31,14 +31,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit;
             }
 
+
             // START SESSION
-            $_SESSION['user_id'] = $user['user_id'];
+            session_regenerate_id(true); 
+            $_SESSION['id'] = $user['user_id']; 
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
 
+
             // Remember Me: set simple cookie for email (will expire in 1 day)
             if ($remember) {
-                setcookie('remember_email', $email, time() + 86400, "/"); 
+                setcookie('remember_email', $email, time() + 86400, "/");
             } else {
                 // Remove cookie if unchecked
                 if (isset($_COOKIE['remember_email'])) {
@@ -55,15 +58,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: Customer/order_water_refill.php");
             }
             exit;
-
         } else {
             echo "<script>alert('Incorrect password!'); window.history.back();</script>";
             exit;
         }
-
     } else {
         echo "<script>alert('Email not found!'); window.history.back();</script>";
         exit;
     }
 }
-?>

@@ -1,3 +1,8 @@
+<?php
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -19,6 +24,9 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
+        .swal-title-small {
+    font-size: 5; /* adjust as needed */
+}
     </style>
 </head>
 
@@ -185,18 +193,25 @@
                 title: `Receipt: ${transactionNumber}`,
                 imageUrl: `../Assets/receipts/${imagePath}`,
                 imageAlt: 'Receipt',
-                width: 600,
+                width: 400, // smaller width
+                height: 600, // smaller width
+
+                padding: '10px', // optional: reduce padding around the content
                 showCloseButton: true,
                 showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-download mr-2"></i>Download',
                 cancelButtonText: 'Close',
-                confirmButtonColor: '#3b82f6'
+                confirmButtonColor: '#3b82f6',
+                customClass: {
+                    title: 'swal-title-small'
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     downloadReceipt(imagePath, transactionNumber);
                 }
             });
         }
+
 
         function downloadReceipt(imagePath, transactionNumber) {
             const link = document.createElement('a');

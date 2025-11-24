@@ -1,3 +1,8 @@
+<?php
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -72,11 +77,7 @@
                         <h1 class="text-3xl font-semibold text-blue-500">Point of Sale</h1>
                         <p class="text-sm text-gray-700 mt-1">Process walk-in customer transactions</p>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <button onclick="window.open('receipt_manager.php', '_blank')"
-                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
-                            <i class="fas fa-receipt mr-2"></i>View Receipts
-                        </button>
+                    <div class="flex items-center gap-4">                        
                         <div class="text-right">
                             <p class="text-sm text-gray-500">Current Date</p>
                             <p id="currentDate" class="font-semibold text-gray-800"></p>

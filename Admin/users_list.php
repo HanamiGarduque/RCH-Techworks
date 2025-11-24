@@ -1,11 +1,7 @@
 <?php
-// require_once '../check_session.php';
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
 require_once '../Database/db_connection.php';
-
-// if (!isAdmin()) {
-//     header("Location: " . dirname($_SERVER['PHP_SELF']) . "/index.php");
-//     exit();
-// }
 
 $database = new Database();
 $db = $database->getConnect();
@@ -113,28 +109,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     <div class="p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 flex flex-col flex-1 overflow-hidden">
                         <!-- Updated filter tabs for users: All, Customers, Riders, Banned -->
                         <div class="flex gap-3 mb-6 flex-wrap flex-shrink-0">
-
-                            <button id="allTab"
-                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
-                                onclick="filterTab('all', this)">
+                            <button class="filter-btn px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
+                                onclick="filterTab(this)">
                                 <i class="fas fa-list mr-2"></i>All
                             </button>
-                            <button
-                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
-                                onclick="filterTab('customer', this)">
+                            <button class="filter-btn px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
                                 <i class="fas fa-shopping-cart mr-2"></i>Customers
                             </button>
-                            <button
-                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
-                                onclick="filterTab('rider', this)">
+                            <button class="filter-btn px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
                                 <i class="fas fa-motorcycle mr-2"></i>Riders
                             </button>
-                            <button
-                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
-                                onclick="filterTab('banned', this)">
+                            <button class="filter-btn px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                onclick="filterTab(this)">
                                 <i class="fas fa-ban mr-2"></i>Banned
                             </button>
                         </div>
+
 
                         <!-- Table -->
                         <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col flex-1">
@@ -193,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                                 $userStatus = htmlspecialchars($row['status']);
 
 
-                                               echo '<td class="px-6 py-4 text-center">';
+                                                echo '<td class="px-6 py-4 text-center">';
 
                                                 echo "<div class='flex items-center justify-center gap-3'>";
 
@@ -214,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                                                 echo '</td>';
 
-                                                
+
 
                                                 echo "</tr>";
                                             }
@@ -255,30 +247,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
         }
 
-        function filterTab(filter, button) {
+        function filterTab(button) {
             // Update tab styles
             document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white');
-                btn.classList.add('bg-blue-50', 'text-blue-500');
+                btn.classList.remove('bg-blue-600', 'text-white', 'no-hover');
+                btn.classList.add('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
             });
-            button.classList.remove('bg-blue-50', 'text-blue-500');
-            button.classList.add('bg-blue-600', 'text-white');
+            button.classList.remove('bg-blue-50', 'text-blue-500', 'hover:bg-gray-200');
+            button.classList.add('bg-blue-600', 'text-white', 'no-hover');
 
+            // Filter table rows
+            const filter = button.textContent.trim().toLowerCase(); // all, customers, riders, banned
             const rows = document.querySelectorAll('#usersTable tbody tr');
+
             rows.forEach(row => {
                 const userType = row.querySelector('.usertype-cell')?.textContent.trim().toLowerCase();
                 const userStatus = row.querySelector('.userstatus-cell')?.textContent.trim().toLowerCase();
 
                 let show = false;
-                if (filter === "all") show = true;
-                else if (filter === "customer" && userType === "customer") show = true;
-                else if (filter === "rider" && userType === "rider") show = true;
-                else if (filter === "banned" && userStatus === "banned") show = true;
+
+                if (filter === "all") {
+                    show = true;
+                } else if (filter === "customers" && userType === "customer") {
+                    show = true;
+                } else if (filter === "riders" && userType === "rider") {
+                    show = true;
+                } else if (filter === "banned" && userStatus === "banned") {
+                    show = true;
+                }
 
                 row.style.display = show ? "" : "none";
             });
-
         }
+
 
         // Fixed searchTable function
         function searchTable() {

@@ -44,7 +44,7 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
               "inventory_list.php"
             )}
             ${createNavItem(
-              "../Customer/users_list.php",
+              "../Admin/users_list.php",
               "fas fa-users",
               "Users",
               "users_list.php"

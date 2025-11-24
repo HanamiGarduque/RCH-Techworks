@@ -1,12 +1,8 @@
 <?php
-// require_once '../check_session.php';
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
+
 require_once '../Database/db_connection.php';
-
-// if (!isAdmin()) {
-//     header("Location: " . dirname($_SERVER['PHP_SELF']) . "/index.php");
-//     exit();
-// }
-
 $database = new Database();
 $db = $database->getConnect();
 ?>

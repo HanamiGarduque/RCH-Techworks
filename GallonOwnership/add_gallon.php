@@ -1,5 +1,10 @@
 <?php
+require_once __DIR__ . '/../session.php';
 require_once '../Database/db_connection.php';
+redirectIfRoleMismatch('admin'); // only admins can access
+
+
+
 $database = new Database();
 $db = $database->getConnect();
 
@@ -13,7 +18,7 @@ $data = json_decode(file_get_contents("php://input"), true);
 $item_id = $data['item_id'] ?? null;
 $gallon_type = $data['gallon_type'] ?? null;
 $status = 'Available';
-$current_owner_id = 1; // default owner
+$current_owner_id = 10; // default owner
 
 if (!$item_id || !$gallon_type) {
     echo json_encode(['success' => false, 'message' => 'Missing item ID or gallon type.']);

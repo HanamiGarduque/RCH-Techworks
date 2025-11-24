@@ -1,4 +1,8 @@
 <?php
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
+
+
 require_once '../Database/db_connection.php';
 header('Content-Type: application/json');
 
