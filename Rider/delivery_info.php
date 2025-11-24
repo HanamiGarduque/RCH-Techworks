@@ -173,12 +173,7 @@ body { font-family:'Poppins',sans-serif; background:#f4f6fa; margin:0; padding-t
     <?php endforeach; ?>
 </div>
 
-<button class="action-btn" onclick="pickupOrder(<?= $user_id ?>)">Pickup Order</button>
-
 <script>
-function pickupOrder(userId) {
-    window.location.href = "delivery_info.php?id=" + userId;
-}
 function openFullMap() {
     window.location.href = "full_map.php?id=<?= $user_id ?>";
 }
