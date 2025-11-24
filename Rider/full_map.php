@@ -30,8 +30,10 @@ $map_stmt->bindParam(':id', $user_id);
 $map_stmt->execute();
 $map = $map_stmt->fetch(PDO::FETCH_ASSOC);
 
-$destLat = $map['latitude'] ?? 13.88;   // fallback coordinates
-$destLng = $map['longitude'] ?? 121.11;
+// Fallback coordinates if missing
+$destLat = (!empty($map['latitude'])) ? floatval($map['latitude']) : 13.8800;
+$destLng = (!empty($map['longitude'])) ? floatval($map['longitude']) : 121.1100;
+
 $customer_name = $customer['name'];
 $address = $customer['address'];
 ?>
@@ -42,6 +44,7 @@ $address = $customer['address'];
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Live GPS | <?= htmlspecialchars($customer_name) ?></title>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 
@@ -67,7 +70,7 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
 .back-btn {
     position: absolute;
     top: 10px;
-    left: 20px;
+    left: 70px;
     background: rgba(255,255,255,0.9);
     padding: 6px 12px;
     border-radius: 8px;
@@ -76,7 +79,6 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
     cursor: pointer;
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    user-select: none;
 }
 
 .bottom-bar {
@@ -118,11 +120,16 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
 <body>
 
 <div class="back-btn" onclick="history.back()">←</div>
+
 <div id="map"></div>
 <div class="direction-control" id="eta">Calculating route...</div>
 
 <div class="bottom-bar">
-    <button class="btn btn-green" onclick="window.location.href='qr_scan.php?user_id=<?= $user_id ?>&customer=<?= urlencode($customer_name) ?>&lat=<?= $destLat ?>&lng=<?= $destLng ?>'">Scan QR</button>
+    <button class="btn btn-green" 
+        onclick="window.location.href='qr_scan.php?user_id=<?= $user_id ?>&customer=<?= urlencode($customer_name) ?>&lat=<?= $destLat ?>&lng=<?= $destLng ?>'">
+        Scan QR
+    </button>
+
     <button class="btn btn-outline" onclick="messageCustomer()">💬 Message</button>
 </div>
 
@@ -130,53 +137,64 @@ body { margin:0; font-family:'Poppins',sans-serif; background:#f4f6fa; color:#33
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-let map = L.map('map').setView([<?= $destLat ?>, <?= $destLng ?>], 14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
+// Set map to customer's stored coordinates
+let map = L.map('map').setView([<?= $destLat ?>, <?= $destLng ?>], 15);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© OpenStreetMap'
+}).addTo(map);
 
 // Customer marker
 const destMarker = L.marker([<?= $destLat ?>, <?= $destLng ?>]).addTo(map)
-    .bindPopup("<b><?= htmlspecialchars($customer_name) ?></b>").openPopup();
+    .bindPopup("<b><?= htmlspecialchars($customer_name) ?></b><br><?= htmlspecialchars($address) ?>");
 
+// Rider marker
 let riderMarker = null;
 let routingControl = null;
 
-function updateRoute(lat,lng){
-    if(routingControl) map.removeControl(routingControl);
+// Update route
+function updateRoute(lat, lng) {
+    if (routingControl) map.removeControl(routingControl);
 
     routingControl = L.Routing.control({
         waypoints: [
-            L.latLng(lat,lng),
+            L.latLng(lat, lng),
             L.latLng(<?= $destLat ?>, <?= $destLng ?>)
         ],
-        router: L.Routing.osrmv1({ serviceUrl:'https://router.project-osrm.org/route/v1' }),
-        addWaypoints:false,
-        draggableWaypoints:false,
-        lineOptions:{ styles:[{color:'#007bff',weight:5}] },
-        createMarker:() => null
+        router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+        addWaypoints: false,
+        draggableWaypoints: false,
+        lineOptions: { styles: [{ color: '#007bff', weight: 5 }] },
+        createMarker: () => null
     }).addTo(map);
 
     routingControl.on('routesfound', (e) => {
         let route = e.routes[0];
         let mins = Math.round(route.summary.totalTime / 60);
         let dist = (route.summary.totalDistance / 1000).toFixed(1);
+
         document.getElementById('eta').innerText = `${mins} min – ${dist} km`;
     });
 }
 
 // GPS Tracking
-navigator.geolocation.watchPosition((pos)=>{
+navigator.geolocation.watchPosition((pos) => {
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
-    if(!riderMarker)
-        riderMarker = L.marker([lat,lng]).addTo(map).bindPopup("You are here").openPopup();
-    else
-        riderMarker.setLatLng([lat,lng]);
+    if (!riderMarker) {
+        riderMarker = L.marker([lat, lng]).addTo(map).bindPopup("You are here");
+    } else {
+        riderMarker.setLatLng([lat, lng]);
+    }
 
-    updateRoute(lat,lng);
-},()=>{}, {enableHighAccuracy:true});
+    updateRoute(lat, lng);
 
-function messageCustomer(){
+}, (err) => {
+    console.log("GPS Error:", err);
+}, { enableHighAccuracy: true });
+
+function messageCustomer() {
     alert("Opening messaging app…");
 }
 </script>

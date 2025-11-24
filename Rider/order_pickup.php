@@ -1,4 +1,4 @@
-<?php
+<?php 
 session_start();
 require_once '../Database/db_connection.php';
 
@@ -16,7 +16,7 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
 $db = new Database();
 $conn = $db->getConnect();
 
-// Fetch customer details from database
+// Fetch customer details
 $customer_stmt = $conn->prepare("
     SELECT name, address 
     FROM users 
@@ -31,7 +31,7 @@ if (!$customer) {
     exit;
 }
 
-// Hardcoded items per customer (no orders table)
+// Hardcoded orders
 $orders = [
     4 => [
         "order_id" => "#DEL004",
@@ -69,7 +69,7 @@ $orders = [
         "items" => [
             ["name" => "20L Slim Gallon", "code" => "SP-204-401", "status" => "Ready"]
         ]
-        ],
+    ],
     9 => [
         "order_id" => "#DEL009",
         "status" => "Ready for Pickup",
@@ -79,7 +79,7 @@ $orders = [
     ]
 ];
 
-// Check if hardcoded order exists for this user
+// Check if order exists
 if (!isset($orders[$user_id])) {
     echo "No order assigned for this customer.";
     exit;
@@ -102,18 +102,27 @@ $address = $customer['address'];
 <title>Order Pickup</title>
 
 <style>
-body { 
-    font-family:'Poppins',sans-serif; 
-    background:#f4f6fa; 
-    margin:0; 
-    padding-top: 120px;
-    color:#333; 
+:root {
+    --header-height: 90px;       /* ADJUST HEADER HEIGHT */
+    --header-padding: 18px;      /* ADJUST INNER SPACING */
+    --header-radius: 28px;       /* ADJUST CURVED BOTTOM */
 }
-.header { 
-    background-color:#2196F3; 
-    color:white; 
-    padding:30px 20px 60px; 
-    border-radius:0 0 40px 40px; 
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #f4f6fa;
+    margin: 0;
+    padding-top: calc(var(--header-height) + 40px);
+    color: #333;
+}
+
+/* REDUCED HEADER SIZE */
+.header {
+    background-color: #2196F3;
+    color: white;
+    padding: var(--header-padding);
+    height: var(--header-height);
+    border-radius: 0 0 var(--header-radius) var(--header-radius);
     position: fixed;
     top: 0;
     left: 0;
@@ -121,76 +130,107 @@ body {
     z-index: 1000;
 }
 
-.back-btn { 
-    position:absolute; 
-    top:10px; 
-    left:20px; 
-    font-size:22px; 
-    cursor:pointer; 
+.back-btn {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    font-size: 22px;
+    cursor: pointer;
 }
 
-.status-badge { 
-    position:absolute; 
-    top:30px; 
-    right:20px; 
-    background-color:#FF6F61; 
-    color:white; 
-    font-size:12px; 
-    padding:5px 12px; 
-    border-radius:20px; 
+.status-badge {
+    position: absolute;
+    top: 14px;
+    right: 20px;
+    background-color: #FF6F61;
+    color: white;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 16px;
 }
 
-.card { 
-    background:white; 
-    border-radius:15px; 
-    box-shadow:0 2px 8px rgba(0,0,0,0.1); 
-    margin:20px; 
-    padding:15px; 
+.header p {
+    margin: 36px 0 2px;
+    font-size: 14px;
 }
 
-.step { display:flex; align-items:center; margin:10px 0; }
-.circle { width:22px; height:22px; border-radius:50%; background:#ccc; color:white; display:flex; justify-content:center; align-items:center; font-size:12px; margin-right:10px; }
-.active-step { background-color:#4CAF50; }
-
-.items { 
-    background:white; 
-    border-radius:15px; 
-    margin:20px; 
-    padding:15px; 
-    box-shadow:0 2px 8px rgba(0,0,0,0.1); 
+.header h3 {
+    margin: 0;
+    font-size: 20px;
 }
 
-.item { 
-    display:flex; 
-    justify-content:space-between; 
-    align-items:center; 
-    background:#f4f6fa; 
-    border-radius:10px; 
-    padding:10px; 
-    margin-bottom:10px; 
+.card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 20px;
+    padding: 15px;
 }
 
-.item-status { 
-    background:#8BC34A; 
-    color:white; 
-    border-radius:12px; 
-    padding:2px 8px; 
-    font-size:11px; 
+.step {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
 }
 
-.action-btn { 
-    width:90%; 
-    margin:20px auto; 
-    display:block; 
-    padding:12px 0; 
-    border:none; 
-    border-radius:25px; 
-    color:white; 
-    font-size:16px; 
-    cursor:pointer; 
-    background:#1E90FF; 
+.circle {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ccc;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    margin-right: 10px;
 }
-.action-btn:hover { background:#0b7dda; }
+
+.active-step {
+    background-color: #4CAF50;
+}
+
+.items {
+    background: white;
+    border-radius: 15px;
+    margin: 20px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f4f6fa;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.item-status {
+    background: #8BC34A;
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+.action-btn {
+    width: 90%;
+    margin: 20px auto;
+    display: block;
+    padding: 12px 0;
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    background: #1E90FF;
+}
+.action-btn:hover {
+    background: #0b7dda;
+}
 </style>
 </head>
 
@@ -218,7 +258,7 @@ body {
 
 <div class="items">
     <strong>Items (<?= count($items) ?>)</strong>
-    
+
     <?php foreach ($items as $item): ?>
         <div class="item">
             <div>
