@@ -3,12 +3,14 @@
 <?php
 
 ?>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - RCH Water Refilling System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -97,100 +99,131 @@
 </head>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const passwordInput = document.getElementById('password');
-    const confirmInput = document.getElementById('confirmPassword');
-    const passwordReqText = document.getElementById('passwordReq');
-    const confirmReqText = document.getElementById('confirmPasswordReq');
+    document.addEventListener("DOMContentLoaded", function() {
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('confirmPassword');
+        const passwordReqText = document.getElementById('passwordReq');
+        const confirmReqText = document.getElementById('confirmPasswordReq');
 
-    const requirements = [
-        { regex: /.{8,}/, text: '8+' },
-        { regex: /[A-Z]/, text: 'A-Z' },
-        { regex: /[a-z]/, text: 'a-z' },
-        { regex: /[0-9]/, text: '0-9' },
-        { regex: /[!@#$%^&*(),.?":{}|<>]/, text: '!@#$' },
-    ];
+        const requirements = [{
+                regex: /.{8,}/,
+                text: '8+'
+            },
+            {
+                regex: /[A-Z]/,
+                text: 'A-Z'
+            },
+            {
+                regex: /[a-z]/,
+                text: 'a-z'
+            },
+            {
+                regex: /[0-9]/,
+                text: '0-9'
+            },
+            {
+                regex: /[!@#$%^&*(),.?":{}|<>]/,
+                text: '!@#$'
+            },
+        ];
 
-    function updatePasswordReqText() {
-        const value = passwordInput.value;
-        let html = '';
-        let allMet = true;
+        function updatePasswordReqText() {
+            const value = passwordInput.value;
+            let html = '';
+            let allMet = true;
 
-        requirements.forEach((req, index) => {
-            if (req.regex.test(value)) {
-                html += `<span class="text-green-600 font-semibold">${req.text}</span>`;
+            requirements.forEach((req, index) => {
+                if (req.regex.test(value)) {
+                    html += `<span class="text-green-600 font-semibold">${req.text}</span>`;
+                } else {
+                    html += `<span class="text-red-500 font-semibold">${req.text}</span>`;
+                    allMet = false;
+                }
+                if (index !== requirements.length - 1) html += ' , ';
+            });
+
+            passwordReqText.innerHTML = html;
+
+            // Change input border based on all requirements
+            if (allMet) {
+                passwordInput.classList.remove("border-red-500");
+                passwordInput.classList.add("border-green-600");
             } else {
-                html += `<span class="text-red-500 font-semibold">${req.text}</span>`;
-                allMet = false;
+                passwordInput.classList.remove("border-green-600");
+                passwordInput.classList.add("border-red-500");
             }
-            if (index !== requirements.length - 1) html += ' , ';
+
+            return allMet;
+        }
+
+
+
+
+        function updateConfirmPasswordText() {
+            const password = passwordInput.value;
+            const confirm = confirmInput.value;
+
+            if (confirm === "") {
+                confirmReqText.textContent = "";
+                confirmInput.classList.remove("border-green-600", "border-red-500");
+            } else if (password === confirm) {
+                confirmReqText.textContent = "Great! Your passwords match.";
+                confirmReqText.classList.remove("text-red-500");
+                confirmReqText.classList.add("text-green-600");
+                confirmInput.classList.remove("border-red-500");
+                confirmInput.classList.add("border-green-600");
+            } else {
+                confirmReqText.textContent = "Oops! Your passwords don’t match.";
+                confirmReqText.classList.remove("text-green-600");
+                confirmReqText.classList.add("text-red-500");
+                confirmInput.classList.remove("border-green-600");
+                confirmInput.classList.add("border-red-500");
+            }
+        }
+
+        passwordInput.addEventListener('input', function() {
+            updatePasswordReqText();
+            updateConfirmPasswordText();
         });
 
-        passwordReqText.innerHTML = html;
+        confirmInput.addEventListener('input', updateConfirmPasswordText);
 
-        // Change input border based on all requirements
-        if (allMet) {
-            passwordInput.classList.remove("border-red-500");
-            passwordInput.classList.add("border-green-600");
-        } else {
-            passwordInput.classList.remove("border-green-600");
-            passwordInput.classList.add("border-red-500");
-        }
+        // Form submission validation
+        const form = document.querySelector("form");
+        form.addEventListener("submit", function(e) {
+            const value = passwordInput.value;
+            const confirm = confirmInput.value;
 
-        return allMet;
-    }
+            const allMet = updatePasswordReqText();
+            if (!allMet) {
+                e.preventDefault();
+                alert("Password does not meet all required criteria.");
+                return;
+            }
 
-    function updateConfirmPasswordText() {
-        const password = passwordInput.value;
-        const confirm = confirmInput.value;
+            if (value !== confirm) {
+                e.preventDefault();
+                alert("Passwords do not match.");
+            }
+        });
 
-        if (confirm === "") {
-            confirmReqText.textContent = "";
-            confirmInput.classList.remove("border-green-600", "border-red-500");
-        } else if (password === confirm) {
-            confirmReqText.textContent = "Great! Your passwords match.";
-            confirmReqText.classList.remove("text-red-500");
-            confirmReqText.classList.add("text-green-600");
-            confirmInput.classList.remove("border-red-500");
-            confirmInput.classList.add("border-green-600");
-        } else {
-            confirmReqText.textContent = "Oops! Your passwords don’t match.";
-            confirmReqText.classList.remove("text-green-600");
-            confirmReqText.classList.add("text-red-500");
-            confirmInput.classList.remove("border-green-600");
-            confirmInput.classList.add("border-red-500");
-        }
-    }
-
-    passwordInput.addEventListener('input', function() {
+        // Initialize on load
         updatePasswordReqText();
-        updateConfirmPasswordText();
     });
 
-    confirmInput.addEventListener('input', updateConfirmPasswordText);
+    function togglePassword(id, icon) {
+        const input = document.getElementById(id);
 
-    // Form submission validation
-    const form = document.querySelector("form");
-    form.addEventListener("submit", function (e) {
-        const value = passwordInput.value;
-        const confirm = confirmInput.value;
-
-        const allMet = updatePasswordReqText();
-        if (!allMet) {
-            e.preventDefault();
-            alert("Password does not meet all required criteria.");
-            return;
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        } else {
+            input.type = "password";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
         }
-
-        if (value !== confirm) {
-            e.preventDefault();
-            alert("Passwords do not match.");
-        }
-    });
-
-    // Initialize on load
-    updatePasswordReqText();
-});
+    }
 </script>
 
 
@@ -280,24 +313,40 @@ document.addEventListener("DOMContentLoaded", function() {
                         </div>
 
 
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password<span class="text-red-500">*</span></label>
-                            <input type="password" id="password" name="password" placeholder="Enter your password"
-                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                        <div class="relative">
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                                Password <span class="text-red-500">*</span>
+                            </label>
+
+                            <input type="password" id="password" name="password"
+                                placeholder="Enter your password"
+                                class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
+
+                            <!-- Eye icon inside input -->
+                            <i class="fa-solid fa-eye absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+                                onclick="togglePassword('password', this)"></i>
 
                             <p id="passwordReq" class="text-sm text-red-500 mt-2">
                                 Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character (!@#$%^&*(),.?)
                             </p>
-
                         </div>
 
-                        <div>
-                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password<span class="text-red-500">*</span></label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter your password"
-                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                        <div class="relative">
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                                Confirm Password <span class="text-red-500">*</span>
+                            </label>
+
+                            <input type="password" id="confirmPassword" name="confirmPassword"
+                                placeholder="Re-enter your password"
+                                class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
-                                <p id="confirmPasswordReq" class="text-sm mt-2"></p>
+
+                            <!-- Eye icon inside input -->
+                            <i class="fa-solid fa-eye absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+                                onclick="togglePassword('confirmPassword', this)"></i>
+
+                            <p id="confirmPasswordReq" class="text-sm mt-2"></p>
                         </div>
 
                         <div class="flex items-start gap-2">
@@ -373,20 +422,22 @@ document.addEventListener("DOMContentLoaded", function() {
     </script>
 
     <?php if (isset($_SESSION['alert'])): ?>
-<script>
-Swal.fire({
-    icon: "<?= $_SESSION['alert']['icon'] ?>",
-    title: "<?= $_SESSION['alert']['title'] ?>",
-    text: "<?= $_SESSION['alert']['text'] ?>",
-}).then(() => {
-    <?php if ($_SESSION['alert']['action'] == "redirect"): ?>
-        window.location = "<?= $_SESSION['alert']['url'] ?>";
-    <?php else: ?>
-        window.history.back();
-    <?php endif; ?>
-});
-</script>
-<?php unset($_SESSION['alert']); endif; ?>
+        <script>
+            Swal.fire({
+                icon: "<?= $_SESSION['alert']['icon'] ?>",
+                title: "<?= $_SESSION['alert']['title'] ?>",
+                text: "<?= $_SESSION['alert']['text'] ?>",
+            }).then(() => {
+                <?php if ($_SESSION['alert']['action'] == "redirect"): ?>
+                    window.location = "<?= $_SESSION['alert']['url'] ?>";
+                <?php else: ?>
+                    window.history.back();
+                <?php endif; ?>
+            });
+        </script>
+    <?php unset($_SESSION['alert']);
+    endif; ?>
 
 </body>
+
 </html>
