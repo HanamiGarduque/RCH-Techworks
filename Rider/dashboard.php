@@ -274,11 +274,7 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
             hours = hours ? hours : 12; // Convert 0 to 12
             const hoursFormatted = String(hours).padStart(2, '0');
 
-<<<<<<< HEAD
             document.getElementById('datetime').innerText = `${month} ${day}, ${year} • ${hoursFormatted}:${minutes} ${ampm}`;
-=======
-            document.getElementById('datetime').innerText = ${month} ${day}, ${year} • ${hoursFormatted}:${minutes} ${ampm};
->>>>>>> 73e5d8355a12433804f1d9c0c6fbdd12bb331637
         }
 
         updateDateTime();
@@ -720,9 +716,4 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
 
 </body>
 
-<<<<<<< HEAD
 </html>
-=======
-</html>
-
->>>>>>> 73e5d8355a12433804f1d9c0c6fbdd12bb331637
