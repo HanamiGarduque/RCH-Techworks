@@ -226,10 +226,11 @@
                             </div>
 
                             <!-- --------------------------------------------- -->
-                            <!-- CANCELED TAB (Delivered Orders) -->
+                            <!-- CANCELLED TAB -->
                             <!-- --------------------------------------------- -->
                             <div id="cancelled" class="tab-content space-y-6 hidden">
 
+                                <!-- CANCELLED ORDER #1 -->
                                 <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
                                     <div class="flex justify-between items-center mb-3">
                                         <span class="font-semibold text-gray-800">ORD-110325001</span>
@@ -257,9 +258,16 @@
                                         <span class="text-lg font-bold text-gray-800">₱677.20</span>
                                     </div>
 
+                                    <!-- VIEW DETAILS BUTTON -->
+                                    <div class="flex justify-end">
+                                        <a href="order_details.php?order=ORD-110325001&status=cancelled"
+                                            class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                            View Details
+                                        </a>
+                                    </div>
                                 </div>
 
-
+                                <!-- CANCELLED ORDER #2 -->
                                 <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
                                     <div class="flex justify-between items-center mb-3">
                                         <span class="font-semibold text-gray-800">ORD-110325002</span>
@@ -287,9 +295,17 @@
                                         <span class="text-lg font-bold text-gray-800">₱150.00</span>
                                     </div>
 
+                                    <!-- VIEW DETAILS BUTTON -->
+                                    <div class="flex justify-end">
+                                        <a href="order_details.php?order=ORD-110325002&status=cancelled"
+                                            class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
+                                            View Details
+                                        </a>
+                                    </div>
                                 </div>
 
                             </div>
+
 
 
                         </div>
@@ -403,7 +419,7 @@
                     <div class="p-4 border border-gray-200 rounded-lg shadow-sm mb-4">
                         <div class="flex justify-between items-center mb-3">
                             <span class="font-semibold text-gray-800">${order.order_number}</span>
-                            <span class="text-red-500 font-medium">${order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}</span>
+                            <span class="text-yellow-500 font-medium">${order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}</span>
                         </div>
 
                         <hr class="mb-3">

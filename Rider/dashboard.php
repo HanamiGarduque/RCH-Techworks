@@ -15,6 +15,8 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         body {
@@ -84,13 +86,9 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
             <h3 class="text-md font-semibold text-blue-600 mb-3">Active Deliveries</h3>
 
             <!-- Map Placeholder -->
-            <div class="bg-gray-200 rounded-xl h-40 mb-4 flex items-center justify-center border-2 border-dashed border-gray-400">
-                <div class="text-center text-gray-500">
-                    <i class="bi bi-map text-4xl mb-2"></i>
-                    <p class="text-sm font-medium">Map View</p>
-                    <p class="text-xs">Route tracking will appear here</p>
-                </div>
-            </div>
+           <!-- Map Integration -->
+<div id="active-map" class="rounded-xl h-40 mb-4 border border-gray-300 overflow-hidden"></div>
+
 
             <div id="active-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[330px] pb-5 pr-2"></div>
         </div>
@@ -634,6 +632,42 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
     `;
             });
         }
+        // ===== MAP INTEGRATION (OpenStreetMap using Leaflet) =====
+let map = null;
+let markers = [];
+
+function initMap() {
+    map = L.map('active-map').setView([13.7563, 121.0583], 12); // Default view (Batangas area)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+}
+
+function updateMapMarkers(orders) {
+    if (!map) return;
+
+    // Clear old markers
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
+
+    orders.forEach(order => {
+        if (order.user.latitude && order.user.longitude) {
+            const lat = parseFloat(order.user.latitude);
+            const lng = parseFloat(order.user.longitude);
+            const marker = L.marker([lat, lng]).addTo(map)
+                .bindPopup(`<b>${order.user.name}</b><br>${order.user.address}`);
+            markers.push(marker);
+        }
+    });
+
+    if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2));
+    }
+}
+// ===== END MAP CODE =====
+
 
         function fetchDeliveries() {
             fetch('dashboard_backend.php')
@@ -684,6 +718,8 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
                         </button>
                     </div>
                 `).join('');
+                updateMapMarkers(activeOrders);
+
                     }
 
                     // Render pickup, delivery, delayed, and completed lists
@@ -703,6 +739,7 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
             updateDeliveryPeriodDisplay();
             updateDelayedPeriodDisplay();
             updateCompletedPeriodDisplay();
+            initMap();
             fetchDeliveries();
             setInterval(fetchDeliveries, 30000);
 
