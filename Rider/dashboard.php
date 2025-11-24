@@ -1,4 +1,4 @@
-<?php
+`<?php
 session_start();
 require_once '../Database/db_connection.php';
 date_default_timezone_set('Asia/Manila');
@@ -62,7 +62,7 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
                     </button>
 
                     <!-- Messages Button -->
-                    <button onclick="window.location.href='messages.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                    <button onclick="window.location.href='../Messaging/rider_messages.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
                         <i class="bi bi-chat-dots"></i>
                         <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
                     </button>
@@ -717,3 +717,4 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
 </body>
 
 </html>
+`

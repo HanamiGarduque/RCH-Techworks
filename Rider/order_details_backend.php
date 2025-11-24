@@ -83,12 +83,35 @@ try {
     // ---------------------------------------------
     // 4. Prepare JSON Response
     // ---------------------------------------------
-    echo json_encode([
-        "success" => true,
-        "order"   => $order,
-        "items"   => $items,
-        "total_subtotal" => $total_subtotal
-    ]);
+    // echo json_encode([
+    //     "success" => true,
+    //     "order"   => $order,
+    //     "items"   => $items,
+    //     "total_subtotal" => $total_subtotal
+    // ]);
+echo json_encode([
+    "success" => true,
+    "order" => [
+        "order_number" => "TEST123",
+        "customer_name" => "Debug Customer",
+        "customer_address" => "Debug Street",
+        "customer_phone" => "09123456789",
+        "pickup_datetime" => date("Y-m-d H:i:s", strtotime("+1 minute")),
+        "delivery_datetime" => date("Y-m-d H:i:s", strtotime("+45 minutes")),
+        "order_status" => "picked_up"
+    ],
+    "items" => [
+        [
+            "item_name" => "Water Gallon",
+            "gallon_size" => "5L",
+            "quantity" => 2,
+            "unit_price" => 50,
+            "subtotal" => 100
+        ]
+    ],
+    "total_subtotal" => 100
+]);
+exit;
 
 } catch (Exception $e) {
     echo json_encode([
