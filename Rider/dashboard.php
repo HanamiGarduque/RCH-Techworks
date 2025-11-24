@@ -1,32 +1,9 @@
 <?php
 session_start();
 require_once '../Database/db_connection.php';
+date_default_timezone_set('Asia/Manila');
 
-// Rider session
 $rider_name = $_SESSION['rider_name'] ?? "Rider";
-
-// Database connection
-$db = new Database();
-$conn = $db->getConnect();
-
-// FETCH ACTIVE DELIVERIES
-$active_stmt = $conn->prepare("
-    SELECT u.user_id, u.name, u.address 
-    FROM users u
-    WHERE u.role = 'customer'
-");
-$active_stmt->execute();
-$active_orders = $active_stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// FETCH PENDING DELIVERIES
-$pending_stmt = $conn->prepare("
-    SELECT u.user_id, u.name, u.address 
-    FROM users u
-    WHERE u.status = 'pending'
-");
-$pending_stmt->execute();
-$pending_orders = $pending_stmt->fetchAll(PDO::FETCH_ASSOC);
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,237 +12,708 @@ $pending_orders = $pending_stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rider Dashboard | RCH Water</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #f4f6fa;
-            margin: 0;
-            padding: 0;
         }
 
-        .header {
-            background-color: #2196F3;
-            color: white;
-            padding: 10px 20px 20px;
-            border-radius: 0 0 10px 10px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .rider-name {
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .current-datetime {
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        .header-cards {
-            display: flex;
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .dashboard-card {
-            flex: 1;
-            height: 80px;
-            padding: 15px 10px;
-            background-color: #FFFFFF4D;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
             border-radius: 10px;
-            text-align: center;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s;
         }
 
-        .dashboard-card:hover {
-            transform: scale(1.05);
-        }
-
-        .deliveries {
-            margin: 20px;
-        }
-
-        .deliveries h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .delivery-card {
-            background-color: white;
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .delivery-header {
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .delivery-info {
-            font-size: 13px;
-            color: #666;
-            margin: 5px 0 10px;
-        }
-
-        .status {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            color: white;
-        }
-
-        .ontheway {
-            background-color: #4CAF50;
-        }
-
-        .ready {
-            background-color: #FF6F61;
-        }
-
-        .details {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .start-btn,
-        .view-btn {
-            width: 100%;
-            padding: 8px;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
             border-radius: 10px;
-            border: none;
-            font-size: 14px;
         }
 
-        .start-btn {
-            background-color: #1E90FF;
-            color: white;
-        }
-
-        .view-btn {
-            background-color: rgb(246, 249, 252);
-            color: gray;
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
 
-<body>
+<body class="bg-white min-h-screen flex justify-center items-center relative">
 
-    <div class="header d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2 class="rider-name"><?= htmlspecialchars($rider_name); ?></h2>
-                <div id="datetime" class="current-datetime"></div>
+    <!-- Fixed-width container wrapper -->
+    <div class="bg-white w-[375px] h-[750px] mx-auto relative rounded-3xl overflow-hidden border shadow-lg">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-br from-blue-400 to-blue-600 text-white sticky top-0 z-50 w-full px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight">Welcome, Rider</h2>
+                    <div id="datetime" class="text-sm text-blue-100 font-medium"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Notification Button -->
+                    <button onclick="window.location.href='notification.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-bell"></i>
+                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                    </button>
+
+                    <!-- Messages Button -->
+                    <button onclick="window.location.href='messages.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-chat-dots"></i>
+                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
+                    </button>
+                </div>
             </div>
-            <button onclick="window.location.href='notification.php'" class="btn btn-link text-white position-relative" style="font-size: 20px;">
-                <i class="bi bi-bell"></i>
-                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-            </button>
         </div>
 
-        <div class="header-cards">
-            <div class="dashboard-card" onclick="scrollToTop()">Today's Delivery</div>
-            <div class="dashboard-card" onclick="scrollToPending()">Pending Delivery</div>
-            <div class="dashboard-card">Completed</div>
+        <!-- Dashboard Buttons Container -->
+        <div class="bg-white sticky top-16 z-40 w-full px-5 py-4">
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="showSection('active-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Active</button>
+                <button onclick="showSection('pending-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Pending</button>
+                <button onclick="showSection('completed-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Completed</button>
+            </div>
         </div>
-    </div>
 
-    <!-- ACTIVE -->
-    <div class="deliveries" id="active-deliveries">
-        <h3>Active Deliveries</h3>
+        <!-- ACTIVE DELIVERIES -->
+        <div class="px-5 pb-5" id="active-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Active Deliveries</h3>
 
-        <?php if (count($active_orders) === 0): ?>
-            <p>No active deliveries.</p>
-        <?php endif; ?>
-
-        <?php foreach ($active_orders as $row): ?>
-            <div class="delivery-card">
-                <div class="delivery-header">
-                    <h4><?= htmlspecialchars($row['name']) ?></h4>
-                    <span class="status ontheway">On the Way</span>
+            <!-- Map Placeholder -->
+            <div class="bg-gray-200 rounded-xl h-40 mb-4 flex items-center justify-center border-2 border-dashed border-gray-400">
+                <div class="text-center text-gray-500">
+                    <i class="bi bi-map text-4xl mb-2"></i>
+                    <p class="text-sm font-medium">Map View</p>
+                    <p class="text-xs">Route tracking will appear here</p>
                 </div>
-                <div class="delivery-info">📍 <?= htmlspecialchars($row['address']) ?></div>
-
-                <div class="details">
-                    <span>Items: Water Gallon</span>
-                    <span>Distance: --</span>
-                    <span>ETA: --</span>
-                </div>
-
-                <button class="view-btn" onclick="window.location.href='order_pickup.php?id=<?= $row['user_id'] ?>'">View Delivery</button>
             </div>
-        <?php endforeach; ?>
-    </div>
 
-    <!-- PENDING -->
-    <div class="deliveries" id="pending-deliveries">
-        <h3>Pending Deliveries</h3>
+            <div id="active-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[330px] pb-5 pr-2"></div>
+        </div>
 
-        <?php if (count($pending_orders) === 0): ?>
-            <p>No pending deliveries.</p>
-        <?php endif; ?>
+        <!-- PENDING DELIVERIES -->
+        <div class="px-5 pb-20 hidden relative" id="pending-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Pending Deliveries</h3>
 
-        <?php foreach ($pending_orders as $row): ?>
-            <div class="delivery-card">
-                <div class="delivery-header">
-                    <h4><?= htmlspecialchars($row['name']) ?></h4>
-                    <span class="status ready">Pending</span>
-                </div>
+            <!-- TABS - No gap between buttons -->
+            <div class="flex mb-4 bg-gray-200 rounded-lg overflow-hidden">
+                <button id="pending-tab-pickup"
+                    class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200"
+                    onclick="showPendingTab('pickup')">
+                    For Pickup
+                </button>
 
-                <div class="delivery-info">📍 <?= htmlspecialchars($row['address']) ?></div>
-
-                <div class="details">
-                    <span>Items: Water Gallon</span>
-                    <span>Distance: --</span>
-                    <span>ETA: --</span>
-                </div>
-
-                <button class="start-btn" onclick="startDelivery(<?= $row['user_id'] ?>)">Start Delivery</button>
+                <button id="pending-tab-delivery"
+                    class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200"
+                    onclick="showPendingTab('delivery')">
+                    For Delivery
+                </button>
             </div>
-        <?php endforeach; ?>
-    </div>
 
+            <!-- PICKUP LIST -->
+            <div id="pickup-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2"></div>
+
+            <!-- DELIVERY LIST -->
+            <div id="delivery-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden"></div>
+
+            <!-- Floating Period Switcher for Pickup -->
+            <div id="time-switcher-pickup"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                       flex items-center space-x-6 z-50 border">
+                <button id="prev-period-pickup"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-pickup" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-pickup"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+
+            <!-- Floating Period Switcher for Delivery -->
+            <div id="time-switcher-delivery"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                       flex items-center space-x-6 z-50 border hidden">
+                <button id="prev-period-delivery"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-delivery" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-delivery"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+        </div>
+
+        <!-- HISTORY SECTION (previously COMPLETED DELIVERIES) -->
+        <div class="px-5 pb-20 hidden relative" id="completed-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Order History</h3>
+
+            <!-- TABS - Delayed and Completed -->
+            <div class="flex mb-4 bg-gray-200 rounded-lg overflow-hidden">
+                <button id="history-tab-delayed"
+                    class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200"
+                    onclick="showHistoryTab('delayed')">
+                    Delayed
+                </button>
+
+                <button id="history-tab-completed"
+                    class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200"
+                    onclick="showHistoryTab('completed')">
+                    Completed
+                </button>
+            </div>
+
+            <!-- DELAYED LIST -->
+            <div id="delayed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2"></div>
+
+            <!-- COMPLETED LIST -->
+            <div id="completed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden"></div>
+
+            <!-- Floating Period Switcher for Delayed -->
+            <div id="time-switcher-delayed"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+               flex items-center space-x-6 z-50 border">
+                <button id="prev-period-delayed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-delayed" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-delayed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+
+            <!-- Floating Period Switcher for Completed -->
+            <div id="time-switcher-completed"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+               flex items-center space-x-6 z-50 border hidden">
+                <button id="prev-period-completed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-completed" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-completed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+        </div>
+
+    </div>
     <script>
-        function startDelivery(id) {
-            window.location.href = "order_pickup.php?id=" + id;
-        }
+        // Global variables
+        let currentPeriodPickup = "morning";
+        let currentPeriodDelivery = "morning";
+        let currentPeriodDelayed = "morning";
+        let currentPeriodCompleted = "morning";
+        let deliveryData = null;
 
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        // Month names
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
 
-        function scrollToPending() {
-            const el = document.getElementById('pending-deliveries');
-            const y = el.getBoundingClientRect().top + window.pageYOffset - 180;
-            window.scrollTo({ top: y, behavior: 'smooth' });
+        // Initialize periods based on current time
+        function initializePeriods() {
+            const now = new Date();
+            const hour = now.getHours();
+
+            // If it's 12 PM (noon) or later, set to afternoon
+            if (hour >= 12) {
+                currentPeriodPickup = "afternoon";
+                currentPeriodDelivery = "afternoon";
+                currentPeriodDelayed = "afternoon";
+                currentPeriodCompleted = "afternoon";
+            } else {
+                currentPeriodPickup = "morning";
+                currentPeriodDelivery = "morning";
+                currentPeriodDelayed = "morning";
+                currentPeriodCompleted = "morning";
+            }
         }
 
         function updateDateTime() {
-            const n = new Date();
-            const m = String(n.getMonth() + 1).padStart(2, '0');
-            const d = String(n.getDate()).padStart(2, '0');
-            const y = n.getFullYear();
-            document.getElementById('datetime').innerText = `${m}/${d}/${y}`;
+            const now = new Date();
+            const month = monthNames[now.getMonth()];
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            // Convert to 12-hour format with AM/PM
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // Convert 0 to 12
+            const hoursFormatted = String(hours).padStart(2, '0');
+
+            document.getElementById('datetime').innerText = `${month} ${day}, ${year} • ${hoursFormatted}:${minutes} ${ampm}`;
         }
 
         updateDateTime();
         setInterval(updateDateTime, 60000);
+
+        function showSection(sectionId, button) {
+            const sections = ['active-deliveries', 'pending-deliveries', 'completed-deliveries'];
+            sections.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+
+            document.querySelectorAll('.section-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-blue-100', 'text-blue-600');
+            });
+            button.classList.remove('bg-blue-100', 'text-blue-600');
+            button.classList.add('bg-blue-600', 'text-white');
+        }
+
+        showSection('active-deliveries', document.querySelector('.section-btn'));
+
+        function showPendingTab(tab) {
+            const pickupTab = document.getElementById('pending-tab-pickup');
+            const deliveryTab = document.getElementById('pending-tab-delivery');
+            const pickupList = document.getElementById('pickup-list');
+            const deliveryList = document.getElementById('delivery-list');
+            const timeSwitcherPickup = document.getElementById('time-switcher-pickup');
+            const timeSwitcherDelivery = document.getElementById('time-switcher-delivery');
+
+            if (tab === 'pickup') {
+                pickupTab.classList.add("bg-blue-500", "text-white");
+                pickupTab.classList.remove("bg-gray-200", "text-gray-700");
+                deliveryTab.classList.add("bg-gray-200", "text-gray-700");
+                deliveryTab.classList.remove("bg-blue-500", "text-white");
+
+                pickupList.classList.remove("hidden");
+                deliveryList.classList.add("hidden");
+                timeSwitcherPickup.classList.remove("hidden");
+                timeSwitcherDelivery.classList.add("hidden");
+            } else {
+                deliveryTab.classList.add("bg-blue-500", "text-white");
+                deliveryTab.classList.remove("bg-gray-200", "text-gray-700");
+                pickupTab.classList.add("bg-gray-200", "text-gray-700");
+                pickupTab.classList.remove("bg-blue-500", "text-white");
+
+                deliveryList.classList.remove("hidden");
+                pickupList.classList.add("hidden");
+                timeSwitcherDelivery.classList.remove("hidden");
+                timeSwitcherPickup.classList.add("hidden");
+            }
+        }
+
+        function showHistoryTab(tab) {
+            const delayedTab = document.getElementById('history-tab-delayed');
+            const completedTab = document.getElementById('history-tab-completed');
+            const delayedList = document.getElementById('delayed-list');
+            const completedList = document.getElementById('completed-list');
+            const timeSwitcherDelayed = document.getElementById('time-switcher-delayed');
+            const timeSwitcherCompleted = document.getElementById('time-switcher-completed');
+
+            if (tab === 'delayed') {
+                delayedTab.classList.add("bg-blue-500", "text-white");
+                delayedTab.classList.remove("bg-gray-200", "text-gray-700");
+                completedTab.classList.add("bg-gray-200", "text-gray-700");
+                completedTab.classList.remove("bg-blue-500", "text-white");
+
+                delayedList.classList.remove("hidden");
+                completedList.classList.add("hidden");
+                timeSwitcherDelayed.classList.remove("hidden");
+                timeSwitcherCompleted.classList.add("hidden");
+            } else {
+                completedTab.classList.add("bg-blue-500", "text-white");
+                completedTab.classList.remove("bg-gray-200", "text-gray-700");
+                delayedTab.classList.add("bg-gray-200", "text-gray-700");
+                delayedTab.classList.remove("bg-blue-500", "text-white");
+
+                completedList.classList.remove("hidden");
+                delayedList.classList.add("hidden");
+                timeSwitcherCompleted.classList.remove("hidden");
+                timeSwitcherDelayed.classList.add("hidden");
+            }
+        }
+
+        function updatePickupPeriodDisplay() {
+            document.getElementById("current-period-pickup").textContent =
+                currentPeriodPickup.charAt(0).toUpperCase() + currentPeriodPickup.slice(1);
+            renderPickupList();
+        }
+
+        function updateDeliveryPeriodDisplay() {
+            document.getElementById("current-period-delivery").textContent =
+                currentPeriodDelivery.charAt(0).toUpperCase() + currentPeriodDelivery.slice(1);
+            renderDeliveryList();
+        }
+
+        function updateDelayedPeriodDisplay() {
+            document.getElementById("current-period-delayed").textContent =
+                currentPeriodDelayed.charAt(0).toUpperCase() + currentPeriodDelayed.slice(1);
+            renderDelayedList();
+        }
+
+        function updateCompletedPeriodDisplay() {
+            document.getElementById("current-period-completed").textContent =
+                currentPeriodCompleted.charAt(0).toUpperCase() + currentPeriodCompleted.slice(1);
+            renderCompletedList();
+        }
+
+        // Period switchers for pickup/delivery
+        document.getElementById("prev-period-pickup").addEventListener("click", () => {
+            currentPeriodPickup = currentPeriodPickup === "morning" ? "afternoon" : "morning";
+            updatePickupPeriodDisplay();
+        });
+
+        document.getElementById("next-period-pickup").addEventListener("click", () => {
+            currentPeriodPickup = currentPeriodPickup === "morning" ? "afternoon" : "morning";
+            updatePickupPeriodDisplay();
+        });
+
+        document.getElementById("prev-period-delivery").addEventListener("click", () => {
+            currentPeriodDelivery = currentPeriodDelivery === "morning" ? "afternoon" : "morning";
+            updateDeliveryPeriodDisplay();
+        });
+
+        document.getElementById("next-period-delivery").addEventListener("click", () => {
+            currentPeriodDelivery = currentPeriodDelivery === "morning" ? "afternoon" : "morning";
+            updateDeliveryPeriodDisplay();
+        });
+
+        // Period switchers for delayed/completed
+        document.getElementById("prev-period-delayed").addEventListener("click", () => {
+            currentPeriodDelayed = currentPeriodDelayed === "morning" ? "afternoon" : "morning";
+            updateDelayedPeriodDisplay();
+        });
+
+        document.getElementById("next-period-delayed").addEventListener("click", () => {
+            currentPeriodDelayed = currentPeriodDelayed === "morning" ? "afternoon" : "morning";
+            updateDelayedPeriodDisplay();
+        });
+
+        document.getElementById("prev-period-completed").addEventListener("click", () => {
+            currentPeriodCompleted = currentPeriodCompleted === "morning" ? "afternoon" : "morning";
+            updateCompletedPeriodDisplay();
+        });
+
+        document.getElementById("next-period-completed").addEventListener("click", () => {
+            currentPeriodCompleted = currentPeriodCompleted === "morning" ? "afternoon" : "morning";
+            updateCompletedPeriodDisplay();
+        });
+
+        function renderPickupList() {
+            if (!deliveryData) return;
+
+            const pickupList = document.getElementById('pickup-list');
+            const today = new Date().toISOString().split('T')[0];
+
+            pickupList.innerHTML = '';
+
+            const orders = deliveryData.pending.pickup[currentPeriodPickup].filter(order =>
+                order.pickup_datetime.startsWith(today)
+            );
+
+            if (!orders.length) {
+                pickupList.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <p class="text-center text-gray-400 text-sm">No ${currentPeriodPickup} pickups for today</p>
+            </div>
+        `;
+                return;
+            }
+
+            orders.forEach(order => {
+                pickupList.innerHTML += `
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                    </div>
+                    <span class="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-semibold">Pickup</span>
+                </div>
+
+                <div class="space-y-2 mb-3">
+                    <div class="flex items-start text-sm text-gray-600">
+                        <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                        <span class="flex-1">${order.user.address}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                        <span class="font-medium">${new Date(order.pickup_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                </div>
+
+                <button onclick="startDelivery(${order.refill_id})"
+                    class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                    Start Delivery
+                </button>
+            </div>
+        `;
+            });
+        }
+
+        function startDelivery(refillId) {
+            window.location.href = `order_details.php?refill_id=${refill_id}`;
+        }
+
+
+
+        function renderDeliveryList() {
+            if (!deliveryData) return;
+
+            const deliveryList = document.getElementById('delivery-list');
+            const today = new Date().toISOString().split('T')[0];
+
+            deliveryList.innerHTML = '';
+
+            const orders = deliveryData.pending.delivery[currentPeriodDelivery].filter(order =>
+                order.delivery_datetime.startsWith(today)
+            );
+
+            if (!orders.length) {
+                deliveryList.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <p class="text-center text-gray-400 text-sm">No ${currentPeriodDelivery} deliveries for today</p>
+            </div>
+        `;
+                return;
+            }
+
+            orders.forEach(order => {
+                deliveryList.innerHTML += `
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                    </div>
+                    <span class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold">Delivery</span>
+                </div>
+
+                <div class="space-y-2 mb-3">
+                    <div class="flex items-start text-sm text-gray-600">
+                        <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                        <span class="flex-1">${order.user.address}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                        <span class="font-medium">${new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                </div>
+
+                <button onclick="startDelivery(${order.refill_id})"
+                    class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                    Start Delivery
+                </button>
+            </div>
+        `;
+            });
+        }
+
+        function renderDelayedList() {
+            if (!deliveryData) return;
+
+            const delayedList = document.getElementById('delayed-list');
+            delayedList.innerHTML = '';
+
+            // Removed date filtering
+            const orders = deliveryData.history.delayed[currentPeriodDelayed];
+
+            if (!orders.length) {
+                delayedList.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+            <p class="text-center text-gray-400 text-sm">No ${currentPeriodDelayed} delayed orders</p>
+        </div>
+    `;
+                return;
+            }
+
+            orders.forEach(order => {
+                delayedList.innerHTML += `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                </div>
+                <span class="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                    <i class="bi bi-clock-history mr-1"></i> Delayed
+                </span>
+            </div>
+
+            <div class="space-y-2 mb-3">
+                <div class="flex items-start text-sm text-gray-600">
+                    <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                    <span class="flex-1">${order.user.address}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="bi bi-clock-fill text-yellow-500 mr-2"></i>
+                    <span class="font-medium">${new Date(order.delivery_datetime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+            </div>
+
+            <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-yellow-50 text-yellow-700 cursor-default">
+                <i class="bi bi-exclamation-triangle mr-1"></i> Delivery Delayed
+            </button>
+        </div>
+    `;
+            });
+        }
+
+        function renderCompletedList() {
+            if (!deliveryData) return;
+
+            const completedList = document.getElementById('completed-list');
+            completedList.innerHTML = '';
+
+            // Removed date filtering
+            const orders = deliveryData.history.completed[currentPeriodCompleted];
+
+            if (!orders.length) {
+                completedList.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+            <p class="text-center text-gray-400 text-sm">No ${currentPeriodCompleted} completed orders</p>
+        </div>
+    `;
+                return;
+            }
+
+            orders.forEach(order => {
+                completedList.innerHTML += `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                </div>
+                <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                    <i class="bi bi-check-circle-fill mr-1"></i> Completed
+                </span>
+            </div>
+
+            <div class="space-y-2 mb-3">
+                <div class="flex items-start text-sm text-gray-600">
+                    <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                    <span class="flex-1">${order.user.address}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="bi bi-clock-fill text-gray-500 mr-2"></i>
+                    <span class="font-medium">${new Date(order.delivery_datetime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+            </div>
+
+            <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-green-50 text-green-700 cursor-default">
+                <i class="bi bi-check-circle mr-1"></i> Delivery Completed
+            </button>
+        </div>
+    `;
+            });
+        }
+
+        function fetchDeliveries() {
+            fetch('dashboard_backend.php')
+                .then(res => res.json())
+                .then(data => {
+                    deliveryData = data;
+                    const activeList = document.getElementById('active-list');
+                    const today = new Date().toISOString().split('T')[0];
+
+                    // --- Active ---
+                    const activeOrders = data.active.filter(order =>
+                        order.pickup_datetime.startsWith(today) || order.delivery_datetime.startsWith(today)
+                    );
+
+                    if (!activeOrders.length) {
+                        activeList.innerHTML = `
+                    <div class="flex items-center justify-center h-full">
+                        <p class="text-center text-gray-400 text-sm">No active deliveries for today</p>
+                    </div>
+                `;
+                    } else {
+                        activeList.innerHTML = activeOrders.map(order => `
+                    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                            </div>
+                            <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                                <i class="bi bi-truck mr-1"></i> On the Way
+                            </span>
+                        </div>
+
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-start text-sm text-gray-600">
+                                <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                                <span class="flex-1">${order.user.address}</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                                <span class="font-medium">${order.pickup_datetime ? new Date(order.pickup_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        </div>
+
+                        <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'"
+                            class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
+                            View Details
+                        </button>
+                    </div>
+                `).join('');
+                    }
+
+                    // Render pickup, delivery, delayed, and completed lists
+                    renderPickupList();
+                    renderDeliveryList();
+                    renderDelayedList();
+                    renderCompletedList();
+                })
+                .catch(console.error);
+        }
+
+        // Initialize periods based on current time when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initializePeriods();
+            // Update the display labels after setting the periods
+            updatePickupPeriodDisplay();
+            updateDeliveryPeriodDisplay();
+            updateDelayedPeriodDisplay();
+            updateCompletedPeriodDisplay();
+            fetchDeliveries();
+            setInterval(fetchDeliveries, 30000);
+
+        });
+
+        function startDelivery(id) {
+            window.location.href = "order_details.php?refill_id=" + id;
+        }
     </script>
 
+
 </body>
+
 </html>

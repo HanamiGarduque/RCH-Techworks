@@ -112,14 +112,14 @@
                         <p class="font-medium mt-2">Slim Gallon</p>
                     </div>
 
-                    <div id="roundCard" data-price="30" class="border-2 border-gray-300 p-4 rounded-xl cursor-pointer text-center hover:bg-blue-500 hover:text-white transition">
+                    <div id="roundCard" data-price="30" data-product-id="1" class="border-2 border-gray-300 p-4 rounded-xl cursor-pointer text-center hover:bg-blue-500 hover:text-white transition">
                         <img src="img/18.9L_round_gallon.jpg" class="mx-auto w-40" />
                         <p class="font-medium mt-2">Round Gallon</p>
                     </div>
                 </div>
 
                 <div id="set2" class="grid grid-cols-2 gap-6 hidden">
-                    <div id="sizeCard1" data-size="large" data-price="30"
+                    <div id="sizeCard1" data-size="large" data-price="30" data-product-id="2"
                         class="size-card border-2 border-gray-300 p-6 rounded-xl cursor-pointer text-center transition hover:bg-blue-600 hover:text-white">
                         <div class="p-6 bg-white rounded-md">
                             <img src="img/20L_box_type_gallon.jpg" class="mx-auto w-36" />
@@ -128,7 +128,7 @@
                         <p class="font-large mt-4">₱30.00</p>
                     </div>
 
-                    <div id="sizeCard2" data-size="small" data-price="20"
+                    <div id="sizeCard2" data-size="small" data-price="20" data-product-id="11"
                         class="size-card border-2 border-gray-300 p-6 rounded-xl cursor-pointer text-center transition hover:bg-blue-600 hover:text-white">
                         <div class="p-6 bg-white rounded-md">
                             <img src="img/10L_box_type_gallon.jpg" class="mx-auto w-36" />
@@ -319,6 +319,7 @@
             chosenSize: null, // 'large' | 'small' | '18.9L'
             chosenPrice: 0,
             quantity: 1,
+            productId: null,
             chosenPickupTime: null,
             chosenDeliveryTime: null,
             hasOwnGallon: true, // default value
@@ -854,6 +855,8 @@
 
         round.addEventListener('click', () => {
             state.chosenType = 'round';
+            state.productId = 1;
+
 
             round.classList.add('border-blue-500', 'border-4');
             slim.classList.remove('border-blue-500', 'border-4');
@@ -890,15 +893,20 @@
         function chooseSize(size, silent = false) {
             state.chosenSize = size;
             [size1, size2].forEach(el => el.classList.remove('border-blue-500', 'border-4', 'bg-blue-500', 'text-white'));
+
             if (size === 'large') {
                 size1.classList.add('border-blue-500', 'border-4', 'bg-blue-500', 'text-white');
                 state.chosenPrice = parseFloat(size1.dataset.price) || 0;
+                state.productId = 2;
             } else if (size === 'small') {
                 size2.classList.add('border-blue-500', 'border-4', 'bg-blue-500', 'text-white');
                 state.chosenPrice = parseFloat(size2.dataset.price) || 0;
+                state.productId = 11;
             } else {
                 state.chosenPrice = 0;
+                state.productId = null;
             }
+
             if (!silent && state.chosenSize) goToStep(3);
         }
         size1.addEventListener('click', () => chooseSize('large'));
@@ -1028,7 +1036,6 @@
 
         // ---------- Orders & Step 6 rendering ----------
         function saveCurrentOrder(commit = true) {
-            // Build order object from current state (return it even if not committing)
             if (!state.chosenType || !state.chosenPrice || !state.quantity) return null;
 
             let sizeLabel = '';
@@ -1042,6 +1049,7 @@
             const subtotal = unit * state.quantity;
 
             const order = {
+                productId: state.productId, 
                 type: (state.chosenType === 'slim') ? 'Slim' : 'Round',
                 size: sizeLabel,
                 quantity: state.quantity,
