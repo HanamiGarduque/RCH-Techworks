@@ -1,493 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RCH Water - <?= htmlspecialchars($pageTitle) ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RCH Water</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            /* Add padding to the body to account for the fixed, collapsed sidebar (w-20) */
-            padding-left: 5rem;
-            /* 5rem = 80px (w-20 in tailwind) */
-            transition: padding-left 0.5s ease-in-out;
-        }
+  <!-- BOOTSTRAP ICONS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-        /* Adjust padding when the sidebar is hovered/expanded (w-64) */
-        .group:hover+.content-area {
-            padding-left: 16rem;
-            /* 16rem = 256px (w-64 in tailwind) */
-        }
-
-        /* Custom style for the active tab (To Pay) */
-        .tab-button.active {
-            background-color: #2563eb;
-            /* Blue 600 */
-            color: white;
-            border-radius: 0.375rem;
-        }
-
-        /* Ensures the sidebar is at the beginning of the body and main content pushes right */
-        .content-area {
-            min-height: 100vh;
-        }
-    </style>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html { scroll-behavior: smooth; }
+    /* navbar height set to 4rem (64px) */
+    :root{ --nav-h: 4rem; }
+    body { font-family: 'Poppins', sans-serif; padding-top: var(--nav-h); }
+    nav { height: var(--nav-h); }
+    /* ensure anchor targets are not hidden under fixed nav */
+    section { scroll-margin-top: calc(var(--nav-h) + 0.5rem); }
+  </style>
 </head>
 
-<body class="bg-gray-100 overflow-hidden">
-    <div class="content-area flex h-screen">
-        <main class="bg-white rounded-xl shadow-lg overflow-y-auto">
-            <!-- Sidebar -->
-            <script src="includes/sidebar.js"></script>
-
-
-            <div class="flex flex-col h-screen p-6">
-              <?php
-                $pageTitle = "Browse Products";
-                $pageSubtitle = "Shop for gallon containers and accessories!";
-                include 'includes/header.php';
-                ?>
-
-                <div class="flex space-x-2 p-1 bg-gray-100 rounded-lg w-full mb-6">
-                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="topay">To Pay</button>
-                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="toreceive">To Recieve</button>
-                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="completed">Completed</button>
-                    <button class="tab-button flex-1 text-center py-2 text-gray-700 text-sm font-medium hover:bg-blue-600 hover:text-white rounded-md transition-colors duration-200" data-tab="cancelled">Cancelled</button>
-
-                </div>
-
-
-                <!-- --------------------------------------------- -->
-                <!-- TO PAY TAB (Pending Orders) -->
-                <!-- --------------------------------------------- -->
-                <div id="topay" class="tab-content space-y-6 overflow-x-auto">
-
-                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-semibold text-gray-800">ORD-110325001</span>
-                            <span class="text-red-500 font-medium">Pending</span>
-                        </div>
-
-                        <hr class="mb-3">
-
-                        <!-- COLUMN LABELS -->
-                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
-                            <div class="col-span-2">Product</div>
-                            <div class="text-center">Quantity</div>
-                            <div></div>
-                        </div>
-
-                        <!-- PRODUCT LIST -->
-                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
-                            <div class="col-span-2">20L Slim Container Gallon</div>
-                            <div class="text-center">2</div>
-                            <div></div>
-
-                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
-                            <div class="text-center">10</div>
-                            <div></div>
-                        </div>
-
-                        <div class="flex justify-end items-center mb-4">
-                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
-                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
-                        </div>
-
-                        <div class="flex justify-end space-x-3">
-                            <button class="cancel-order bg-red-500 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-red-600">
-                                Cancel Order
-                            </button>
-                            <a href="order_details.php?order=ORD-110325001&status=pending"
-                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-
-                </div>
-
-
-                <!-- --------------------------------------------- -->
-                <!-- TO RECEIVE TAB (On Delivery Orders) -->
-                <!-- --------------------------------------------- -->
-                <div id="toreceive" class="tab-content space-y-6 hidden overflow-x-auto">
-
-                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-semibold text-gray-800">ORD-110325001</span>
-                            <span class="text-blue-500 font-medium">On Delivery</span>
-                        </div>
-                        <hr class="mb-3">
-
-                        <!-- COLUMN LABELS -->
-                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
-                            <div class="col-span-2">Product</div>
-                            <div class="text-center">Quantity</div>
-                            <div></div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
-                            <div class="col-span-2">20L Slim Container Gallon</div>
-                            <div class="col-span-1 text-center">2</div>
-
-                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
-                            <div class="col-span-1 text-center">10</div>
-                        </div>
-
-                        <div class="flex justify-end items-center mb-4">
-                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
-                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
-                        </div>
-
-                        <div class="flex justify-end space-x-3">
-                            <a href="order_details.php?order=ORD-110325001&status=on_delivery"
-                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-
-
-                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-semibold text-gray-800">ORD-110325002</span>
-                            <span class="text-blue-500 font-medium">On Delivery</span>
-                        </div>
-                        <hr class="mb-3">
-
-                        <!-- COLUMN LABELS -->
-                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
-                            <div class="col-span-2">Product</div>
-                            <div class="text-center">Quantity</div>
-                            <div></div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
-                            <div class="col-span-2">Refill - Slim Gallon 20L</div>
-                            <div class="col-span-1 text-center">3</div>
-
-                            <div class="col-span-2">Refill - Round Gallon 18.9L</div>
-                            <div class="col-span-1 text-center">2</div>
-                        </div>
-
-                        <div class="flex justify-end items-center mb-4">
-                            <span class="text-sm text-gray-600 mr-2">Total 5 Item:</span>
-                            <span class="text-lg font-bold text-gray-800">₱150.00</span>
-                        </div>
-
-                        <div class="flex justify-end space-x-3">
-                            <a href="order_details.php?order=ORD-110325002&status=on_delivery"
-                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-
-                </div>
-
-
-
-
-                <!-- --------------------------------------------- -->
-                <!-- COMPLETED TAB (Delivered Orders) -->
-                <!-- --------------------------------------------- -->
-                <div id="completed" class="tab-content space-y-6 hidden overflow-x-auto">
-
-                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-semibold text-gray-800">ORD-110325001</span>
-                            <span class="text-green-600 font-medium">Delivered</span>
-                        </div>
-                        <hr class="mb-3">
-
-                        <!-- COLUMN LABELS -->
-                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
-                            <div class="col-span-2">Product</div>
-                            <div class="text-center">Quantity</div>
-                            <div></div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
-                            <div class="col-span-2">20L Slim Container Gallon</div>
-                            <div class="col-span-1 text-center">2</div>
-
-                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
-                            <div class="col-span-1 text-center">10</div>
-                        </div>
-
-                        <div class="flex justify-end items-center mb-4">
-                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
-                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
-                        </div>
-
-                        <div class="flex justify-end space-x-3">
-                            <button class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
-                                <i class="bi bi-arrow-repeat text-white"></i>
-                                <span>Reorder</span>
-                            </button>
-                            <a href="order_details.php?order=ORD-110325001&status=completed"
-                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-
-
-                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-semibold text-gray-800">ORD-110325002</span>
-                            <span class="text-green-600 font-medium">Delivered</span>
-                        </div>
-                        <hr class="mb-3">
-
-                        <!-- COLUMN LABELS -->
-                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
-                            <div class="col-span-2">Product</div>
-                            <div class="text-center">Quantity</div>
-                            <div></div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
-                            <div class="col-span-2">Refill - Slim Gallon 20L</div>
-                            <div class="col-span-1 text-center">3</div>
-
-                            <div class="col-span-2">Refill - Round Gallon 18.9L</div>
-                            <div class="col-span-1 text-center">2</div>
-                        </div>
-
-                        <div class="flex justify-end items-center mb-4">
-                            <span class="text-sm text-gray-600 mr-2">Total 5 Item:</span>
-                            <span class="text-lg font-bold text-gray-800">₱150.00</span>
-                        </div>
-
-                        <div class="flex justify-end space-x-3">
-                            <button class="bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2">
-                                <i class="bi bi-arrow-repeat text-white"></i>
-                                <span>Reorder</span>
-                            </button>
-                            <a href="order_details.php?order=ORD-110325002&status=completed"
-                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- --------------------------------------------- -->
-                <!-- CANCELED TAB (Delivered Orders) -->
-                <!-- --------------------------------------------- -->
-                <div id="cancelled" class="tab-content space-y-6 hidden overflow-x-auto">
-
-                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-semibold text-gray-800">ORD-110325001</span>
-                            <span class="text-red-600 font-medium">Cancelled</span>
-                        </div>
-                        <hr class="mb-3">
-
-                        <!-- COLUMN LABELS -->
-                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
-                            <div class="col-span-2">Product</div>
-                            <div class="text-center">Quantity</div>
-                            <div></div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
-                            <div class="col-span-2">20L Slim Container Gallon</div>
-                            <div class="col-span-1 text-center">2</div>
-
-                            <div class="col-span-2">Slim Gallon Faucet - Press</div>
-                            <div class="col-span-1 text-center">10</div>
-                        </div>
-
-                        <div class="flex justify-end items-center mb-4">
-                            <span class="text-sm text-gray-600 mr-2">Total 12 Item:</span>
-                            <span class="text-lg font-bold text-gray-800">₱677.20</span>
-                        </div>
-
-                    </div>
-
-
-                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-semibold text-gray-800">ORD-110325002</span>
-                            <span class="text-red-600 font-medium">Cancelled</span>
-                        </div>
-                        <hr class="mb-3">
-
-                        <!-- COLUMN LABELS -->
-                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
-                            <div class="col-span-2">Product</div>
-                            <div class="text-center">Quantity</div>
-                            <div></div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
-                            <div class="col-span-2">Refill - Slim Gallon 20L</div>
-                            <div class="col-span-1 text-center">3</div>
-
-                            <div class="col-span-2">Refill - Round Gallon 18.9L</div>
-                            <div class="col-span-1 text-center">2</div>
-                        </div>
-
-                        <div class="flex justify-end items-center mb-4">
-                            <span class="text-sm text-gray-600 mr-2">Total 5 Item:</span>
-                            <span class="text-lg font-bold text-gray-800">₱150.00</span>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-            </div>
-
-        </main>
+<body class="bg-white text-gray-700">
+
+  <!-- NAVIGATION -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b bg-white">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center">
+      <!-- left: logo -->
+      <div class="flex items-center gap-3">
+        <i class="bi bi-droplet-fill text-blue-600 text-2xl"></i>
+        <span class="font-semibold text-lg text-gray-800">RCH Water</span>
+      </div>
+
+      <!-- center: nav links (centered, spacing from logo) -->
+      <div class="flex-1 flex justify-center">
+        <ul class="hidden md:flex gap-10 text-sm font-medium text-blue-600">
+          <li><a href="#home" class="hover:underline">Home</a></li>
+          <li><a href="#about" class="hover:underline">About</a></li>
+          <li><a href="#contact" class="hover:underline">Contact</a></li>
+          <li><a href="developers.html" class="hover:underline">Developer</a></li>
+        </ul>
+      </div>
+
+      <!-- right: actions -->
+      <div class="flex items-center gap-3">
+        <a href="login.html" class="inline-block px-4 py-1 rounded-full border border-blue-400 text-blue-600 hover:bg-blue-50 transition">Login</a>
+        <button class="px-4 py-1 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition">Sign Up</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section id="home" class="min-h-screen max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-12 px-6 py-20">
+    <div class="px-6 md:px-0">
+      <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold text-blue-500 leading-tight italic tracking-tight"> 
+        Fresh Water,
+        <br>
+        Delivered Daily
+      </h1>
+
+      <p class="mt-6 text-gray-600 text-base md:text-lg max-w-xl">
+        We make it easy to stay hydrated with pure water delivered whenever you need it.
+      </p>
+
+      <a href="login.html" class="inline-block mt-10 px-5 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition text-sm">ORDER NOW</a>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
+    <div class="flex justify-center md:justify-end">
+      <img src="img/home.jpg" alt="Water Image" class="rounded-lg w-80 md:w-[420px] shadow-lg border border-white">
+    </div>
+  </section>
 
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const targetTab = button.getAttribute('data-tab');
+  <!-- ABOUT SECTION -->
+  <section id="about" class="min-h-screen w-full bg-blue-500 text-white py-20">
+    <div class="max-w-4xl mx-auto text-center px-6">
+      <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold uppercase mb-8">ABOUT RCH</h2>
 
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    tabContents.forEach(content => content.classList.add('hidden'));
+      <p class="mx-auto leading-relaxed text-sm md:text-base">
+        Welcome to our Water Delivery System — a service designed to make clean, safe, and refreshing drinking water accessible to everyone, every day. We understand the importance of reliable hydration, which is why our system ensures that fresh water reaches your home, office, or business exactly when you need it.
+        <br><br>
+        Our delivery process is built on three core principles: quality, convenience, and consistency. Every drop of water we provide goes through a thorough purification process, ensuring it meets the highest standards for safety and taste.
+        <br><br>
+        Whether you're a household, a workplace, or a business with regular water needs, our Water Delivery System is here to support you with reliable service and clean drinking water you can trust.
+      </p>
 
-                    button.classList.add('active');
-                    document.getElementById(targetTab).classList.remove('hidden');
-                });
-            });
+      <p class="mt-8 font-semibold">Pure water. Simple process. Everyday delivery.</p>
+    </div>
+  </section>
 
-            // Set the initial active tab to 'To Pay'
-            const initialTabButton = document.querySelector('[data-tab="topay"]');
-            if (initialTabButton) {
-                initialTabButton.click();
-            }
-        });
+  <!-- CONTACT SECTION -->
+  <section id="contact" class="min-h-screen max-w-6xl mx-auto px-6 py-20">
+    <h2 class="text-3xl md:text-4xl font-bold text-blue-500 text-center mb-12">CONTACT US</h2>
 
-        document.addEventListener("DOMContentLoaded", () => {
-            document.querySelectorAll(".cancel-order").forEach(button => {
-                button.addEventListener("click", function() {
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+      <!-- Contact Info Column -->
+      <div class="space-y-6">
+        <div class="flex items-start gap-4 bg-blue-500 text-white rounded-xl p-5 shadow">
+          <div class="flex-shrink-0 bg-blue-600 p-3 rounded-full">
+            <i class="bi bi-clock text-white text-lg"></i>
+          </div>
+          <div>
+            <h4 class="font-semibold">Working Hours</h4>
+            <p class="text-sm">8:00 AM - 6:00 PM<br>Monday - Sunday</p>
+          </div>
+        </div>
 
-                    Swal.fire({
-                        title: "Are you sure you want to cancel this order?",
-                        text: "Once cancelled, you won’t be able to restore it.",
-                        icon: "warning",
-                        showCancelButton: true,
-                        confirmButtonColor: "#dc2626", // red-600
-                        cancelButtonColor: "#6b7280", // gray-500
-                        confirmButtonText: "Yes, cancel it"
-                    }).then((result) => {
-                        if (result.isConfirmed) {
+        <div class="flex items-start gap-4 bg-blue-500 text-white rounded-xl p-5 shadow">
+          <div class="flex-shrink-0 bg-blue-600 p-3 rounded-full">
+            <i class="bi bi-geo-alt-fill text-white text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm">123 Pag-asa Street, Barangay Uno, Lipa City, Batangas</p>
+          </div>
+        </div>
 
-                            // OPTIONAL: Call your backend PHP cancel API here
-                            // fetch('cancel_order.php?id=ORDER_ID')
+        <div class="flex items-start gap-4 bg-blue-500 text-white rounded-xl p-5 shadow">
+          <div class="flex-shrink-0 bg-blue-600 p-3 rounded-full">
+            <i class="bi bi-envelope-fill text-white text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm">rch@gmail.com</p>
+          </div>
+        </div>
+      </div>
 
-                            Swal.fire({
-                                title: "Cancelled!",
-                                text: "Order cancelled successfully.",
-                                icon: "success",
-                                confirmButtonColor: "#2563eb"
-                            });
-                        }
-                    });
+      <!-- Contact Form occupies 2 columns on wider screens -->
+      <div class="md:col-span-2">
+        <form class="p-6 md:p-8 border rounded-xl shadow bg-white">
+          <h3 class="text-xl font-semibold text-blue-500 mb-4">Send us your concern.</h3>
 
-                });
-            });
-        });
-        document.addEventListener("DOMContentLoaded", function() {
-            const topayContainer = document.getElementById("topay");
+          <label class="text-sm">Name: <span class="text-red-500">*</span></label>
+          <input class="w-full border border-gray-300 p-2 rounded mb-4" type="text" required>
 
-            fetch("../Order/pending_deliveries.php")
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        console.error(data.error);
-                        return;
-                    }
+          <label class="text-sm">Address: <span class="text-red-500">*</span></label>
+          <input class="w-full border border-gray-300 p-2 rounded mb-4" type="text" required>
 
-                    topayContainer.innerHTML = ""; // clear existing content
+          <label class="text-sm">Email: <span class="text-red-500">*</span></label>
+          <input class="w-full border border-gray-300 p-2 rounded mb-4" type="email" required>
 
-                    data.forEach(entry => {
-                        const order = entry.order;
-                        const items = entry.items;
+          <label class="text-sm">Message: <span class="text-red-500">*</span></label>
+          <textarea class="w-full border border-gray-300 p-2 rounded h-32 mb-4" required></textarea>
 
-                        // Calculate total items and total amount
-                        let totalQty = 0;
-                        let totalAmount = 0;
-                        items.forEach(item => {
-                            totalQty += parseInt(item.quantity);
-                            totalAmount += parseFloat(item.quantity) * parseFloat(item.unit_price);
-                        });
+          <button class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">Submit</button>
+        </form>
+      </div>
+    </div>
+  </section>
 
-                        // Generate HTML for order
-                        let itemsHtml = "";
-                        items.forEach(item => {
-                            itemsHtml += `
-                        <div class="col-span-2">${item.item_name}</div>
-                        <div class="text-center">${item.quantity}</div>
-                        <div></div>
-                    `;
-                        });
+  <!-- FOOTER -->
+  <footer id="developer" class="w-full bg-blue-500 text-white mt-12">
+    <div class="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <i class="bi bi-droplet-fill text-white text-2xl"></i>
+        <div>
+          <div class="font-semibold">RCH Water</div>
+          <div class="text-xs opacity-80">© RCH 2025. All rights reserved.</div>
+        </div>
+      </div>
 
-                        const orderHtml = `
-                    <div class="p-4 border border-gray-200 rounded-lg shadow-sm mb-4">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="font-semibold text-gray-800">${order.order_number}</span>
-                            <span class="text-red-500 font-medium">${order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}</span>
-                        </div>
+      <div class="hidden md:flex gap-6 text-sm">
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        <a href="developers.html">Developer</a>
+      </div>
 
-                        <hr class="mb-3">
-
-                        <!-- COLUMN LABELS -->
-                        <div class="grid grid-cols-4 gap-4 text-sm font-semibold text-gray-700 mb-1">
-                            <div class="col-span-2">Product</div>
-                            <div class="text-center">Quantity</div>
-                            <div></div>
-                        </div>
-
-                        <!-- PRODUCT LIST -->
-                        <div class="grid grid-cols-4 gap-2 text-sm text-gray-600 mb-4">
-                            ${itemsHtml}
-                        </div>
-
-                        <div class="flex justify-end items-center mb-4">
-                            <span class="text-sm text-gray-600 mr-2">Total ${totalQty} Item${totalQty > 1 ? 's' : ''}:</span>
-                            <span class="text-lg font-bold text-gray-800">₱${totalAmount.toFixed(2)}</span>
-                        </div>
-
-                        <div class="flex justify-end space-x-3">
-                            <button class="cancel-order bg-red-500 text-white font-medium py-2 px-4 rounded-md shadow hover:bg-red-600">
-                                Cancel Order
-                            </button>
-                            <a href="order_details.php?order=${order.order_number}&status=${order.order_status}"
-                                class="bg-white text-blue-600 border border-blue-600 font-medium py-2 px-4 rounded-md shadow hover:bg-blue-600 hover:text-white">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-                `;
-
-                        topayContainer.innerHTML += orderHtml;
-                    });
-                })
-                .catch(err => console.error("Fetch error:", err));
-        });
-    </script>
-
+      <div class="flex items-center gap-4">
+        <a class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center" href="#"><i class="bi bi-facebook"></i></a>
+        <a class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center" href="#"><i class="bi bi-instagram"></i></a>
+        <a class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center" href="#"><i class="bi bi-github"></i></a>
+      </div>
+    </div>
+  </footer>
 
 </body>
-
 </html>
