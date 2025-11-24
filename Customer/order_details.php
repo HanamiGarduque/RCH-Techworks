@@ -65,7 +65,7 @@ $buttonText = '';
 $buttonClass = '';
 
 if ($orderStatus === 'Pending') {
-    $statusColor = 'text-red-600 font-semibold';
+    $statusColor = 'text-yellow-600 font-semibold';
     $buttonText = "Back";
     $buttonClass = "bg-blue-600 hover:bg-blue-700";
 } elseif ($orderStatus === 'On Delivery') {
@@ -150,7 +150,6 @@ if ($orderStatus === 'Pending') {
                     ${createNavItem("../Customer/order_water_refill.php", "fas fa-tint", "Order Water Refill", "order_water_refill.php")}
                     ${createNavItem("../Customer/browse_products.php", "fas fa-shopping-basket", "Browse Products", "browse_products.php")}
                     ${createNavItem("../Customer/my_orders.php", "fas fa-box", "My Orders", "my_orders.php")}
-                    ${createNavItem("../Customer/receipts.php", "fas fa-receipt", "Receipts", "receipts.php")}
                 </ul>
             </nav>
 
