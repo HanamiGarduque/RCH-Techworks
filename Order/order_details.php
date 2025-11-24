@@ -212,9 +212,6 @@ if ($orderStatus === 'Pending') {
 
                     </div>
 
-
-
-
                     <!-- DELIVERY INFORMATION -->
                     <div class="border rounded-xl p-5 mb-6">
                         <div class="flex items-center gap-2 text-blue-600 font-medium mb-2">
