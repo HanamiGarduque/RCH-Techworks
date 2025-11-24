@@ -1,5 +1,9 @@
 <?php
-$refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
+session_start();
+require_once '../Database/db_connection.php';
+date_default_timezone_set('Asia/Manila');
+
+$rider_name = $_SESSION['rider_name'] ?? "Rider";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -7,567 +11,745 @@ $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : 0;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Details | Rider</title>
-
+    <title>Rider Dashboard | RCH Water</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         body {
-            font-family: "Inter", sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
-        h1, h2, h3, .font-display {
-            font-family: "Poppins", sans-serif;
-            font-weight: 700;
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
         }
-        .map-container {
-            height: 300px;
-            border-radius: 12px;
-            overflow: hidden;
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
         }
-        .timeline-item {
-            position: relative;
-            padding-left: 40px;
-            margin-bottom: 24px;
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
         }
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 6px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background-color: #e5e7eb;
-            border: 2px solid white;
-        }
-        .timeline-item.active::before {
-            background-color: #2563eb;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-        }
-        .timeline-item.completed::before {
-            background-color: #10b981;
-        }
-        .timeline-connector {
-            position: absolute;
-            left: 15px;
-            top: 24px;
-            width: 2px;
-            height: 24px;
-            background-color: #e5e7eb;
-        }
-        .timeline-item.active ~ .timeline-item .timeline-connector,
-        .timeline-item.completed .timeline-connector {
-            background-color: #2563eb;
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 50;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-overlay.active {
-            display: flex;
-        }
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .btn-disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        /* Added phone-frame styles for proper scrolling */
-        .phone-frame {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            max-height: 900px;
-        }
-        .scrollable-content {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
 
 <body class="bg-white min-h-screen flex justify-center items-center relative">
 
-    <!-- PHONE FRAME -->
-    <div class="phone-frame bg-white w-[375px] max-h-[750px] rounded-2xl shadow-2xl">
+    <!-- Fixed-width container wrapper -->
+    <div class="bg-white w-[375px] h-[750px] mx-auto relative rounded-3xl overflow-hidden border shadow-lg">
 
-        <!-- HEADER -->
-        <div class="bg-gradient-to-br from-blue-400 to-blue-600 text-white px-4 py-3 rounded-t-3xl flex-shrink-0">
-            <div class="flex items-center justify-between mb-1">
-                <button onclick="history.back()" class="text-xl hover:bg-blue-500 rounded-lg transition">
-                    <i class="bi bi-chevron-left"></i>
+        <!-- Header -->
+        <div class="bg-gradient-to-br from-blue-400 to-blue-600 text-white sticky top-0 z-50 w-full px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight">Welcome, Rider</h2>
+                    <div id="datetime" class="text-sm text-blue-100 font-medium"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Notification Button -->
+                    <button onclick="window.location.href='notification.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-bell"></i>
+                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                    </button>
+
+                    <!-- Messages Button -->
+                    <button onclick="window.location.href='messages.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-chat-dots"></i>
+                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Buttons Container -->
+        <div class="bg-white sticky top-16 z-40 w-full px-5 py-4">
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="showSection('active-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Active</button>
+                <button onclick="showSection('pending-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Pending</button>
+                <button onclick="showSection('completed-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Completed</button>
+            </div>
+        </div>
+
+        <!-- ACTIVE DELIVERIES -->
+        <div class="px-5 pb-5" id="active-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Active Deliveries</h3>
+
+            <!-- Map Placeholder -->
+           <!-- Map Integration -->
+<div id="active-map" class="rounded-xl h-40 mb-4 border border-gray-300 overflow-hidden"></div>
+
+
+            <div id="active-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[330px] pb-5 pr-2"></div>
+        </div>
+
+        <!-- PENDING DELIVERIES -->
+        <div class="px-5 pb-20 hidden relative" id="pending-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Pending Deliveries</h3>
+
+            <!-- TABS - No gap between buttons -->
+            <div class="flex mb-4 bg-gray-200 rounded-lg overflow-hidden">
+                <button id="pending-tab-pickup"
+                    class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200"
+                    onclick="showPendingTab('pickup')">
+                    For Pickup
                 </button>
-                <span id="status-badge" class="status-badge bg-white text-blue-600">
-                    <i class="bi bi-hourglass-split"></i>
-                    <span id="status-text">Loading</span>
+
+                <button id="pending-tab-delivery"
+                    class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200"
+                    onclick="showPendingTab('delivery')">
+                    For Delivery
+                </button>
+            </div>
+
+            <!-- PICKUP LIST -->
+            <div id="pickup-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2"></div>
+
+            <!-- DELIVERY LIST -->
+            <div id="delivery-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden"></div>
+
+            <!-- Floating Period Switcher for Pickup -->
+            <div id="time-switcher-pickup"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                       flex items-center space-x-6 z-50 border">
+                <button id="prev-period-pickup"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-pickup" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-pickup"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+
+            <!-- Floating Period Switcher for Delivery -->
+            <div id="time-switcher-delivery"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                       flex items-center space-x-6 z-50 border hidden">
+                <button id="prev-period-delivery"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-delivery" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-delivery"
+                    class="w-7 h-7 flex items-center justify-center 
+                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+        </div>
+
+        <!-- HISTORY SECTION (previously COMPLETED DELIVERIES) -->
+        <div class="px-5 pb-20 hidden relative" id="completed-deliveries">
+            <h3 class="text-md font-semibold text-blue-600 mb-3">Order History</h3>
+
+            <!-- TABS - Delayed and Completed -->
+            <div class="flex mb-4 bg-gray-200 rounded-lg overflow-hidden">
+                <button id="history-tab-delayed"
+                    class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200"
+                    onclick="showHistoryTab('delayed')">
+                    Delayed
+                </button>
+
+                <button id="history-tab-completed"
+                    class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200"
+                    onclick="showHistoryTab('completed')">
+                    Completed
+                </button>
+            </div>
+
+            <!-- DELAYED LIST -->
+            <div id="delayed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2"></div>
+
+            <!-- COMPLETED LIST -->
+            <div id="completed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden"></div>
+
+            <!-- Floating Period Switcher for Delayed -->
+            <div id="time-switcher-delayed"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+               flex items-center space-x-6 z-50 border">
+                <button id="prev-period-delayed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-delayed" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-delayed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+
+            <!-- Floating Period Switcher for Completed -->
+            <div id="time-switcher-completed"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 
+               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+               flex items-center space-x-6 z-50 border hidden">
+                <button id="prev-period-completed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    ←
+                </button>
+                <span id="current-period-completed" class="text-xs text-white font-semibold">
+                    Morning
+                </span>
+                <button id="next-period-completed"
+                    class="w-7 h-7 flex items-center justify-center 
+                   rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
+                    →
+                </button>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        // Global variables
+        let currentPeriodPickup = "morning";
+        let currentPeriodDelivery = "morning";
+        let currentPeriodDelayed = "morning";
+        let currentPeriodCompleted = "morning";
+        let deliveryData = null;
+
+        // Month names
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // Initialize periods based on current time
+        function initializePeriods() {
+            const now = new Date();
+            const hour = now.getHours();
+
+            // If it's 12 PM (noon) or later, set to afternoon
+            if (hour >= 12) {
+                currentPeriodPickup = "afternoon";
+                currentPeriodDelivery = "afternoon";
+                currentPeriodDelayed = "afternoon";
+                currentPeriodCompleted = "afternoon";
+            } else {
+                currentPeriodPickup = "morning";
+                currentPeriodDelivery = "morning";
+                currentPeriodDelayed = "morning";
+                currentPeriodCompleted = "morning";
+            }
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const month = monthNames[now.getMonth()];
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            // Convert to 12-hour format with AM/PM
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // Convert 0 to 12
+            const hoursFormatted = String(hours).padStart(2, '0');
+
+            document.getElementById('datetime').innerText = `${month} ${day}, ${year} • ${hoursFormatted}:${minutes} ${ampm}`;
+        }
+
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
+
+        function showSection(sectionId, button) {
+            const sections = ['active-deliveries', 'pending-deliveries', 'completed-deliveries'];
+            sections.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+
+            document.querySelectorAll('.section-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-blue-100', 'text-blue-600');
+            });
+            button.classList.remove('bg-blue-100', 'text-blue-600');
+            button.classList.add('bg-blue-600', 'text-white');
+        }
+
+        showSection('active-deliveries', document.querySelector('.section-btn'));
+
+        function showPendingTab(tab) {
+            const pickupTab = document.getElementById('pending-tab-pickup');
+            const deliveryTab = document.getElementById('pending-tab-delivery');
+            const pickupList = document.getElementById('pickup-list');
+            const deliveryList = document.getElementById('delivery-list');
+            const timeSwitcherPickup = document.getElementById('time-switcher-pickup');
+            const timeSwitcherDelivery = document.getElementById('time-switcher-delivery');
+
+            if (tab === 'pickup') {
+                pickupTab.classList.add("bg-blue-500", "text-white");
+                pickupTab.classList.remove("bg-gray-200", "text-gray-700");
+                deliveryTab.classList.add("bg-gray-200", "text-gray-700");
+                deliveryTab.classList.remove("bg-blue-500", "text-white");
+
+                pickupList.classList.remove("hidden");
+                deliveryList.classList.add("hidden");
+                timeSwitcherPickup.classList.remove("hidden");
+                timeSwitcherDelivery.classList.add("hidden");
+            } else {
+                deliveryTab.classList.add("bg-blue-500", "text-white");
+                deliveryTab.classList.remove("bg-gray-200", "text-gray-700");
+                pickupTab.classList.add("bg-gray-200", "text-gray-700");
+                pickupTab.classList.remove("bg-blue-500", "text-white");
+
+                deliveryList.classList.remove("hidden");
+                pickupList.classList.add("hidden");
+                timeSwitcherDelivery.classList.remove("hidden");
+                timeSwitcherPickup.classList.add("hidden");
+            }
+        }
+
+        function showHistoryTab(tab) {
+            const delayedTab = document.getElementById('history-tab-delayed');
+            const completedTab = document.getElementById('history-tab-completed');
+            const delayedList = document.getElementById('delayed-list');
+            const completedList = document.getElementById('completed-list');
+            const timeSwitcherDelayed = document.getElementById('time-switcher-delayed');
+            const timeSwitcherCompleted = document.getElementById('time-switcher-completed');
+
+            if (tab === 'delayed') {
+                delayedTab.classList.add("bg-blue-500", "text-white");
+                delayedTab.classList.remove("bg-gray-200", "text-gray-700");
+                completedTab.classList.add("bg-gray-200", "text-gray-700");
+                completedTab.classList.remove("bg-blue-500", "text-white");
+
+                delayedList.classList.remove("hidden");
+                completedList.classList.add("hidden");
+                timeSwitcherDelayed.classList.remove("hidden");
+                timeSwitcherCompleted.classList.add("hidden");
+            } else {
+                completedTab.classList.add("bg-blue-500", "text-white");
+                completedTab.classList.remove("bg-gray-200", "text-gray-700");
+                delayedTab.classList.add("bg-gray-200", "text-gray-700");
+                delayedTab.classList.remove("bg-blue-500", "text-white");
+
+                completedList.classList.remove("hidden");
+                delayedList.classList.add("hidden");
+                timeSwitcherCompleted.classList.remove("hidden");
+                timeSwitcherDelayed.classList.add("hidden");
+            }
+        }
+
+        function updatePickupPeriodDisplay() {
+            document.getElementById("current-period-pickup").textContent =
+                currentPeriodPickup.charAt(0).toUpperCase() + currentPeriodPickup.slice(1);
+            renderPickupList();
+        }
+
+        function updateDeliveryPeriodDisplay() {
+            document.getElementById("current-period-delivery").textContent =
+                currentPeriodDelivery.charAt(0).toUpperCase() + currentPeriodDelivery.slice(1);
+            renderDeliveryList();
+        }
+
+        function updateDelayedPeriodDisplay() {
+            document.getElementById("current-period-delayed").textContent =
+                currentPeriodDelayed.charAt(0).toUpperCase() + currentPeriodDelayed.slice(1);
+            renderDelayedList();
+        }
+
+        function updateCompletedPeriodDisplay() {
+            document.getElementById("current-period-completed").textContent =
+                currentPeriodCompleted.charAt(0).toUpperCase() + currentPeriodCompleted.slice(1);
+            renderCompletedList();
+        }
+
+        // Period switchers for pickup/delivery
+        document.getElementById("prev-period-pickup").addEventListener("click", () => {
+            currentPeriodPickup = currentPeriodPickup === "morning" ? "afternoon" : "morning";
+            updatePickupPeriodDisplay();
+        });
+
+        document.getElementById("next-period-pickup").addEventListener("click", () => {
+            currentPeriodPickup = currentPeriodPickup === "morning" ? "afternoon" : "morning";
+            updatePickupPeriodDisplay();
+        });
+
+        document.getElementById("prev-period-delivery").addEventListener("click", () => {
+            currentPeriodDelivery = currentPeriodDelivery === "morning" ? "afternoon" : "morning";
+            updateDeliveryPeriodDisplay();
+        });
+
+        document.getElementById("next-period-delivery").addEventListener("click", () => {
+            currentPeriodDelivery = currentPeriodDelivery === "morning" ? "afternoon" : "morning";
+            updateDeliveryPeriodDisplay();
+        });
+
+        // Period switchers for delayed/completed
+        document.getElementById("prev-period-delayed").addEventListener("click", () => {
+            currentPeriodDelayed = currentPeriodDelayed === "morning" ? "afternoon" : "morning";
+            updateDelayedPeriodDisplay();
+        });
+
+        document.getElementById("next-period-delayed").addEventListener("click", () => {
+            currentPeriodDelayed = currentPeriodDelayed === "morning" ? "afternoon" : "morning";
+            updateDelayedPeriodDisplay();
+        });
+
+        document.getElementById("prev-period-completed").addEventListener("click", () => {
+            currentPeriodCompleted = currentPeriodCompleted === "morning" ? "afternoon" : "morning";
+            updateCompletedPeriodDisplay();
+        });
+
+        document.getElementById("next-period-completed").addEventListener("click", () => {
+            currentPeriodCompleted = currentPeriodCompleted === "morning" ? "afternoon" : "morning";
+            updateCompletedPeriodDisplay();
+        });
+
+        function renderPickupList() {
+            if (!deliveryData) return;
+
+            const pickupList = document.getElementById('pickup-list');
+            const today = new Date().toISOString().split('T')[0];
+
+            pickupList.innerHTML = '';
+
+            const orders = deliveryData.pending.pickup[currentPeriodPickup].filter(order =>
+                order.pickup_datetime.startsWith(today)
+            );
+
+            if (!orders.length) {
+                pickupList.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <p class="text-center text-gray-400 text-sm">No ${currentPeriodPickup} pickups for today</p>
+            </div>
+        `;
+                return;
+            }
+
+            orders.forEach(order => {
+                pickupList.innerHTML += `
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                    </div>
+                    <span class="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-semibold">Pickup</span>
+                </div>
+
+                <div class="space-y-2 mb-3">
+                    <div class="flex items-start text-sm text-gray-600">
+                        <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                        <span class="flex-1">${order.user.address}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                        <span class="font-medium">${new Date(order.pickup_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                </div>
+
+                <button onclick="startDelivery(${order.refill_id})"
+                    class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                    Start Delivery
+                </button>
+            </div>
+        `;
+            });
+        }
+
+        function startDelivery(refillId) {
+            window.location.href = `order_details.php?refill_id=${refill_id}`;
+        }
+
+
+
+        function renderDeliveryList() {
+            if (!deliveryData) return;
+
+            const deliveryList = document.getElementById('delivery-list');
+            const today = new Date().toISOString().split('T')[0];
+
+            deliveryList.innerHTML = '';
+
+            const orders = deliveryData.pending.delivery[currentPeriodDelivery].filter(order =>
+                order.delivery_datetime.startsWith(today)
+            );
+
+            if (!orders.length) {
+                deliveryList.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <p class="text-center text-gray-400 text-sm">No ${currentPeriodDelivery} deliveries for today</p>
+            </div>
+        `;
+                return;
+            }
+
+            orders.forEach(order => {
+                deliveryList.innerHTML += `
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                    </div>
+                    <span class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold">Delivery</span>
+                </div>
+
+                <div class="space-y-2 mb-3">
+                    <div class="flex items-start text-sm text-gray-600">
+                        <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                        <span class="flex-1">${order.user.address}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                        <span class="font-medium">${new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                </div>
+
+                <button onclick="startDelivery(${order.refill_id})"
+                    class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                    Start Delivery
+                </button>
+            </div>
+        `;
+            });
+        }
+
+        function renderDelayedList() {
+            if (!deliveryData) return;
+
+            const delayedList = document.getElementById('delayed-list');
+            delayedList.innerHTML = '';
+
+            // Removed date filtering
+            const orders = deliveryData.history.delayed[currentPeriodDelayed];
+
+            if (!orders.length) {
+                delayedList.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+            <p class="text-center text-gray-400 text-sm">No ${currentPeriodDelayed} delayed orders</p>
+        </div>
+    `;
+                return;
+            }
+
+            orders.forEach(order => {
+                delayedList.innerHTML += `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                </div>
+                <span class="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                    <i class="bi bi-clock-history mr-1"></i> Delayed
                 </span>
             </div>
 
-            <div>
-                <h1 id="order-id" class="text-lg font-bold">Loading...</h1>
-                <div class="flex items-center gap-2 text-blue-100">
-                    <i class="bi bi-person-circle text-xl"></i>
-                    <p id="customer-name" class="text-sm font-medium">Loading...</p>
+            <div class="space-y-2 mb-3">
+                <div class="flex items-start text-sm text-gray-600">
+                    <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                    <span class="flex-1">${order.user.address}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="bi bi-clock-fill text-yellow-500 mr-2"></i>
+                    <span class="font-medium">${new Date(order.delivery_datetime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
             </div>
+
+            <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-yellow-50 text-yellow-700 cursor-default">
+                <i class="bi bi-exclamation-triangle mr-1"></i> Delivery Delayed
+            </button>
         </div>
-
-        <!-- SCROLLABLE CONTENT -->
-        <div class="scrollable-content">
-
-            <!-- MAP SECTION -->
-            <div class="px-6 pt-3 pb-4">
-                <div class="flex items-center gap-2 mb-2">
-                    <i class="bi bi-geo-alt-fill text-blue-600 text-lg"></i>
-                    <h2 class="text-md font-semibold text-blue-600">Live Location</h2>
-                </div>
-                <div class="map-container bg-gray-200 border-2 border-blue-100" id="map"></div>
-            </div>
-
-            <!-- DELIVERY INFO CARD -->
-            <div class="px-6 pb-4">
-                <div class="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-xs text-gray-600 font-semibold mb-1">PICKUP TIME</p>
-                            <p class="text-sm font-bold text-gray-900" id="pickup-time">--:--</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-600 font-semibold mb-1">DELIVERY TIME</p>
-                            <p class="text-sm font-bold text-gray-900" id="delivery-time">--:--</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ADDRESS SECTION -->
-            <div class="px-6 pb-4">
-                <div class="bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition">
-                    <div class="flex items-start gap-3">
-                        <div class="text-blue-600 text-xl mt-1">
-                            <i class="bi bi-house-door"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-xs font-semibold text-gray-500 mb-1">DELIVERY ADDRESS</p>
-                            <p id="customer-address" class="text-sm font-medium text-gray-900">Loading...</p>
-                            <p id="customer-phone" class="text-xs text-gray-600 mt-2 flex items-center gap-1">
-                                <i class="bi bi-telephone"></i> <span id="phone-text">Loading...</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PROGRESS TIMELINE -->
-            <div class="px-6 pb-4">
-                <h3 class="text-md font-semibold text-blue-600 mb-4 flex items-center gap-2">
-                    <i class="bi bi-arrow-repeat text-blue-600"></i> Delivery Progress
-                </h3>
-                <div class="relative">
-                    <div id="timeline-container"></div>
-                </div>
-            </div>
-
-            <!-- ITEMS CARD -->
-            <div class="px-6 pb-32">
-                <h3 class="text-md font-semibold text-blue-600 mb-3 flex items-center gap-2">
-                    <i class="bi bi-box2 text-blue-600"></i> Order Items
-                </h3>
-                <div id="items-list" class="space-y-3"></div>
-            </div>
-
-        </div>
-
-        <!-- FIXED ACTION BUTTONS -->
-        <div class="bg-white border-t border-gray-200 px-6 py-4 flex-shrink-0 shadow-2xl">
-            <div id="action-buttons" class="space-y-3"></div>
-        </div>
-
-    </div>
-
-    <!-- DELAY NOTE MODAL -->
-    <div id="delay-modal" class="modal-overlay">
-        <div class="bg-white rounded-2xl p-6 w-11/12 max-w-sm max-h-96 flex flex-col">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-gray-900">Reason for Delay</h3>
-                <button onclick="closeDelayModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="bi bi-x-lg text-xl"></i>
-                </button>
-            </div>
-
-            <textarea id="delay-reason" placeholder="Please enter the reason for delay..." class="flex-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 resize-none mb-4"></textarea>
-
-            <div class="flex gap-3">
-                <button onclick="closeDelayModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
-                    Cancel
-                </button>
-                <button id="submit-delay-btn" onclick="submitDelayReason()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
-                    <span>Submit</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const refillId = urlParams.get("refill_id");
-
-        if (!refillId) {
-            alert("Missing refill_id in URL");
-            throw new Error("Missing refill_id");
-        }
-
-        let currentOrder = null;
-        let map = null;
-        let riderMarker = null;
-        let userMarker = null;
-        let delayAction = null;
-
-        const STATUS_CONFIG = {
-            pending: { step: 1, color: "bg-gray-500", text: "Pending", icon: "bi-clock" },
-            assigned: { step: 1, color: "bg-yellow-500", text: "Assigned", icon: "bi-person-check" },
-            pickup_in_progress: { step: 2, color: "bg-blue-600", text: "Pickup In Progress", icon: "bi-box-seam" },
-            pickup_delayed: { step: 2, color: "bg-orange-500", text: "Pickup Delayed", icon: "bi-exclamation-triangle" },
-            picked_up: { step: 3, color: "bg-green-500", text: "Picked Up", icon: "bi-check-circle" },
-            on_delivery: { step: 4, color: "bg-blue-700", text: "On Delivery", icon: "bi-truck" },
-            delivery_delayed: { step: 4, color: "bg-red-500", text: "Delivery Delayed", icon: "bi-exclamation-circle" },
-            delivered: { step: 5, color: "bg-green-600", text: "Delivered", icon: "bi-check-lg" },
-            cancelled: { step: -1, color: "bg-gray-700", text: "Cancelled", icon: "bi-x-circle" }
-        };
-
-        // Initialize map
-        function initMap() {
-            if (map) map.remove();
-            const defaultLat = 14.5995;
-            const defaultLng = 120.9842;
-
-            map = L.map('map').setView([defaultLat, defaultLng], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(map);
-
-            riderMarker = L.circleMarker([defaultLat, defaultLng], {
-                radius: 8,
-                fillColor: '#2563eb',
-                color: '#1e40af',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.8
-            }).addTo(map).bindPopup('Your Location');
-
-            userMarker = L.circleMarker([defaultLat + 0.01, defaultLng + 0.01], {
-                radius: 8,
-                fillColor: '#10b981',
-                color: '#059669',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.8
-            }).addTo(map).bindPopup('Delivery Location');
-        }
-
-        function fetchOrderData() {
-            fetch(`order_details_backend.php?refill_id=${refillId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (!data.success) {
-                        alert(data.error || "Order not found");
-                        return;
-                    }
-
-                    currentOrder = data.order;
-                    const items = data.items;
-
-                    populateHeader();
-                    populateAddressInfo();
-                    populateTimings();
-                    populateTimeline();
-                    populateItems(items);
-                    populateActionButtons();
-                    initMap();
-                })
-                .catch(err => {
-                    console.error("Fetch error:", err);
-                    alert("Failed to load order details");
-                });
-        }
-
-        function populateHeader() {
-            document.getElementById("order-id").textContent = `#${currentOrder.order_number}`;
-            document.getElementById("customer-name").textContent = currentOrder.customer_name;
-
-            const config = STATUS_CONFIG[currentOrder.order_status];
-            const badgeEl = document.getElementById("status-badge");
-            badgeEl.className = `status-badge ${config.color} text-white`;
-            badgeEl.innerHTML = `<i class="bi ${config.icon}"></i><span id="status-text">${config.text}</span>`;
-        }
-
-        function populateAddressInfo() {
-            document.getElementById("customer-address").textContent = currentOrder.customer_address;
-            document.getElementById("phone-text").textContent = currentOrder.customer_phone;
-        }
-
-        function populateTimings() {
-            const pickupTime = new Date(currentOrder.pickup_datetime).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
+    `;
             });
-            const deliveryTime = new Date(currentOrder.delivery_datetime).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            });
-            document.getElementById("pickup-time").textContent = pickupTime;
-            document.getElementById("delivery-time").textContent = deliveryTime;
         }
 
-        function populateTimeline() {
-            const steps = [
-                { step: 1, label: "Order Placed", status: "pending" },
-                { step: 2, label: "Pickup In Progress", status: "pickup_in_progress" },
-                { step: 3, label: "Picked Up", status: "picked_up" },
-                { step: 4, label: "On Delivery", status: "on_delivery" },
-                { step: 5, label: "Delivered", status: "delivered" }
-            ];
+        function renderCompletedList() {
+            if (!deliveryData) return;
 
-            const currentStep = STATUS_CONFIG[currentOrder.order_status].step;
-            let html = '';
+            const completedList = document.getElementById('completed-list');
+            completedList.innerHTML = '';
 
-            steps.forEach((item, index) => {
-                const isActive = item.step === currentStep;
-                const isCompleted = item.step < currentStep;
-                const hasConnector = index < steps.length - 1;
+            // Removed date filtering
+            const orders = deliveryData.history.completed[currentPeriodCompleted];
 
-                html += `
-                    <div class="timeline-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">
-                        ${hasConnector ? '<div class="timeline-connector"></div>' : ''}
-                        <div class="flex flex-col">
-                            <p class="text-sm font-semibold text-gray-900">${item.label}</p>
-                            <p class="text-xs text-gray-600 mt-1">Step ${item.step} of 5</p>
-                        </div>
-                    </div>
-                `;
-            });
-
-            document.getElementById("timeline-container").innerHTML = html;
-        }
-
-        function populateItems(items) {
-            const itemsList = document.getElementById("items-list");
-            itemsList.innerHTML = '';
-
-            if (items.length === 0) {
-                itemsList.innerHTML = '<p class="text-gray-500 text-sm">No items found</p>';
+            if (!orders.length) {
+                completedList.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+            <p class="text-center text-gray-400 text-sm">No ${currentPeriodCompleted} completed orders</p>
+        </div>
+    `;
                 return;
             }
 
-            items.forEach(item => {
-                itemsList.innerHTML += `
-                    <div class="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between hover:border-blue-300 transition">
-                        <div class="flex-1">
-                            <p class="text-sm font-semibold text-gray-900">${item.gallon_type}</p>
-                            <p class="text-xs text-gray-600">${item.gallon_size} • Qty: ${item.quantity}</p>
-                        </div>
-                        <span class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">
-                            ₱${parseFloat(item.unit_price).toFixed(2)}
-                        </span>
-                    </div>
-                `;
+            orders.forEach(order => {
+                completedList.innerHTML += `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                    <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                </div>
+                <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                    <i class="bi bi-check-circle-fill mr-1"></i> Completed
+                </span>
+            </div>
+
+            <div class="space-y-2 mb-3">
+                <div class="flex items-start text-sm text-gray-600">
+                    <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                    <span class="flex-1">${order.user.address}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="bi bi-clock-fill text-gray-500 mr-2"></i>
+                    <span class="font-medium">${new Date(order.delivery_datetime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+            </div>
+
+            <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-green-50 text-green-700 cursor-default">
+                <i class="bi bi-check-circle mr-1"></i> Delivery Completed
+            </button>
+        </div>
+    `;
             });
         }
+        // ===== MAP INTEGRATION (OpenStreetMap using Leaflet) =====
+let map = null;
+let markers = [];
 
-        function populateActionButtons() {
-            const buttonsEl = document.getElementById("action-buttons");
-            const status = currentOrder.order_status;
+function initMap() {
+    map = L.map('active-map').setView([13.7563, 121.0583], 12); // Default view (Batangas area)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+}
 
-            let html = '';
+function updateMapMarkers(orders) {
+    if (!map) return;
 
-            if (status === 'pending' || status === 'assigned') {
-                html = `
-                    <button onclick="startPickup()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-lg">
-                        <i class="bi bi-box-seam"></i> Start Pickup
-                    </button>
-                `;
-            }
-            else if (status === 'pickup_in_progress') {
-                html = `
-                    <button onclick="markPickedUp()" class="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition flex items-center justify-center gap-2 shadow-lg mb-2">
-                        <i class="bi bi-check-circle"></i> Mark as Picked Up
-                    </button>
-                    <button onclick="openDelayModal('pickup')" class="w-full py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition flex items-center justify-center gap-2 shadow-lg">
-                        <i class="bi bi-exclamation-triangle"></i> Delay
-                    </button>
-                `;
-            }
-            else if (status === 'picked_up') {
-                const canStartDelivery = canShowStartDeliveryButton();
-                html = `
-                    <button onclick="startDelivery()" ${!canStartDelivery ? 'disabled' : ''} class="w-full py-3 ${canStartDelivery ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'} text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-lg">
-                        <i class="bi bi-truck"></i> Start Delivery
-                    </button>
-                    ${!canStartDelivery ? '<p class="text-xs text-gray-600 text-center mt-2">Available 30 minutes before delivery time</p>' : ''}
-                `;
-            }
-            else if (status === 'on_delivery') {
-                html = `
-                    <button onclick="completeDelivery()" class="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition flex items-center justify-center gap-2 shadow-lg mb-2">
-                        <i class="bi bi-check-lg"></i> Complete Delivery
-                    </button>
-                    <button onclick="openDelayModal('delivery')" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition flex items-center justify-center gap-2 shadow-lg">
-                        <i class="bi bi-exclamation-circle"></i> Delay
-                    </button>
-                `;
-            }
-            else if (status === 'delivered' || status === 'cancelled') {
-                html = `
-                    <button disabled class="w-full py-3 bg-gray-400 text-white rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2 shadow-lg">
-                        <i class="bi bi-check-lg"></i> ${status === 'delivered' ? 'Order Completed' : 'Order Cancelled'}
-                    </button>
-                `;
-            }
+    // Clear old markers
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
 
-            buttonsEl.innerHTML = html;
+    orders.forEach(order => {
+        if (order.user.latitude && order.user.longitude) {
+            const lat = parseFloat(order.user.latitude);
+            const lng = parseFloat(order.user.longitude);
+            const marker = L.marker([lat, lng]).addTo(map)
+                .bindPopup(`<b>${order.user.name}</b><br>${order.user.address}`);
+            markers.push(marker);
         }
+    });
 
-        function canShowStartDeliveryButton() {
-            const now = new Date();
-            const deliveryTime = new Date(currentOrder.delivery_datetime);
-            const thirtyMinutesBefore = new Date(deliveryTime.getTime() - 30 * 60000);
-            return now >= thirtyMinutesBefore;
-        }
+    if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2));
+    }
+}
+// ===== END MAP CODE =====
 
-        function updateOrderStatus(newStatus, delayNote = null) {
-            const submitBtn = document.querySelector('#action-buttons button[onclick*="startPickup"], #action-buttons button[onclick*="markPickedUp"], #action-buttons button[onclick*="startDelivery"], #action-buttons button[onclick*="completeDelivery"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<div class="loading-spinner"></div> Processing...';
-            }
 
-            const formData = new FormData();
-            formData.append('refill_id', refillId);
-            formData.append('new_status', newStatus);
-            if (delayNote) formData.append('delay_note', delayNote);
-
-            fetch('update_order_status.php', {
-                method: 'POST',
-                body: formData
-            })
+        function fetchDeliveries() {
+            fetch('dashboard_backend.php')
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success) {
-                        currentOrder.order_status = newStatus;
-                        populateHeader();
-                        populateTimeline();
-                        populateActionButtons();
-                        alert('Order status updated successfully!');
+                    deliveryData = data;
+                    const activeList = document.getElementById('active-list');
+                    const today = new Date().toISOString().split('T')[0];
+
+                    // --- Active ---
+                    const activeOrders = data.active.filter(order =>
+                        order.pickup_datetime.startsWith(today) || order.delivery_datetime.startsWith(today)
+                    );
+
+                    if (!activeOrders.length) {
+                        activeList.innerHTML = `
+                    <div class="flex items-center justify-center h-full">
+                        <p class="text-center text-gray-400 text-sm">No active deliveries for today</p>
+                    </div>
+                `;
                     } else {
-                        alert(data.error || 'Failed to update order status');
-                        populateActionButtons();
+                        activeList.innerHTML = activeOrders.map(order => `
+                    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-bold text-gray-900 text-base">${order.user.name}</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Order #${order.order_number}</p>
+                            </div>
+                            <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                                <i class="bi bi-truck mr-1"></i> On the Way
+                            </span>
+                        </div>
+
+                        <div class="space-y-2 mb-3">
+                            <div class="flex items-start text-sm text-gray-600">
+                                <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                                <span class="flex-1">${order.user.address}</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                                <span class="font-medium">${order.pickup_datetime ? new Date(order.pickup_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date(order.delivery_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        </div>
+
+                        <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'"
+                            class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
+                            View Details
+                        </button>
+                    </div>
+                `).join('');
+                updateMapMarkers(activeOrders);
+
                     }
+
+                    // Render pickup, delivery, delayed, and completed lists
+                    renderPickupList();
+                    renderDeliveryList();
+                    renderDelayedList();
+                    renderCompletedList();
                 })
-                .catch(err => {
-                    console.error("Update error:", err);
-                    alert('Error updating order status');
-                    populateActionButtons();
-                });
+                .catch(console.error);
         }
 
-        // Action button handlers
-        function startPickup() {
-            if (confirm('Start pickup for this order?')) {
-                updateOrderStatus('pickup_in_progress');
-            }
-        }
-
-        function markPickedUp() {
-            if (confirm('Mark order as picked up?')) {
-                updateOrderStatus('picked_up');
-            }
-        }
-
-        function startDelivery() {
-            if (!canShowStartDeliveryButton()) {
-                alert('Cannot start delivery yet. Available 30 minutes before delivery time.');
-                return;
-            }
-            if (confirm('Start delivery for this order?')) {
-                updateOrderStatus('on_delivery');
-            }
-        }
-
-        function completeDelivery() {
-            if (confirm('Mark order as delivered?')) {
-                updateOrderStatus('delivered');
-            }
-        }
-
-        function openDelayModal(action) {
-            delayAction = action;
-            document.getElementById("delay-modal").classList.add("active");
-            document.getElementById("delay-reason").value = '';
-        }
-
-        function closeDelayModal() {
-            document.getElementById("delay-modal").classList.remove("active");
-            delayAction = null;
-        }
-
-        function submitDelayReason() {
-            const reason = document.getElementById("delay-reason").value.trim();
-            if (!reason) {
-                alert('Please enter a reason for delay');
-                return;
-            }
-
-            const newStatus = delayAction === 'pickup' ? 'pickup_delayed' : 'delivery_delayed';
-            closeDelayModal();
-            updateOrderStatus(newStatus, reason);
-        }
-
-        // Initialize on page load
+        // Initialize periods based on current time when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            fetchOrderData();
+            initializePeriods();
+            // Update the display labels after setting the periods
+            updatePickupPeriodDisplay();
+            updateDeliveryPeriodDisplay();
+            updateDelayedPeriodDisplay();
+            updateCompletedPeriodDisplay();
+            initMap();
+            fetchDeliveries();
+            setInterval(fetchDeliveries, 30000);
+
         });
 
-        // Close modal on escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeDelayModal();
-        });
+        function startDelivery(id) {
+            window.location.href = "order_details.php?refill_id=" + id;
+        }
     </script>
+
 
 </body>
 
