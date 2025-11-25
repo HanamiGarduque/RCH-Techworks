@@ -262,7 +262,7 @@
                             <input type="checkbox" id="terms" name="terms"
                                 class="mt-1 w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500" required>
                             <label for="terms" class="text-sm text-gray-600">
-                                I agree to the <a href="javascript:void(0);" onclick="openModal('termsModal')" class="text-blue-500 hover:text-blue-600 font-medium">Terms and Conditions</a> and <a href="javascript:void(0);" onclick="openModal('privacyModal')" class="text-blue-500 hover:text-blue-600 font-medium">Privacy Policy</a><span class="text-red-500">*</span>
+                                I agree to the <a href="javascript:void(0);" onclick="openModal('termsModal')" class="text-blue-500 hover:text-blue-600 font-medium">Terms and Conditions and Privacy Policy</a><span class="text-red-500">*</span>
                             </label>
                         </div>
 
@@ -307,7 +307,7 @@
                     <li>All orders are subject to availability and confirmation.</li>
                     <li>RCH will make reasonable efforts to ensure timely delivery but is not responsible for delays caused by circumstances beyond our control.</li>
                     <li>Users are responsible for maintaining the confidentiality of their account credentials.</li>
-                    <li>Payments are processed securely via our payment gateway. RCH is not liable for errors or delays caused by third-party payment processors.</li>
+                    <li>Payments are processed securely via cash on delivery (COD).</li>
                     <li>All content, branding, and software are protected under intellectual property laws and may not be copied or distributed without permission.</li>
                     <li>RCH’s liability is limited to the total amount paid by the user for the service.</li>
                     <li>Governing law: Republic of the Philippines, including <strong>RA 8792 (E-Commerce Act)</strong> and <strong>RA 7394 (Consumer Act)</strong>.</li>
@@ -324,8 +324,7 @@
                     <li><strong>Data Sharing:</strong> With trusted service providers for order fulfillment or payment processing; as required by law.</li>
                     <li><strong>Data Security:</strong> Industry-standard measures are implemented; however, no method is 100% secure.</li>
                     <li><strong>Your Rights:</strong> Access, correct, or delete your personal data, subject to legal obligations.</li>
-                    <li><strong>Cookies:</strong> Used to enhance user experience and analytics. Can be disabled in browser settings.</li>
-                    <li><strong>Compliance:</strong> <strong>RA 10173 (Data Privacy Act of 2012)</strong>, <strong>RA 8792 (E-Commerce Act)</strong>, and relevant BSP online payment guidelines.</li>
+                    <li><strong>Compliance:</strong> <strong>RA 10173 (Data Privacy Act of 2012)</strong>, <strong>RA 8792 (E-Commerce Act).</li>
                     <li>RCH may update this Privacy Policy. Major changes will be communicated via platform or email.</li>
                 </ul>
             </div>
