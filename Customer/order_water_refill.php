@@ -1,3 +1,14 @@
+<?php
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('customer'); // only admins can access
+
+require_once '../Database/db_connection.php';
+
+
+$database = new Database();
+$db = $database->getConnect();
+$user_id = $_SESSION['id'] ?? null;
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -314,7 +325,7 @@
 
         // ---------- State (preserved across steps) ----------
         const state = {
-            userId: 4, // TEMPORARY: hardcoded user ID for testing 
+            userId: <?php echo json_encode($user_id); ?>, // TEMPORARY: hardcoded user ID for testing 
             chosenType: null, // 'slim' | 'round'
             chosenSize: null, // 'large' | 'small' | '18.9L'
             chosenPrice: 0,

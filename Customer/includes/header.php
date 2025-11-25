@@ -40,14 +40,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-envelope text-blue-500 text-xl"></i>
             </a>
 
-            <!-- Cart -->
-            <a href="../Order/cart.php"
-               title="Cart"
-               class="w-10 h-10 flex items-center justify-center rounded-full transition
-               <?= $currentPage === 'cart.php' ? 'bg-blue-100' : 'hover:bg-blue-100' ?>">
-                <i class="fas fa-shopping-cart text-blue-500 text-xl"></i>
-            </a>
-
             <!-- Profile -->
             <a href="../Customer/profile.php"
                title="Profile"
