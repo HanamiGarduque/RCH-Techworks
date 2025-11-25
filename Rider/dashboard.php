@@ -1,4 +1,4 @@
-`<?php
+ <?php
 session_start();
 require_once '../Database/db_connection.php';
 date_default_timezone_set('Asia/Manila');
@@ -57,18 +57,23 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
                     <div id="datetime" class="text-sm text-blue-100 font-medium"></div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <!-- Notification Button -->
-                    <button onclick="window.location.href='notification.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
-                        <i class="bi bi-bell"></i>
-                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
-                    </button>
+    <!-- Notification Button -->
+    <button onclick="window.location.href='notification.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+        <i class="bi bi-bell"></i>
+        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+    </button>
 
-                    <!-- Messages Button -->
-                    <button onclick="window.location.href='../Messaging/rider_messages.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
-                        <i class="bi bi-chat-dots"></i>
-                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
-                    </button>
-                </div>
+    <!-- Messages Button -->
+    <button onclick="window.location.href='messages.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+        <i class="bi bi-chat-dots"></i>
+        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
+    </button>
+
+    <!-- Profile Button -->
+    <button onclick="window.location.href='edit_profile.php'" class="text-white text-2xl hover:scale-110 transition-transform duration-200">
+        <i class="bi bi-person-circle"></i>
+    </button>
+</div>
             </div>
         </div>
 
@@ -754,4 +759,3 @@ function updateMapMarkers(orders) {
 </body>
 
 </html>
-`
