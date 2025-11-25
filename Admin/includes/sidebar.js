@@ -1,4 +1,3 @@
-
 const currentPage = window.location.pathname.split("/").pop();
 
 // Define your sidebar HTML template
@@ -20,11 +19,49 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
 
     <nav class="mt-6 flex-1">
         <ul class="space-y-1 px-4">
-            ${createNavItem("../Admin/dashboard.php", "fas fa-chart-line", "Dashboard", "dashboard.php")}
-            ${createNavItem("../Order/orders_list.php", "fas fa-shopping-cart", "Orders", "orders_list.php")}
-            ${createNavItem("../GallonOwnership/gallon_ownership.php", "fas fa-tint", "Gallon Ownership", "gallon_ownership.php")}
-            ${createNavItem("../Inventory/inventory_list.php", "fas fa-boxes", "Inventory", "inventory_list.php")}
-            ${createNavItem("../Customer/users_list.php", "fas fa-users", "Users", "users_list.php")}
+            ${createNavItem(
+              "../Admin/dashboard.php",
+              "fas fa-chart-line",
+              "Dashboard",
+              "dashboard.php"
+            )}
+            ${createNavItem(
+              "../Order/orders_list.php",
+              "fas fa-shopping-cart",
+              "Orders",
+              "orders_list.php"
+            )} 
+            ${createNavItem(
+              "../GallonOwnership/gallon_ownership.php",
+              "fas fa-tint",
+              "Gallon Ownership",
+              "gallon_ownership.php"
+            )}
+            ${createNavItem(
+              "../Inventory/inventory_list.php",
+              "fas fa-boxes",
+              "Inventory",
+              "inventory_list.php"
+            )}
+            ${createNavItem(
+              "../Admin/users_list.php",
+              "fas fa-users",
+              "Users",
+              "users_list.php"
+            )}
+            ${createNavItem(
+              "../Admin/admin_pos.php",
+              "fas fa-cash-register",
+              "Point of Sale",
+              "admin_pos.php"
+            )}
+            ${createNavItem(
+              "../Receipts/receipts_manager.php",
+              "fas fa-receipt",
+              "Receipts",
+              "receipts_manager.php"
+            )}
+
         </ul>
     </nav>
 
@@ -45,13 +82,16 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
 
 // Function to generate each navigation item
 function createNavItem(href, iconClass, label, fileName) {
-    const isActive = currentPage === fileName;
-    const baseClass = "flex items-center px-4 py-3 rounded-lg font-medium transition-all duration-200 ";
-    const activeClass = "bg-white/20 text-white";
-    const inactiveClass = "text-white hover:bg-white/20";
-    return `
+  const isActive = currentPage === fileName;
+  const baseClass =
+    "flex items-center px-4 py-3 rounded-lg font-medium transition-all duration-200 ";
+  const activeClass = "bg-white/20 text-white";
+  const inactiveClass = "text-white hover:bg-white/20";
+  return `
         <li>
-            <a href="${href}" class="${baseClass} ${isActive ? activeClass : inactiveClass}">
+            <a href="${href}" class="${baseClass} ${
+    isActive ? activeClass : inactiveClass
+  }">
                 <i class="${iconClass} text-lg"></i>
                 <div class="overflow-hidden ml-3">
                     <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 
@@ -65,5 +105,5 @@ function createNavItem(href, iconClass, label, fileName) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    document.body.insertAdjacentHTML("afterbegin", sidebarHTML);
+  document.body.insertAdjacentHTML("afterbegin", sidebarHTML);
 });

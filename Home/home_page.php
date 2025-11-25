@@ -145,15 +145,12 @@
                 <li><a href="#features" class="hover:text-blue-600 transition flex items-center gap-2"><i class="bi bi-star"></i> Features</a></li>
                 <li><a href="#about" class="hover:text-blue-600 transition flex items-center gap-2"><i class="bi bi-info-circle"></i> About</a></li>
                 <li><a href="#contact" class="hover:text-blue-600 transition flex items-center gap-2"><i class="bi bi-envelope"></i> Contact</a></li>
-                <li><a href="#developers" class="hover:text-blue-600 transition flex items-center gap-2"><i class="bi bi-people"></i> Developers</a></li>
-
+                <li><a class="go-developers hover:text-blue-600 transition flex items-center gap-2 cursor-pointer"><i class="bi bi-people"></i> Developers</a></li>
             </ul>
 
             <div class="flex items-center gap-3">
-                <button class="hidden md:inline-block px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition font-medium text-sm">Login</button>
-                <button class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:shadow-lg transition font-medium text-sm flex items-center justify-center gap-2">
-                    <i class="bi bi-person-plus"></i> Sign Up
-                </button>
+                <button class="go-login hidden md:inline-block px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition font-medium text-sm">Login</button>
+                <button class="go-signup px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:shadow-lg transition font-medium text-sm flex items-center justify-center gap-2"><i class="bi bi-person-plus"></i> Sign Up</button>
             </div>
         </div>
     </nav>
@@ -181,9 +178,7 @@
                     </p>
 
                     <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-                        <button class="btn-primary px-10 py-4 text-white rounded-lg font-semibold flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl transition">
-                            <i class="bi bi-cart-plus-fill text-xl"></i> ORDER NOW
-                        </button>
+                        <button class="go-order btn-primary px-10 py-4 text-white rounded-lg font-semibold flex items-center justify-center gap-3 text-lg shadow-lg hover:shadow-xl transition"><i class="bi bi-cart-plus-fill text-xl"></i> ORDER NOW</button>
                     </div>
                 </div>
 
@@ -283,7 +278,7 @@
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-3">Track and Receive</h3>
                     <p class="text-gray-600">Monitor your order status in real time and receive your fresh, clean water right at your doorstep.</p>
-                </div> 
+                </div>
             </div>
         </div>
     </section>
@@ -474,7 +469,7 @@
                     <a href="features" class="hover:underline transition">Features</a>
                     <a href="about" class="hover:underline transition">About</a>
                     <a href="contact" class="hover:underline transition">Contact</a>
-                    <a href="../developers.php" class="hover:underline transition">Developers</a>
+                    <a class="go-developers hover:underline transition flex items-center gap-2 cursor-pointer"><i class="bi bi-people"></i> Developers</a>
                 </div>
 
                 <!-- Right: Social Media Icons -->
@@ -549,6 +544,37 @@
             e.target.reset();
         });
     </script>
+
+    <script>
+        // Redirect to Developers Page (Navbar & Footer)
+        document.querySelectorAll('.go-developers').forEach(btn => {
+            btn.addEventListener('click', () => {
+                window.location.href = "../Developers/developers.php";
+            });
+        });
+
+        // Redirect to Login Page
+        document.querySelectorAll('.go-login').forEach(btn => {
+            btn.addEventListener('click', () => {
+                window.location.href = "../index.php";
+            });
+        });
+
+        // Redirect to Order Now Button → index.php
+        document.querySelectorAll('.go-order').forEach(btn => {
+            btn.addEventListener('click', () => {
+                window.location.href = "../index.php";
+            });
+        });
+
+        // Redirect to Sign Up Page
+        document.querySelectorAll('.go-signup').forEach(btn => {
+            btn.addEventListener('click', () => {
+                window.location.href = "../signup.php";
+            });
+        });
+    </script>
+
 
 </body>
 

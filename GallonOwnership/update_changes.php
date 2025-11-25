@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
+
 require_once '../Database/db_connection.php';
 $database = new Database();
 $db = $database->getConnect();
@@ -8,7 +11,7 @@ $id = $data['id'] ?? null;
 $ownerName = isset($data['ownerName']) ? trim($data['ownerName']) : '';
 $status = $data['status'] ?? null;
 
-// ✅ Ensure Gallon ID exists
+// Ensure Gallon ID exists
 if (!$id) {
     echo json_encode(['success' => false, 'message' => 'Missing Gallon ID.']);
     exit;
@@ -20,7 +23,7 @@ try {
     $updateFields = [];
     $params = [':id' => $id];
 
-    // ✅ If ownerName is provided (not empty), update owner
+    // If ownerName is provided (not empty), update owner
     if (!empty($ownerName)) {
         // Check if customer exists
         $checkUser = $db->prepare("SELECT user_id FROM users WHERE name = :name LIMIT 1");
@@ -37,19 +40,19 @@ try {
         $updateFields[] = "current_owner_id = :current_owner_id";
     }
 
-    // ✅ If status is provided (not null or empty), update status
+    // If status is provided (not null or empty), update status
     if (!empty($status)) {
         $params[':status'] = $status;
         $updateFields[] = "status = :status";
     }
 
-    // ✅ If nothing was sent (neither owner nor status)
+    // If nothing was sent (neither owner nor status)
     if (empty($updateFields)) {
         echo json_encode(['success' => false, 'message' => 'No updates were made.']);
         exit;
     }
 
-    // ✅ Build dynamic query
+    //Build dynamic query
     $sql = "UPDATE gallon_ownership SET " . implode(', ', $updateFields) . " WHERE ownership_id = :id";
     $stmt = $db->prepare($sql);
 

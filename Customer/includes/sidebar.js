@@ -21,7 +21,6 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
         <ul class="space-y-1 px-4">
 
             ${createNavItem("../Customer/order_water_refill.php", "fas fa-tint", "Order Water Refill", "order_water_refill.php")}
-            ${createNavItem("../Customer/browse_products.php", "fas fa-shopping-basket", "Browse Products", "browse_products.php")}
             ${createNavItem("../Customer/my_orders.php", "fas fa-box", "My Orders", "my_orders.php")}
         </ul>
     </nav>

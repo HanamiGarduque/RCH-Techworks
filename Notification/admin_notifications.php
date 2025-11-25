@@ -1,11 +1,8 @@
 <?php
-// require_once '../check_session.php';
-require_once '../Database/db_connection.php';
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
 
-// if (!isAdmin()) {
-//     header("Location: " . dirname($_SERVER['PHP_SELF']) . "/index.php");
-//     exit();
-// }
+require_once '../Database/db_connection.php';
 
 $database = new Database();
 $db = $database->getConnect();
@@ -50,11 +47,11 @@ $db = $database->getConnect();
                 ?>
 
                 <div class="m-3 flex flex-col flex-1 overflow-hidden">
-                    <div class="w-full mx-auto space-y-4" id="notifications-list">
+                    <div class="w-full overflow-y-scroll mx-auto space-y-4" id="notifications-list">
                         <!-- Notification items will be added here -->
                     </div>
-
                 </div>
+
             </div>
 
         </div>

@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - RCH Water Refilling System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-Ho1GHBBl0sZpOmgQ5Zq8JhLPWqG4k5wbXbw6PdxOTYH/jdTPO5qWix5Dp5S8aC0K0xD7aUSh2F4Q3/H5zW9m1A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -95,17 +97,24 @@
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                         <input type="email" id="email" name="email" placeholder="Enter your email"
-       value="<?php echo isset($_COOKIE['remember_email']) ? htmlspecialchars($_COOKIE['remember_email']) : ''; ?>"
-       class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
-       required>
+                            value="<?php echo isset($_COOKIE['remember_email']) ? htmlspecialchars($_COOKIE['remember_email']) : ''; ?>"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                            required>
 
                     </div>
 
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <div class="relative">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Password
+                        </label>
+
                         <input type="password" id="password" name="password" placeholder="Enter your password"
-                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                            class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                             required>
+
+                        <!-- Eye icon inside input -->
+                        <i class="fa-solid fa-eye absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+                            onclick="togglePassword('password', this)"></i>
                     </div>
 
                     <div class="flex items-center justify-between">
@@ -187,37 +196,35 @@
     <!-- Forgot Password Modal (embedded) -->
     <div id="forgotPasswordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            
+
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-6 flex justify-between items-center">
                 <h2 class="text-2xl font-bold text-white">Reset Password</h2>
                 <button onclick="closeForgotPasswordModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
 
             <!-- Modal Content -->
             <div class="p-6">
-                
+
                 <!-- Step 1: Phone Number -->
                 <div id="step1" class="space-y-4">
                     <p class="text-gray-600 text-sm mb-4">Enter your registered phone number to receive an OTP code.</p>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
-                        <input 
-                            type="tel" 
-                            id="phoneNumber" 
-                            placeholder="e.g., 0912 345 6789" 
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
-                        >
+                        <input
+                            type="tel"
+                            id="phoneNumber"
+                            placeholder="e.g., 0912 345 6789"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
                         <span id="phoneError" class="text-red-500 text-xs mt-1 hidden"></span>
                     </div>
-                    <button 
-                        onclick="sendOTP()" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300 mt-4"
-                    >
+                    <button
+                        onclick="sendOTP()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300 mt-4">
                         Send OTP
                     </button>
                 </div>
@@ -243,10 +250,9 @@
                             Resend
                         </button>
                     </div>
-                    <button 
-                        onclick="verifyOTP()" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300 mt-4"
-                    >
+                    <button
+                        onclick="verifyOTP()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300 mt-4">
                         Verify OTP
                     </button>
                 </div>
@@ -257,12 +263,11 @@
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
-                        <input 
-                            type="password" 
-                            id="newPassword" 
-                            placeholder="Enter new password" 
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
-                        >
+                        <input
+                            type="password"
+                            id="newPassword"
+                            placeholder="Enter new password"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
                         <p id="passwordReqReset" class="text-sm text-red-500 mt-1">
                             Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character (!@#$%^&*(),.?)
                         </p>
@@ -270,20 +275,18 @@
 
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
-                        <input 
-                            type="password" 
-                            id="confirmResetPassword" 
-                            placeholder="Confirm new password" 
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
-                        >
+                        <input
+                            type="password"
+                            id="confirmResetPassword"
+                            placeholder="Confirm new password"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
                         <p id="resetPasswordMatch" class="text-sm mt-1"></p>
                         <span id="passwordError" class="text-red-500 text-xs mt-1 hidden"></span>
                     </div>
 
-                    <button 
-                        onclick="resetPassword()" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300 mt-4"
-                    >
+                    <button
+                        onclick="resetPassword()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300 mt-4">
                         Reset Password
                     </button>
                 </div>
@@ -294,16 +297,15 @@
                     <div class="flex justify-center mb-4">
                         <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
                             <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
                             </svg>
                         </div>
                     </div>
                     <h3 class="text-xl font-bold text-gray-800">Password Reset Successful!</h3>
                     <p class="text-gray-600">Your password has been updated. You can now login with your new password.</p>
-                    <button 
-                        onclick="closeForgotPasswordModal()" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300"
-                    >
+                    <button
+                        onclick="closeForgotPasswordModal()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-300">
                         Back to Login
                     </button>
                 </div>
@@ -316,6 +318,19 @@
         function openForgotPasswordModal() {
             document.getElementById('forgotPasswordModal').classList.remove('hidden');
             resetModalSteps();
+        }
+
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
         }
 
         function closeForgotPasswordModal() {
@@ -378,47 +393,50 @@
             sendBtn.textContent = 'Sending...';
 
             fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    action: 'send_otp',
-                    phone: phone
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'send_otp',
+                        phone: phone
+                    })
                 })
-            })
-            .then(async response => {
-                const contentType = response.headers.get('content-type');
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                } else if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    throw new Error('Invalid response (HTML returned): ' + text.slice(0, 50));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    phoneError.classList.add('hidden');
-                    document.getElementById('step1').classList.add('hidden');
-                    document.getElementById('step2').classList.remove('hidden');
-                    startTimer();
-                } else {
-                    phoneError.textContent = data.message || 'Failed to send OTP';
+                .then(async response => {
+                    const contentType = response.headers.get('content-type');
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    } else if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        throw new Error('Invalid response (HTML returned): ' + text.slice(0, 50));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        phoneError.classList.add('hidden');
+                        document.getElementById('step1').classList.add('hidden');
+                        document.getElementById('step2').classList.remove('hidden');
+                        startTimer();
+                    } else {
+                        phoneError.textContent = data.message || 'Failed to send OTP';
+                        phoneError.classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    phoneError.textContent = 'Network error: ' + error.message;
                     phoneError.classList.remove('hidden');
-                }
-            })
-            .catch(error => {
-                phoneError.textContent = 'Network error: ' + error.message;
-                phoneError.classList.remove('hidden');
-            })
-            .finally(() => {
-                sendBtn.disabled = false;
-                sendBtn.textContent = 'Send OTP';
-            });
+                })
+                .finally(() => {
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = 'Send OTP';
+                });
         }
 
 
         // Timer
         let timerInterval;
+
         function startTimer() {
             let timeLeft = 60;
             const resendBtn = document.getElementById('resendBtn');
@@ -435,44 +453,44 @@
         }
 
         function resendOTP() {
-    document.querySelectorAll('.otp-input').forEach(input => input.value = '');
-    const resendBtn = document.getElementById('resendBtn');
-    const otpError = document.getElementById('otpError');
-    
-    resendBtn.disabled = true;
-    resendBtn.textContent = 'Sending...';
+            document.querySelectorAll('.otp-input').forEach(input => input.value = '');
+            const resendBtn = document.getElementById('resendBtn');
+            const otpError = document.getElementById('otpError');
 
-    const phone = document.getElementById('phoneNumber').value.trim();
-    if (!phone) return;
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Sending...';
 
-    const formData = new FormData();
-    formData.append('action', 'send_otp'); 
-    formData.append('phone', phone);    
+            const phone = document.getElementById('phoneNumber').value.trim();
+            if (!phone) return;
 
-    fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            otpError.classList.add('hidden');
-            startTimer();
-            resendBtn.textContent = 'Resend';
-        } else {
-            otpError.textContent = data.message || 'Failed to resend OTP';
-            otpError.classList.remove('hidden');
-            resendBtn.disabled = false;
-            resendBtn.textContent = 'Resend';
+            const formData = new FormData();
+            formData.append('action', 'send_otp');
+            formData.append('phone', phone);
+
+            fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        otpError.classList.add('hidden');
+                        startTimer();
+                        resendBtn.textContent = 'Resend';
+                    } else {
+                        otpError.textContent = data.message || 'Failed to resend OTP';
+                        otpError.classList.remove('hidden');
+                        resendBtn.disabled = false;
+                        resendBtn.textContent = 'Resend';
+                    }
+                })
+                .catch(error => {
+                    otpError.textContent = 'Network error: ' + error.message;
+                    otpError.classList.remove('hidden');
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Resend';
+                });
         }
-    })
-    .catch(error => {
-        otpError.textContent = 'Network error: ' + error.message;
-        otpError.classList.remove('hidden');
-        resendBtn.disabled = false;
-        resendBtn.textContent = 'Resend';
-    });
-}
 
         // Verify OTP
         function verifyOTP() {
@@ -497,31 +515,31 @@
             formData.append('otp', otp);
 
             fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    otpError.classList.add('hidden');
-                    clearInterval(timerInterval);
-                    document.getElementById('step2').classList.add('hidden');
-                    document.getElementById('step3').classList.remove('hidden');
-                    verifyBtn.disabled = false;
-                    verifyBtn.textContent = 'Verify OTP';
-                } else {
-                    otpError.textContent = data.message || 'Invalid OTP';
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        otpError.classList.add('hidden');
+                        clearInterval(timerInterval);
+                        document.getElementById('step2').classList.add('hidden');
+                        document.getElementById('step3').classList.remove('hidden');
+                        verifyBtn.disabled = false;
+                        verifyBtn.textContent = 'Verify OTP';
+                    } else {
+                        otpError.textContent = data.message || 'Invalid OTP';
+                        otpError.classList.remove('hidden');
+                        verifyBtn.disabled = false;
+                        verifyBtn.textContent = 'Verify OTP';
+                    }
+                })
+                .catch(error => {
+                    otpError.textContent = 'Network error: ' + error.message;
                     otpError.classList.remove('hidden');
                     verifyBtn.disabled = false;
                     verifyBtn.textContent = 'Verify OTP';
-                }
-            })
-            .catch(error => {
-                otpError.textContent = 'Network error: ' + error.message;
-                otpError.classList.remove('hidden');
-                verifyBtn.disabled = false;
-                verifyBtn.textContent = 'Verify OTP';
-            });
+                });
         }
 
         // Reset Password
@@ -532,12 +550,26 @@
         const resetPasswordMatch = document.getElementById('resetPasswordMatch');
         const resetBtn = document.querySelector('#step3 button');
 
-        const requirements = [
-            { regex: /.{8,}/, text: '8+' },
-            { regex: /[A-Z]/, text: 'A-Z' },
-            { regex: /[a-z]/, text: 'a-z' },
-            { regex: /[0-9]/, text: '0-9' },
-            { regex: /[!@#$%^&*(),.?":{}|<>]/, text: '!@#$...' },
+        const requirements = [{
+                regex: /.{8,}/,
+                text: '8+'
+            },
+            {
+                regex: /[A-Z]/,
+                text: 'A-Z'
+            },
+            {
+                regex: /[a-z]/,
+                text: 'a-z'
+            },
+            {
+                regex: /[0-9]/,
+                text: '0-9'
+            },
+            {
+                regex: /[!@#$%^&*(),.?":{}|<>]/,
+                text: '!@#$...'
+            },
         ];
 
         // Function to update password requirement indicators (inline) and input border
@@ -552,7 +584,7 @@
                     html += `<span class="text-red-500 font-semibold">${req.text}</span>`;
                     allMet = false;
                 }
-                if (index !== requirements.length - 1) html += ' , '; 
+                if (index !== requirements.length - 1) html += ' , ';
             });
             passwordReqReset.innerHTML = html;
 
@@ -634,30 +666,29 @@
             formData.append('confirmPassword', confirmPassword);
 
             fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    passwordError.classList.add('hidden');
-                    document.getElementById('step3').classList.add('hidden');
-                    document.getElementById('success').classList.remove('hidden');
-                } else {
-                    passwordError.textContent = data.message || 'Failed to reset password';
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        passwordError.classList.add('hidden');
+                        document.getElementById('step3').classList.add('hidden');
+                        document.getElementById('success').classList.remove('hidden');
+                    } else {
+                        passwordError.textContent = data.message || 'Failed to reset password';
+                        passwordError.classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    passwordError.textContent = 'Network error: ' + error.message;
                     passwordError.classList.remove('hidden');
-                }
-            })
-            .catch(error => {
-                passwordError.textContent = 'Network error: ' + error.message;
-                passwordError.classList.remove('hidden');
-            })
-            .finally(() => {
-                resetBtn.disabled = false;
-                resetBtn.textContent = 'Reset Password';
-            });
+                })
+                .finally(() => {
+                    resetBtn.disabled = false;
+                    resetBtn.textContent = 'Reset Password';
+                });
         }
-
     </script>
 
 </body>

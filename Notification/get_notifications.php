@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
+
 require_once '../Database/db_connection.php';
-session_start();
 
 // // assuming user ID is stored in session
-// $user_id = $_SESSION['user_id'];
-$user_id = 4;
+$user_id = $_SESSION['id'];
 $database = new Database();
 $db = $database->getConnect();
 

@@ -1,9 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<?php
-
-?>
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,13 +56,17 @@
             animation: float 12s ease-in-out infinite;
         }
 
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+
         .form-scroll-container {
             max-height: 410px;
             overflow-y: auto;
             padding-right: 6px;
         }
 
-        /* Hide scrollbar on WebKit browsers */
         .form-scroll-container::-webkit-scrollbar {
             width: 3px;
         }
@@ -95,137 +95,20 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
         }
+
+        .address-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .address-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const passwordInput = document.getElementById('password');
-        const confirmInput = document.getElementById('confirmPassword');
-        const passwordReqText = document.getElementById('passwordReq');
-        const confirmReqText = document.getElementById('confirmPasswordReq');
-
-        const requirements = [{
-                regex: /.{8,}/,
-                text: '8+'
-            },
-            {
-                regex: /[A-Z]/,
-                text: 'A-Z'
-            },
-            {
-                regex: /[a-z]/,
-                text: 'a-z'
-            },
-            {
-                regex: /[0-9]/,
-                text: '0-9'
-            },
-            {
-                regex: /[!@#$%^&*(),.?":{}|<>]/,
-                text: '!@#$'
-            },
-        ];
-
-        function updatePasswordReqText() {
-            const value = passwordInput.value;
-            let html = '';
-            let allMet = true;
-
-            requirements.forEach((req, index) => {
-                if (req.regex.test(value)) {
-                    html += `<span class="text-green-600 font-semibold">${req.text}</span>`;
-                } else {
-                    html += `<span class="text-red-500 font-semibold">${req.text}</span>`;
-                    allMet = false;
-                }
-                if (index !== requirements.length - 1) html += ' , ';
-            });
-
-            passwordReqText.innerHTML = html;
-
-            // Change input border based on all requirements
-            if (allMet) {
-                passwordInput.classList.remove("border-red-500");
-                passwordInput.classList.add("border-green-600");
-            } else {
-                passwordInput.classList.remove("border-green-600");
-                passwordInput.classList.add("border-red-500");
-            }
-
-            return allMet;
-        }
-
-
-
-
-        function updateConfirmPasswordText() {
-            const password = passwordInput.value;
-            const confirm = confirmInput.value;
-
-            if (confirm === "") {
-                confirmReqText.textContent = "";
-                confirmInput.classList.remove("border-green-600", "border-red-500");
-            } else if (password === confirm) {
-                confirmReqText.textContent = "Great! Your passwords match.";
-                confirmReqText.classList.remove("text-red-500");
-                confirmReqText.classList.add("text-green-600");
-                confirmInput.classList.remove("border-red-500");
-                confirmInput.classList.add("border-green-600");
-            } else {
-                confirmReqText.textContent = "Oops! Your passwords don’t match.";
-                confirmReqText.classList.remove("text-green-600");
-                confirmReqText.classList.add("text-red-500");
-                confirmInput.classList.remove("border-green-600");
-                confirmInput.classList.add("border-red-500");
-            }
-        }
-
-        passwordInput.addEventListener('input', function() {
-            updatePasswordReqText();
-            updateConfirmPasswordText();
-        });
-
-        confirmInput.addEventListener('input', updateConfirmPasswordText);
-
-        // Form submission validation
-        const form = document.querySelector("form");
-        form.addEventListener("submit", function(e) {
-            const value = passwordInput.value;
-            const confirm = confirmInput.value;
-
-            const allMet = updatePasswordReqText();
-            if (!allMet) {
-                e.preventDefault();
-                alert("Password does not meet all required criteria.");
-                return;
-            }
-
-            if (value !== confirm) {
-                e.preventDefault();
-                alert("Passwords do not match.");
-            }
-        });
-
-        // Initialize on load
-        updatePasswordReqText();
-    });
-
-    function togglePassword(id, icon) {
-        const input = document.getElementById(id);
-
-        if (input.type === "password") {
-            input.type = "text";
-            icon.classList.remove("fa-eye");
-            icon.classList.add("fa-eye-slash");
-        } else {
-            input.type = "password";
-            icon.classList.remove("fa-eye-slash");
-            icon.classList.add("fa-eye");
-        }
-    }
-</script>
-
 
 <body class="bg-gray-50 min-h-screen flex items-center justify-center p-10">
     <div class="flex h-[600px] bg-white rounded-2xl shadow-lg overflow-hidden max-w-5xl w-full">
@@ -273,45 +156,73 @@
 
                 <!-- Scrollable form container -->
                 <div class="form-scroll-container">
-                    <form action="signup_backend.php" method="POST" class="space-y-5 pb-6 m-2">
+                    <form action="signup_backend.php" method="POST" class="space-y-5 pb-6 m-2" id="signupForm">
+                        <!-- CSRF Token (Add this in your PHP) -->
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
                         <div>
                             <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">Full Name<span class="text-red-500">*</span></label>
-                            <input type="text" id="fullName" name="fullName" placeholder="Enter your full name"
+                            <input type="text" id="fullName" name="fullName" placeholder="Enter your full name" maxlength="100"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
                         </div>
 
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address<span class="text-red-500">*</span></label>
-                            <input type="email" id="email" name="email" placeholder="Enter your email address"
+                            <input type="email" id="email" name="email" placeholder="Enter your email address" maxlength="100"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
                         </div>
 
                         <div>
                             <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number<span class="text-red-500">*</span></label>
-                            <input type="tel" id="phone" name="phone" placeholder="Enter your phone number"
+                            <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" 
+                                pattern="[0-9]{10,11}" maxlength="11"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
+                            <p class="text-xs text-gray-500 mt-1">Format: 10-11 digits</p>
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Address<span class="text-red-500">*</span></label>
+                        <!-- Improved Address Section -->
+                        <div class="address-section">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">
+                                Delivery Address<span class="text-red-500">*</span>
+                            </label>
 
-                            <input type="text" name="house_number" placeholder="House No." class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
+                            <!-- House & Street in one row -->
+                            <div class="address-grid mb-3">
+                                <input type="text" name="house_number" placeholder="House/Unit No." 
+                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg" 
+                                    maxlength="20" required>
+                                
+                                <input type="text" name="street_name" placeholder="Street Name" 
+                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg" 
+                                    maxlength="100" required>
+                            </div>
 
-                            <input type="text" name="street_name" placeholder="Street Name" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
+                            <!-- Barangay full width -->
+                            <input type="text" name="barangay" placeholder="Barangay" 
+                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-3" 
+                                maxlength="100" required>
 
-                            <input type="text" name="barangay" placeholder="Barangay" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
+                            <!-- City & Province in one row -->
+                            <div class="address-grid mb-3">
+                                <input type="text" name="city" placeholder="City/Municipality" 
+                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg" 
+                                    maxlength="100" required>
+                                
+                                <input type="text" name="province" placeholder="Province" 
+                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg" 
+                                    maxlength="100" required>
+                            </div>
 
-                            <input type="text" name="city" placeholder="City / Municipality" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
-
-                            <input type="text" name="province" placeholder="Province" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg mb-2" required>
-
-                            <input type="text" name="postal_code" placeholder="Postal Code" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg" required>
+                            <!-- Postal Code -->
+                            <input type="text" name="postal_code" placeholder="Postal Code" 
+                                pattern="[0-9]{4}" maxlength="4"
+                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg" 
+                                required>
+                            <p class="text-xs text-gray-500 mt-1">4-digit postal code</p>
                         </div>
-
 
                         <div class="relative">
                             <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
@@ -319,16 +230,15 @@
                             </label>
 
                             <input type="password" id="password" name="password"
-                                placeholder="Enter your password"
+                                placeholder="Enter your password" maxlength="128"
                                 class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
 
-                            <!-- Eye icon inside input -->
-                            <i class="fa-solid fa-eye absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+                            <i class="fa-solid fa-eye absolute right-4 top-11 cursor-pointer text-gray-500"
                                 onclick="togglePassword('password', this)"></i>
 
                             <p id="passwordReq" class="text-sm text-red-500 mt-2">
-                                Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character (!@#$%^&*(),.?)
+                                Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
                             </p>
                         </div>
 
@@ -338,12 +248,11 @@
                             </label>
 
                             <input type="password" id="confirmPassword" name="confirmPassword"
-                                placeholder="Re-enter your password"
+                                placeholder="Re-enter your password" maxlength="128"
                                 class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
 
-                            <!-- Eye icon inside input -->
-                            <i class="fa-solid fa-eye absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+                            <i class="fa-solid fa-eye absolute right-4 top-11 cursor-pointer text-gray-500"
                                 onclick="togglePassword('confirmPassword', this)"></i>
 
                             <p id="confirmPasswordReq" class="text-sm mt-2"></p>
@@ -353,7 +262,7 @@
                             <input type="checkbox" id="terms" name="terms"
                                 class="mt-1 w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500" required>
                             <label for="terms" class="text-sm text-gray-600">
-                                I agree to the <a href="javascript:void(0);" onclick="openModal('termsModal')" class="text-blue-500 hover:text-blue-600 font-medium">Terms and Conditions</a> and <a href="javascript:void(0);" onclick="openModal('privacyModal')" class="text-blue-500 hover:text-blue-600 font-medium">Privacy Policy<span class="text-red-500">*</span></a>
+                                I agree to the <a href="javascript:void(0);" onclick="openModal('termsModal')" class="text-blue-500 hover:text-blue-600 font-medium">Terms and Conditions</a> and <a href="javascript:void(0);" onclick="openModal('privacyModal')" class="text-blue-500 hover:text-blue-600 font-medium">Privacy Policy</a><span class="text-red-500">*</span>
                             </label>
                         </div>
 
@@ -373,12 +282,11 @@
     </div>
 
     <!-- Modals -->
-    <!-- Terms and Conditions Modal -->
     <div id="termsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-y-auto max-h-[80vh]">
             <div class="px-6 py-4 flex justify-between items-center border-b">
                 <h2 class="text-2xl font-bold">Terms and Conditions</h2>
-                <button onclick="closeModal('termsModal')" class="text-gray-500 hover:text-gray-700 p-2 rounded-full transition">&times;</button>
+                <button onclick="closeModal('termsModal')" class="text-gray-500 hover:text-gray-700 text-3xl p-2 rounded-full transition">&times;</button>
             </div>
             <div class="p-6 text-gray-700 space-y-4">
                 <p>Welcome to RCH Water Refilling System! By using our services, you agree to the following terms and conditions.</p>
@@ -392,12 +300,11 @@
         </div>
     </div>
 
-    <!-- Privacy Policy Modal -->
     <div id="privacyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-y-auto max-h-[80vh]">
             <div class="px-6 py-4 flex justify-between items-center border-b">
                 <h2 class="text-2xl font-bold">Privacy Policy</h2>
-                <button onclick="closeModal('privacyModal')" class="text-gray-500 hover:text-gray-700 p-2 rounded-full transition">&times;</button>
+                <button onclick="closeModal('privacyModal')" class="text-gray-500 hover:text-gray-700 text-3xl p-2 rounded-full transition">&times;</button>
             </div>
             <div class="p-6 text-gray-700 space-y-4">
                 <p>RCH Water Refilling System respects your privacy and is committed to protecting your personal information.</p>
@@ -412,6 +319,119 @@
     </div>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const passwordInput = document.getElementById('password');
+            const confirmInput = document.getElementById('confirmPassword');
+            const passwordReqText = document.getElementById('passwordReq');
+            const confirmReqText = document.getElementById('confirmPasswordReq');
+
+            const requirements = [
+                { regex: /.{8,}/, text: '8+' },
+                { regex: /[A-Z]/, text: 'A-Z' },
+                { regex: /[a-z]/, text: 'a-z' },
+                { regex: /[0-9]/, text: '0-9' },
+                { regex: /[!@#$%^&*(),.?":{}|<>]/, text: '!@#$' },
+            ];
+
+            function updatePasswordReqText() {
+                const value = passwordInput.value;
+                let html = '';
+                let allMet = true;
+
+                requirements.forEach((req, index) => {
+                    if (req.regex.test(value)) {
+                        html += `<span class="text-green-600 font-semibold">${req.text}</span>`;
+                    } else {
+                        html += `<span class="text-red-500 font-semibold">${req.text}</span>`;
+                        allMet = false;
+                    }
+                    if (index !== requirements.length - 1) html += ' , ';
+                });
+
+                passwordReqText.innerHTML = html;
+
+                if (allMet) {
+                    passwordInput.classList.remove("border-red-500");
+                    passwordInput.classList.add("border-green-600");
+                } else {
+                    passwordInput.classList.remove("border-green-600");
+                    passwordInput.classList.add("border-red-500");
+                }
+
+                return allMet;
+            }
+
+            function updateConfirmPasswordText() {
+                const password = passwordInput.value;
+                const confirm = confirmInput.value;
+
+                if (confirm === "") {
+                    confirmReqText.textContent = "";
+                    confirmInput.classList.remove("border-green-600", "border-red-500");
+                } else if (password === confirm) {
+                    confirmReqText.textContent = "Great! Your passwords match.";
+                    confirmReqText.classList.remove("text-red-500");
+                    confirmReqText.classList.add("text-green-600");
+                    confirmInput.classList.remove("border-red-500");
+                    confirmInput.classList.add("border-green-600");
+                } else {
+                    confirmReqText.textContent = "Oops! Your passwords don't match.";
+                    confirmReqText.classList.remove("text-green-600");
+                    confirmReqText.classList.add("text-red-500");
+                    confirmInput.classList.remove("border-green-600");
+                    confirmInput.classList.add("border-red-500");
+                }
+            }
+
+            passwordInput.addEventListener('input', function() {
+                updatePasswordReqText();
+                updateConfirmPasswordText();
+            });
+
+            confirmInput.addEventListener('input', updateConfirmPasswordText);
+
+            const form = document.getElementById("signupForm");
+            form.addEventListener("submit", function(e) {
+                const value = passwordInput.value;
+                const confirm = confirmInput.value;
+
+                const allMet = updatePasswordReqText();
+                if (!allMet) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Password',
+                        text: 'Password does not meet all required criteria.'
+                    });
+                    return;
+                }
+
+                if (value !== confirm) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Password Mismatch',
+                        text: 'Passwords do not match.'
+                    });
+                }
+            });
+
+            updatePasswordReqText();
+        });
+
+        function togglePassword(id, icon) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
         }
@@ -420,24 +440,5 @@
             document.getElementById(id).classList.add('hidden');
         }
     </script>
-
-    <?php if (isset($_SESSION['alert'])): ?>
-        <script>
-            Swal.fire({
-                icon: "<?= $_SESSION['alert']['icon'] ?>",
-                title: "<?= $_SESSION['alert']['title'] ?>",
-                text: "<?= $_SESSION['alert']['text'] ?>",
-            }).then(() => {
-                <?php if ($_SESSION['alert']['action'] == "redirect"): ?>
-                    window.location = "<?= $_SESSION['alert']['url'] ?>";
-                <?php else: ?>
-                    window.history.back();
-                <?php endif; ?>
-            });
-        </script>
-    <?php unset($_SESSION['alert']);
-    endif; ?>
-
 </body>
-
 </html>
