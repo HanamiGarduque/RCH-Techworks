@@ -4,7 +4,7 @@ require_once '../Database/db_connection.php';
 date_default_timezone_set('Asia/Manila');
 
 // TEMPORARY RIDER ID FOR TESTING
-$rider_id = $_SESSION['rider_id'] ?? 11;
+$rider_id = $_SESSION['rider_id'] ?? 9;
 
 if (!$rider_id) {
     die("Rider not logged in");

@@ -351,24 +351,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
         }
 
         async function fetchRiderLocation() {
-            if (!refillId) return;
-            try {
-                const resp = await fetch(`?action=rider_location&refill_id=${refillId}`, { cache: 'no-store' });
-                const data = await resp.json();
-                if (data.error) {
-                    console.debug('Rider location error:', data.error);
-                    return;
-                }
-                const lat = parseFloat(data.latitude);
-                const lng = parseFloat(data.longitude);
-                if (isFinite(lat) && isFinite(lng)) {
-                    riderMarker.setLatLng([lat, lng]);
-                    riderMarker.getPopup().setContent(`<b>Rider</b><br>Live`);
-                }
-            } catch (err) {
-                console.error('Error fetching rider location:', err);
-            }
-        }
+  try {
+    const resp = await fetch(`?action=rider_location`, { cache: 'no-store' });
+    const data = await resp.json();
+    if (data.latitude && data.longitude) {
+      const lat = parseFloat(data.latitude), lng = parseFloat(data.longitude);
+      riderMarker.setLatLng([lat, lng]);
+      // optionally pan map slightly or fit bounds:
+      // map.panTo([lat, lng], {animate:true});
+    }
+  } catch(err) { console.error(err); }
+}
+setInterval(fetchRiderLocation, 5000);
+fetchRiderLocation();
+
+        
 
         document.addEventListener('DOMContentLoaded', initMap);
     </script>
