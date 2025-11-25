@@ -283,22 +283,82 @@
 
     <!-- Modals -->
     <div id="termsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-y-auto max-h-[80vh]">
-            <div class="px-6 py-4 flex justify-between items-center border-b">
-                <h2 class="text-2xl font-bold">Terms and Conditions</h2>
-                <button onclick="closeModal('termsModal')" class="text-gray-500 hover:text-gray-700 text-3xl p-2 rounded-full transition">&times;</button>
-            </div>
-            <div class="p-6 text-gray-700 space-y-4">
-                <p>Welcome to RCH Water Refilling System! By using our services, you agree to the following terms and conditions.</p>
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-y-auto max-h-[80vh]">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 flex justify-between items-center border-b">
+            <h2 class="text-2xl font-bold">RCH Policies</h2>
+            <button onclick="closeModal('termsModal')" class="text-gray-500 hover:text-gray-700 text-3xl p-2 rounded-full transition">&times;</button>
+        </div>
+
+        <!-- Modal Tabs -->
+        <div class="px-6 py-2 border-b flex space-x-4">
+            <button onclick="showTab('termsContent')" id="termsTab" class="text-blue-600 font-semibold border-b-2 border-blue-600 pb-1">Terms & Conditions</button>
+            <button onclick="showTab('privacyContent')" id="privacyTab" class="text-gray-500 font-semibold hover:text-blue-600 pb-1">Privacy Policy</button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="p-6 text-gray-700 space-y-4">
+            <!-- Terms & Conditions -->
+            <div id="termsContent">
+                <p>Welcome to <strong>RCH: QR-Code Integrated Web-Based Water Ordering, Refilling, and Delivery Management Platform</strong>. By using our platform, you agree to comply with the following terms and conditions:</p>
                 <ul class="list-disc pl-5 space-y-2">
-                    <li>Users must provide accurate and complete information during signup.</li>
+                    <li>Users must provide accurate and complete information during registration.</li>
                     <li>Account sharing is strictly prohibited.</li>
                     <li>All orders are subject to availability and confirmation.</li>
-                    <li>RCH Water is not responsible for delays due to unforeseen circumstances.</li>
+                    <li>RCH will make reasonable efforts to ensure timely delivery but is not responsible for delays caused by circumstances beyond our control.</li>
+                    <li>Users are responsible for maintaining the confidentiality of their account credentials.</li>
+                    <li>Payments are processed securely via our payment gateway. RCH is not liable for errors or delays caused by third-party payment processors.</li>
+                    <li>All content, branding, and software are protected under intellectual property laws and may not be copied or distributed without permission.</li>
+                    <li>RCH’s liability is limited to the total amount paid by the user for the service.</li>
+                    <li>Governing law: Republic of the Philippines, including <strong>RA 8792 (E-Commerce Act)</strong> and <strong>RA 7394 (Consumer Act)</strong>.</li>
+                    <li>RCH may update these Terms and Conditions at any time. Continued use constitutes acceptance of any changes.</li>
+                </ul>
+            </div>
+
+            <!-- Privacy Policy -->
+            <div id="privacyContent" class="hidden">
+                <p>RCH values your privacy and is committed to protecting your personal information. By using our services, you agree to the collection and use of information as outlined below:</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li><strong>Information Collected:</strong> Personal data (name, email, contact, delivery address), account credentials, order history, payment details, and device/browser information.</li>
+                    <li><strong>Use of Information:</strong> To provide services, process orders/payments, communicate updates/promotions, and comply with legal obligations.</li>
+                    <li><strong>Data Sharing:</strong> With trusted service providers for order fulfillment or payment processing; as required by law.</li>
+                    <li><strong>Data Security:</strong> Industry-standard measures are implemented; however, no method is 100% secure.</li>
+                    <li><strong>Your Rights:</strong> Access, correct, or delete your personal data, subject to legal obligations.</li>
+                    <li><strong>Cookies:</strong> Used to enhance user experience and analytics. Can be disabled in browser settings.</li>
+                    <li><strong>Compliance:</strong> <strong>RA 10173 (Data Privacy Act of 2012)</strong>, <strong>RA 8792 (E-Commerce Act)</strong>, and relevant BSP online payment guidelines.</li>
+                    <li>RCH may update this Privacy Policy. Major changes will be communicated via platform or email.</li>
                 </ul>
             </div>
         </div>
     </div>
+</div>
+
+<script>
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+}
+
+// Tab switch function
+function showTab(tabId) {
+    document.getElementById('termsContent').classList.add('hidden');
+    document.getElementById('privacyContent').classList.add('hidden');
+    document.getElementById('termsTab').classList.remove('text-blue-600','border-blue-600');
+    document.getElementById('privacyTab').classList.remove('text-blue-600','border-blue-600');
+    document.getElementById('termsTab').classList.add('text-gray-500');
+    document.getElementById('privacyTab').classList.add('text-gray-500');
+
+    document.getElementById(tabId).classList.remove('hidden');
+
+    if(tabId === 'termsContent') {
+        document.getElementById('termsTab').classList.add('text-blue-600','border-b-2','border-blue-600');
+        document.getElementById('termsTab').classList.remove('text-gray-500');
+    } else {
+        document.getElementById('privacyTab').classList.add('text-blue-600','border-b-2','border-blue-600');
+        document.getElementById('privacyTab').classList.remove('text-gray-500');
+    }
+}
+</script>
+
 
     <div id="privacyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-y-auto max-h-[80vh]">
