@@ -41,13 +41,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </a>
 
             <!-- Profile -->
-            <a href="../User/profile.php"
+            <a href="../Customer/profile.php"
                title="Profile"
                class="w-10 h-10 flex items-center justify-center rounded-full transition
                <?= $currentPage === 'profile.php' ? 'bg-blue-100' : 'hover:bg-blue-100' ?>">
                 <i class="fas fa-user text-blue-500 text-xl"></i>
             </a>
-
         </div>
     </div>
 </div>

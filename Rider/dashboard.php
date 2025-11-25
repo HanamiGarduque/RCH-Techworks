@@ -74,6 +74,7 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
         <i class="bi bi-person-circle"></i>
     </button>
 </div>
+
             </div>
         </div>
 
@@ -753,6 +754,42 @@ function updateMapMarkers(orders) {
         function startDelivery(id) {
             window.location.href = "order_details.php?refill_id=" + id;
         }
+if ('geolocation' in navigator) {
+  // send position every 20-30s (or use watchPosition)
+  function sendPosition(pos) {
+    const payload = {
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      // include user/rider id from session if available in JS:
+      user_id: <?= json_encode($_SESSION['user_id'] ?? null) ?>
+    };
+    fetch('update_rider_location.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-cache'
+    }).catch(err => console.error('sendPosition err', err));
+  }
+
+  function errorHandler(err) {
+    console.warn('Geolocation error', err);
+  }
+
+  // Option A: continuous watching (recommended)
+  const watchId = navigator.geolocation.watchPosition(sendPosition, errorHandler, {
+    enableHighAccuracy: true,
+    maximumAge: 5000,
+    timeout: 10000
+  });
+
+  // Option B: interval polling (if you prefer)
+  // navigator.geolocation.getCurrentPosition(sendPosition, errorHandler, {enableHighAccuracy:true});
+  // setInterval(()=> navigator.geolocation.getCurrentPosition(sendPosition, errorHandler, {enableHighAccuracy:true}), 30000);
+} else {
+  console.error('Geolocation not supported');
+}
+</script>
+
     </script>
 
 

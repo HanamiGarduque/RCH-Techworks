@@ -7,7 +7,8 @@
     <title>RCH Water - My Orders</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -16,6 +17,7 @@
             padding-left: 5rem;
             transition: padding-left 0.5s ease-in-out;
         }
+
         .tab-button.active {
             background-color: #2563eb;
             color: white;
@@ -27,7 +29,8 @@
 <body class="bg-gray-100 overflow-hidden">
 
     <!-- SIDEBAR -->
-    <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg fixed left-0 top-0 h-full w-20 hover:w-64 transition-all duration-500 text-white flex flex-col z-50">
+    <aside
+        class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg fixed left-0 top-0 h-full w-20 hover:w-64 transition-all duration-500 text-white flex flex-col z-50">
         <div class="px-7 py-7 border-b border-blue-400 flex items-center gap-2">
             <i class="fas fa-tint text-3xl"></i>
             <span class="text-2xl font-semibold opacity-0 group-hover:opacity-100">RCH Water</span>
@@ -73,13 +76,15 @@
 
                     <!-- TABS -->
                     <div class="flex space-x-2 p-1 bg-gray-100 rounded-lg w-full mb-6">
-                        <button class="tab-button flex-1 text-center py-2 text-sm font-medium hover:bg-blue-600 hover:text-white" data-tab="topay">To Pay</button>
-                        <button class="tab-button flex-1 text-center py-2 text-sm font-medium hover:bg-blue-600 hover:text-white" data-tab="toreceive">To Receive</button>
-                        <button class="tab-button flex-1 text-center py-2 text-sm font-medium hover:bg-blue-600 hover:text-white" data-tab="completed">Completed</button>
-                        <button class="tab-button flex-1 text-center py-2 text-sm font-medium hover:bg-blue-600 hover:text-white" data-tab="cancelled">Cancelled</button>
+                        <button class="tab-button flex-1 text-center py-2 text-sm font-medium"
+                            data-tab="topay">To Pay</button>
+                        <button class="tab-button flex-1 text-center py-2 text-sm font-medium"
+                            data-tab="toreceive">To Receive</button>
+                        <button class="tab-button flex-1 text-center py-2 text-sm font-medium"
+                            data-tab="completed">Completed</button>
+                        <button class="tab-button flex-1 text-center py-2 text-sm font-medium"
+                            data-tab="cancelled">Cancelled</button>
                     </div>
-
-                    <!-- PLACEHOLDER CARDS -->
 
                     <!-- TO PAY -->
                     <div id="topay" class="tab-content space-y-6">
@@ -140,7 +145,9 @@
 
                             <div class="flex justify-end space-x-2">
                                 <button class="bg-blue-600 text-white px-4 py-2 rounded">Reorder</button>
-                                <button class="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded">View Details</button>
+                                <button
+                                    class="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded">View
+                                    Details</button>
                             </div>
                         </div>
                         <?php endfor; ?>
@@ -161,7 +168,9 @@
                             <p class="text-lg font-bold">₱60.00</p>
 
                             <div class="flex justify-end">
-                                <button class="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded">View Details</button>
+                                <button
+                                    class="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded">View
+                                    Details</button>
                             </div>
                         </div>
                         <?php endfor; ?>
@@ -173,10 +182,12 @@
     </div>
 
     <script>
-        // Tab switching
+        // Clean tab switching
         document.addEventListener('DOMContentLoaded', () => {
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons[0].classList.add('active'); // default: first tab active
 
             tabButtons.forEach(button => {
                 button.addEventListener('click', () => {
@@ -189,11 +200,9 @@
                     document.getElementById(tab).classList.remove('hidden');
                 });
             });
-
-            // default open tab
-            document.querySelector('[data-tab="topay"]').click();
         });
     </script>
 
 </body>
+
 </html>
