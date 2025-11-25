@@ -147,8 +147,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
             padding-left: 5rem;
             transition: .5s;
         }
-        .group:hover+.content-area {
-            padding-left: 16rem;
+      /* Make the map always stay UNDER the sidebar */
+#rider-map, 
+#rider-map * {
+    z-index: 0 !important;
+}
+
+.group { 
+    z-index: 9999 !important; /* Sidebar stays on top */
+
+
         }
         .content-area {
             min-height: 100vh;
@@ -159,6 +167,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
             border-radius: 0.75rem;
             overflow: hidden;
         }
+        
     </style>
 </head>
 <body class="bg-gray-100">
@@ -183,25 +192,26 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
         }
 
         const sidebarHTML = `
-        <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 fixed left-0 top-0 h-full w-20 hover:w-64 transition-all duration-500 text-white flex flex-col">
-            <div class="px-7 py-7 border-b border-blue-400 flex items-center gap-2">
-                <i class="fas fa-tint text-3xl"></i>
-                <span class="text-2xl font-semibold opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">RCH Water</span>
-            </div>
-            <nav class="mt-6 flex-1">
-                <ul class="space-y-1 px-4">
-                    ${createNavItem("../Customer/order_water_refill.php", "fas fa-tint", "Order Water Refill", "order_water_refill.php")}
-                    ${createNavItem("../Customer/browse_products.php", "fas fa-shopping-basket", "Browse Products", "browse_products.php")}
-                    ${createNavItem("../Customer/my_orders.php", "fas fa-box", "My Orders", "my_orders.php")}
-                </ul>
-            </nav>
-            <div class="border-t border-blue-400 p-4">
-                <a href="#" class="flex items-center gap-3 hover:bg-white/20 px-4 py-3 rounded-lg">
-                    <i class="fas fa-sign-out-alt text-lg"></i>
-                    <span class="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">Logout</span>
-                </a>
-            </div>
-        </aside>`;
+<aside class="group bg-gradient-to-br from-blue-400 to-blue-600 absolute left-0 top-0 h-full w-20 hover:w-64 transition-all duration-500 text-white flex flex-col z-50">
+    <div class="px-7 py-7 border-b border-blue-400 flex items-center gap-2">
+        <i class="fas fa-tint text-3xl"></i>
+        <span class="text-2xl font-semibold opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">RCH Water</span>
+    </div>
+    <nav class="mt-6 flex-1">
+        <ul class="space-y-1 px-4">
+            ${createNavItem("../Customer/order_water_refill.php", "fas fa-tint", "Order Water Refill", "order_water_refill.php")}
+            ${createNavItem("../Customer/browse_products.php", "fas fa-shopping-basket", "Browse Products", "browse_products.php")}
+            ${createNavItem("../Customer/my_orders.php", "fas fa-box", "My Orders", "my_orders.php")}
+        </ul>
+    </nav>
+    <div class="border-t border-blue-400 p-4">
+        <a href="#" class="flex items-center gap-3 hover:bg-white/20 px-4 py-3 rounded-lg">
+            <i class="fas fa-sign-out-alt text-lg"></i>
+            <span class="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">Logout</span>
+        </a>
+    </div>
+</aside>`;
+
         document.addEventListener("DOMContentLoaded", () => {
             document.body.insertAdjacentHTML("afterbegin", sidebarHTML);
         });
