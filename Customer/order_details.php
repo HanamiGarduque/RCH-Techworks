@@ -1,56 +1,119 @@
 <?php
-// order_details.php
+
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('customer'); // only customers can access
+
+require_once '../Database/db_connection.php';
+
+$database = new Database();
+$db = $database->getConnect();
+
+// Get order_number from URL parameter
+$orderNumber = isset($_GET['order_number']) ? $_GET['order_number'] : null;
+
+if (!$orderNumber) {
+    header('Location: my_orders.php');
+    exit;
+}
+
+// Get logged-in user ID from session
+$userId = $_SESSION['user_id'];
 
 // ============================================================================
-// 1. GET STATUS FROM URL
+// FETCH ORDER DETAILS FROM DATABASE
 // ============================================================================
-$rawStatus = isset($_GET['status']) ? strtolower($_GET['status']) : 'pending';
 
-switch ($rawStatus) {
-    case 'pending':
-        $orderStatus = "Pending"; // To Pay
-        break;
-    case 'on_delivery':
-        $orderStatus = "On Delivery"; // To Receive
-        break;
-    case 'completed':
-        $orderStatus = "Delivered"; // Completed
-        break;
-    default:
-        $orderStatus = "Cancelled"; // Cancelled
-        break;
+try {
+    // Fetch main order information
+    $orderQuery = "
+        SELECT 
+            wr.refill_id,
+            wr.order_number,
+            wr.total_amount,
+            wr.pickup_datetime,
+            wr.delivery_datetime,
+            wr.order_status,
+            wr.gallon_owner,
+            wr.created_at,
+            wr.delay_reason,
+            u.name as customer_name,
+            u.phone_number as customer_phone,
+            u.address as delivery_address,
+            r.name as rider_name,
+            r.phone_number as rider_phone
+        FROM water_refills wr
+        INNER JOIN users u ON wr.user_id = u.user_id
+        LEFT JOIN users r ON wr.rider_id = r.user_id
+        WHERE wr.order_number = :order_number 
+        AND wr.user_id = :user_id
+    ";
+    
+    $stmt = $db->prepare($orderQuery);
+    $stmt->bindParam(':order_number', $orderNumber);
+    $stmt->bindParam(':user_id', $userId);
+    $stmt->execute();
+    
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$order) {
+        header('Location: my_orders.php');
+        exit;
+    }
+    
+    // Fetch order items
+    $itemsQuery = "
+        SELECT 
+            wri.item_id,
+            wri.gallon_type,
+            wri.gallon_size,
+            wri.quantity,
+            wri.unit_price,
+            wri.subtotal,
+            p.product_name
+        FROM water_refill_items wri
+        LEFT JOIN products p ON wri.product_id = p.product_id
+        WHERE wri.refill_id = :refill_id
+    ";
+    
+    $itemsStmt = $db->prepare($itemsQuery);
+    $itemsStmt->bindParam(':refill_id', $order['refill_id']);
+    $itemsStmt->execute();
+    
+    $orderItems = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+} catch (PDOException $e) {
+    die("Database error: " . $e->getMessage());
 }
 
 // ============================================================================
-// 2. PAGE INFORMATION
+// PAGE INFORMATION
 // ============================================================================
 $pageTitle = "My Orders";
 $pageSubtitle = "View and track your orders and deliveries in real time.";
 $currentPage = 'order_details.php';
 
-// Customer & Delivery Information
-$customerName = "Christine May Padua";
-$customerPhone = "09161891555";
-$deliveryAddress = "116 Purok 1, Tibig, Lipa City, Batangas 4217";
+// Extract order data
+$customerName = $order['customer_name'];
+$customerPhone = $order['customer_phone'];
+$deliveryAddress = $order['delivery_address'];
+$orderId = $order['order_number'];
+$orderStatus = $order['order_status'];
+$orderDateTime = date('d-m-Y | H:i', strtotime($order['created_at']));
+$shipDateTime = $order['delivery_datetime'] ? date('d-m-Y | H:i', strtotime($order['delivery_datetime'])) : 'N/A';
+$riderName = $order['rider_name'] ?? 'Not Assigned';
+$riderPhone = $order['rider_phone'] ?? 'N/A';
+$paymentMethod = "Cash on Delivery"; // Add payment method field to DB if needed
 
-// Order Metadata
-$orderId = "ORD-110325001";
-$paymentMethod = "Cash on Delivery";
-$orderDateTime = "03-11-2025 | 8:38";
-$shipDateTime = "05-11-2025 | 11:00";
+// Calculate totals
+$subtotal = 0;
+foreach ($orderItems as $item) {
+    $subtotal += $item['subtotal'];
+}
 
-// Order Items
-$orderItems = [
-    ['name' => '20L Slim Container Gallon', 'qty' => 2, 'unitPrice' => 170.00, 'totalPrice' => 340.00],
-    ['name' => 'Slim Gallon Faucet - Press', 'qty' => 10, 'unitPrice' => 25.00, 'totalPrice' => 250.00]
-];
-
-// Totals
-$subtotal = array_sum(array_column($orderItems, 'totalPrice'));
 $taxRate = 0.08;
 $taxAmount = $subtotal * $taxRate;
-$deliveryFee = 40.00;
-$totalCost = $subtotal + $taxAmount + $deliveryFee;
+$deliveryFee = 40.00; // You may want to add this to the database
+$totalCost = $order['total_amount'];
 
 function formatCurrency($amount)
 {
@@ -58,28 +121,27 @@ function formatCurrency($amount)
 }
 
 // ============================================================================
-// 3. STATUS COLORS & BUTTON LOGIC
+// STATUS COLORS & BUTTON LOGIC
 // ============================================================================
 $statusColor = '';
-$buttonText = '';
-$buttonClass = '';
+$buttonText = 'Back';
+$buttonClass = 'bg-blue-600 hover:bg-blue-700';
 
-if ($orderStatus === 'Pending') {
-    $statusColor = 'text-yellow-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} elseif ($orderStatus === 'On Delivery') {
-    $statusColor = 'text-blue-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} elseif ($orderStatus === 'Delivered') {
-    $statusColor = 'text-green-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} elseif ($orderStatus === 'Cancelled') {
-    $statusColor = 'text-red-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
+switch ($orderStatus) {
+    case 'Pending':
+        $statusColor = 'text-yellow-600 font-semibold';
+        break;
+    case 'On Delivery':
+        $statusColor = 'text-blue-600 font-semibold';
+        break;
+    case 'Delivered':
+        $statusColor = 'text-green-600 font-semibold';
+        break;
+    case 'Cancelled':
+        $statusColor = 'text-red-600 font-semibold';
+        break;
+    default:
+        $statusColor = 'text-gray-600 font-semibold';
 }
 
 ?>
@@ -154,7 +216,7 @@ if ($orderStatus === 'Pending') {
             </nav>
 
             <div class="border-t border-blue-400 p-4">
-                <a href="#" class="flex items-center gap-3 hover:bg-white/20 px-4 py-3 rounded-lg">
+                <a href="../logout.php" class="flex items-center gap-3 hover:bg-white/20 px-4 py-3 rounded-lg">
                     <i class="fas fa-sign-out-alt text-lg"></i>
                     <span class="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all">Logout</span>
                 </a>
@@ -168,7 +230,7 @@ if ($orderStatus === 'Pending') {
     </script>
 
     <!-- MAIN CONTENT -->
-    <div class="content-area pt-4 pr-4 pb-4">
+    <div class="content-area">
         <main class="bg-white rounded-xl shadow-lg h-[calc(100vh-2rem)] overflow-y-auto">
 
             <!-- HEADER -->
@@ -180,24 +242,23 @@ if ($orderStatus === 'Pending') {
             <div class="p-8">
                 <div class="bg-white w-full mx-auto rounded-2xl shadow-sm border p-8">
 
-                    <!-- BACK BUTTON (UPPER LEFT) -->
+                    <!-- BACK BUTTON -->
                     <div class="flex items-center gap-3 mb-6">
                         <button onclick="window.history.back()"
                             class="flex items-center text-blue-600 hover:text-blue-700 text-2xl">
                             <i class="bi bi-arrow-left-circle-fill"></i>
                         </button>
-
                         <h1 class="text-2xl text-gray-700 font-semibold">Order Details</h1>
                     </div>
 
-                    <!-- REAL-TIME RIDER LOCATION + RIDER INFO (MOVE THIS TO TOP) -->
+                    <!-- REAL-TIME RIDER LOCATION (Show only if On Delivery) -->
+                    <?php if ($orderStatus === 'On Delivery' && $riderName !== 'Not Assigned'): ?>
                     <div class="border rounded-xl p-5 mb-6">
-
                         <div class="flex items-center gap-2 text-blue-600 font-semibold mb-3">
                             <i class="fas fa-location-arrow"></i> Real-Time Rider Location
                         </div>
 
-                        <!-- MAP CONTAINER ONLY (NO IMAGE) -->
+                        <!-- MAP CONTAINER -->
                         <div class="w-full h-[300px] bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 mb-4">
                             <span>Map will be displayed here</span>
                         </div>
@@ -205,15 +266,12 @@ if ($orderStatus === 'Pending') {
                         <div class="border rounded-xl p-4 bg-gray-50">
                             <div class="font-semibold text-gray-700 mb-1">Rider Information</div>
                             <div class="flex justify-between items-center text-sm">
-                                <span class="font-medium">Ramon Fontelera</span>
-                                <span><i class="fa fa-phone mr-1"></i>09123456789</span>
+                                <span class="font-medium"><?= htmlspecialchars($riderName) ?></span>
+                                <span><i class="fa fa-phone mr-1"></i><?= htmlspecialchars($riderPhone) ?></span>
                             </div>
                         </div>
-
                     </div>
-
-
-
+                    <?php endif; ?>
 
                     <!-- DELIVERY INFORMATION -->
                     <div class="border rounded-xl p-5 mb-6">
@@ -223,18 +281,17 @@ if ($orderStatus === 'Pending') {
 
                         <div class="flex justify-between text-sm">
                             <div class="font-semibold">
-                                <?= $customerName ?><br>
-                                <span class="font-normal"><?= $customerPhone ?></span>
+                                <?= htmlspecialchars($customerName) ?><br>
+                                <span class="font-normal"><?= htmlspecialchars($customerPhone) ?></span>
                             </div>
 
-                            <div class="text-right max-w-xs"><?= $deliveryAddress ?></div>
+                            <div class="text-right max-w-xs"><?= htmlspecialchars($deliveryAddress) ?></div>
                         </div>
                     </div>
 
                     <!-- ORDER SUMMARY -->
                     <div class="border rounded-xl p-5 mb-6">
-
-                        <p class="<?= $statusColor ?> text-sm font-semibold"><?= $orderStatus ?></p>
+                        <p class="<?= $statusColor ?> text-sm font-semibold"><?= htmlspecialchars($orderStatus) ?></p>
 
                         <table class="w-full text-sm mt-3">
                             <thead>
@@ -248,10 +305,18 @@ if ($orderStatus === 'Pending') {
                             <tbody class="border-t">
                                 <?php foreach ($orderItems as $i => $item): ?>
                                     <tr class="<?= $i < count($orderItems) - 1 ? 'border-b' : '' ?>">
-                                        <td class="py-3"><?= $item['name'] ?></td>
-                                        <td class="text-center font-semibold"><?= $item['qty'] ?></td>
-                                        <td class="text-right"><?= formatCurrency($item['unitPrice']) ?></td>
-                                        <td class="text-right"><?= formatCurrency($item['totalPrice']) ?></td>
+                                        <td class="py-3">
+                                            <?php 
+                                            if ($item['product_name']) {
+                                                echo htmlspecialchars($item['product_name']);
+                                            } else {
+                                                echo htmlspecialchars($item['gallon_size']) . ' ' . htmlspecialchars($item['gallon_type']);
+                                            }
+                                            ?>
+                                        </td>
+                                        <td class="text-center font-semibold"><?= $item['quantity'] ?></td>
+                                        <td class="text-right"><?= formatCurrency($item['unit_price']) ?></td>
+                                        <td class="text-right"><?= formatCurrency($item['subtotal']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -273,12 +338,12 @@ if ($orderStatus === 'Pending') {
                     <div class="border rounded-xl p-5">
                         <div class="flex justify-between text-sm mb-2">
                             <span class="font-semibold">Order ID</span>
-                            <span><?= $orderId ?></span>
+                            <span><?= htmlspecialchars($orderId) ?></span>
                         </div>
 
                         <div class="flex justify-between text-sm border-b pb-3 mb-3">
                             <span class="font-normal">Paid by</span>
-                            <span><?= $paymentMethod ?></span>
+                            <span><?= htmlspecialchars($paymentMethod) ?></span>
                         </div>
 
                         <div class="flex justify-between text-sm mb-2">

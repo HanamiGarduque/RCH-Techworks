@@ -117,68 +117,21 @@ if ($orderStatus === 'Pending') {
 <body class="bg-gray-100">
 
     <!-- SIDEBAR -->
-    <script>
-        const currentPage = '<?= $currentPage ?>';
+            <script src="../Admin/includes/sidebar.js"></script>
 
-        function createNavItem(href, icon, label, fileName) {
-            const isActive = currentPage === fileName;
-            const base = "flex items-center px-4 py-3 rounded-lg font-medium transition-all duration-200 ";
-            const active = "bg-white/20 text-white";
-            const inactive = "text-white hover:bg-white/20";
-
-            return `
-            <li>
-                <a href="${href}" class="${base} ${isActive ? active : inactive}">
-                    <i class="${icon} text-lg"></i>
-                    <div class="overflow-hidden ml-3">
-                        <span class="block whitespace-nowrap transition-all duration-500 opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">${label}</span>
-                    </div>
-                </a>
-            </li>
-        `;
-        }
-
-        const sidebarHTML = `
-        <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg fixed left-0 top-0 h-full w-20 hover:w-64 transition-all duration-500 text-white flex flex-col">
-            <div class="px-7 py-7 border-b border-blue-400 flex items-center gap-2">
-                <i class="fas fa-tint text-3xl"></i>
-                <span class="text-2xl font-semibold opacity-0 group-hover:opacity-100 transition-all translate-x-[-20px] group-hover:translate-x-0">RCH Water</span>
-            </div>
-
-            <nav class="mt-6 flex-1">
-                <ul class="space-y-1 px-4">
-                    ${createNavItem("../Customer/order_water_refill.php", "fas fa-tint", "Order Water Refill", "order_water_refill.php")}
-                    ${createNavItem("../Customer/browse_products.php", "fas fa-shopping-basket", "Browse Products", "browse_products.php")}
-                    ${createNavItem("../Customer/my_orders.php", "fas fa-box", "My Orders", "my_orders.php")}
-                </ul>
-            </nav>
-
-            <div class="border-t border-blue-400 p-4">
-                <a href="#" class="flex items-center gap-3 hover:bg-white/20 px-4 py-3 rounded-lg">
-                    <i class="fas fa-sign-out-alt text-lg"></i>
-                    <span class="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all">Logout</span>
-                </a>
-            </div>
-        </aside>
-    `;
-
-        document.addEventListener("DOMContentLoaded", () => {
-            document.body.insertAdjacentHTML("afterbegin", sidebarHTML);
-        });
-    </script>
 
     <!-- MAIN CONTENT -->
-    <div class="content-area pt-4 pr-4 pb-4">
+    <div class="content-area">
         <main class="bg-white rounded-xl shadow-lg h-[calc(100vh-2rem)] overflow-y-auto">
 
-            <!-- HEADER -->
-            <div class="bg-white border-b p-4 shadow-sm">
-                <h1 class="text-3xl font-semibold text-blue-500"><?= $pageTitle ?></h1>
-                <p class="text-sm text-gray-700"><?= $pageSubtitle ?></p>
-            </div>
+            <?php
+                $pageTitle = "Order Management";
+                $pageSubtitle = "View and manage customer orders and details.";
+                include '../Admin/includes/header.php';
+                ?>
 
-            <div class="p-8">
-                <div class="bg-white w-full mx-auto rounded-2xl shadow-sm border p-8">
+            <div class="">
+                <div class="bg-white w-full mx-auto rounded-2xl shadow-sm border">
 
                     <!-- BACK BUTTON (UPPER LEFT) -->
                     <div class="flex items-center gap-3 mb-6">
