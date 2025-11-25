@@ -83,12 +83,10 @@ if ($orderStatus === 'Pending') {
 
 // ============================================================================
 // 4. MAP / LOCATION HANDLING
-//    - Hardcode customer lat/lng
-//    - Fetch rider location by AJAX via loc_history
 // ============================================================================
 $refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : null;
 
-$customerLat = 13.9587;   // Tibig, Lipa City (hardcoded) :contentReference[oaicite:1]{index=1}
+$customerLat = 13.9587;   // Tibig, Lipa City
 $customerLng = 121.1444;
 
 $rider_user_id = null;
@@ -155,19 +153,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
 
 .group { 
     z-index: 9999 !important; /* Sidebar stays on top */
-
-
-        }
-        .content-area {
-            min-height: 100vh;
-        }
-        #rider-map {
-            width: 100%;
-            height: 300px;
-            border-radius: 0.75rem;
-            overflow: hidden;
-        }
-        
+}
+.content-area {
+    min-height: 100vh;
+}
+#rider-map {
+    width: 100%;
+    height: 300px;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
     </style>
 </head>
 <body class="bg-gray-100">
@@ -328,22 +323,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
         const refillId = <?= $refill_id ? intval($refill_id) : 'null' ?>;
         const customerLat = <?= json_encode($customerLat) ?>;
         const customerLng = <?= json_encode($customerLng) ?>;
-
         let map, riderMarker, customerMarker;
 
         function initMap() {
             map = L.map('rider-map').setView([customerLat, customerLng], 14);
-
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
-            // Customer marker (hardcoded)
             customerMarker = L.marker([customerLat, customerLng], { title: 'Delivery Destination' }).addTo(map);
             customerMarker.bindPopup(`<b>Delivery Address</b><br><?= addslashes($deliveryAddress) ?>`);
 
-            // Rider marker placeholder
-            riderMarker = L.marker([customerLat, customerLng], { title: 'Rider (live)' }).addTo(map);
+            riderMarker = L.marker([customerLat, customerLng], { title: 'Rider (live)', icon: L.icon({iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png', iconSize: [32, 32]}) }).addTo(map);
             riderMarker.bindPopup(`<b>Rider</b><br>Loading...`);
 
             fetchRiderLocation();
@@ -351,21 +342,19 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
         }
 
         async function fetchRiderLocation() {
-  try {
-    const resp = await fetch(`?action=rider_location`, { cache: 'no-store' });
-    const data = await resp.json();
-    if (data.latitude && data.longitude) {
-      const lat = parseFloat(data.latitude), lng = parseFloat(data.longitude);
-      riderMarker.setLatLng([lat, lng]);
-      // optionally pan map slightly or fit bounds:
-      // map.panTo([lat, lng], {animate:true});
-    }
-  } catch(err) { console.error(err); }
-}
-setInterval(fetchRiderLocation, 5000);
-fetchRiderLocation();
-
-        
+            try {
+                const resp = await fetch(`?action=rider_location`, { cache: 'no-store' });
+                const data = await resp.json();
+                if (data.latitude && data.longitude) {
+                    const lat = parseFloat(data.latitude);
+                    const lng = parseFloat(data.longitude);
+                    riderMarker.setLatLng([lat, lng]);
+                    riderMarker.getPopup().setContent(`<b>Rider</b><br>Last updated: ${data.timestamp}`);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', initMap);
     </script>
