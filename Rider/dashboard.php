@@ -1,10 +1,3 @@
- <?php
-session_start();
-require_once '../Database/db_connection.php';
-date_default_timezone_set('Asia/Manila');
-
-$rider_name = $_SESSION['rider_name'] ?? "Rider";
-?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -16,14 +9,13 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         body {
             font-family: 'Poppins', sans-serif;
         }
 
-        /* Custom scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
@@ -46,7 +38,6 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
 
 <body class="bg-white min-h-screen flex justify-center items-center relative">
 
-    <!-- Fixed-width container wrapper -->
     <div class="bg-white w-[375px] h-[750px] mx-auto relative rounded-3xl overflow-hidden border shadow-lg">
 
         <!-- Header -->
@@ -57,31 +48,25 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
                     <div id="datetime" class="text-sm text-blue-100 font-medium"></div>
                 </div>
                 <div class="flex items-center gap-3">
-    <!-- Notification Button -->
-    <button onclick="window.location.href='notification.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
-        <i class="bi bi-bell"></i>
-        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
-    </button>
-
-    <!-- Messages Button -->
-    <button onclick="window.location.href='messages.php'" class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
-        <i class="bi bi-chat-dots"></i>
-        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
-    </button>
-
-    <!-- Profile Button -->
-    <button onclick="window.location.href='edit_profile.php'" class="text-white text-2xl hover:scale-110 transition-transform duration-200">
-        <i class="bi bi-person-circle"></i>
-    </button>
-</div>
-
+                    <button class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-bell"></i>
+                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                    </button>
+                    <button class="relative text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-chat-dots"></i>
+                        <span class="absolute top-0 start-100 translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white animate-pulse"></span>
+                    </button>
+                    <button class="text-white text-2xl hover:scale-110 transition-transform duration-200">
+                        <i class="bi bi-person-circle"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Dashboard Buttons Container -->
+        <!-- Dashboard Buttons -->
         <div class="bg-white sticky top-16 z-40 w-full px-5 py-4">
             <div class="grid grid-cols-3 gap-3">
-                <button onclick="showSection('active-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Active</button>
+                <button onclick="showSection('active-deliveries', this)" class="section-btn bg-blue-600 text-white font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Active</button>
                 <button onclick="showSection('pending-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Pending</button>
                 <button onclick="showSection('completed-deliveries', this)" class="section-btn bg-blue-100 text-blue-600 font-semibold py-2 px-4 rounded-3xl text-xs shadow-sm transition-all duration-200">Completed</button>
             </div>
@@ -91,105 +76,368 @@ $rider_name = $_SESSION['rider_name'] ?? "Rider";
         <div class="px-5 pb-5" id="active-deliveries">
             <h3 class="text-md font-semibold text-blue-600 mb-3">Active Deliveries</h3>
 
-            <!-- Map Placeholder -->
-           <!-- Map Integration -->
-<div id="active-map" class="rounded-xl h-40 mb-4 border border-gray-300 overflow-hidden"></div>
+            <div id="active-map" class="rounded-xl h-40 mb-4 border border-gray-300 overflow-hidden"></div>
 
+            <div id="active-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[330px] pb-5 pr-2">
+                <!-- Active Delivery Card 1 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Maria Santos</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112501</p>
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                            <i class="bi bi-truck mr-1"></i> On the Way
+                        </span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">123 San Jose St., Batangas City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">09:30 AM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
+                        View Details
+                    </button>
+                </div>
 
-            <div id="active-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[330px] pb-5 pr-2"></div>
+                <!-- Active Delivery Card 2 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Juan Dela Cruz</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112502</p>
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                            <i class="bi bi-truck mr-1"></i> On the Way
+                        </span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">456 Rizal Ave., Lipa City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">10:15 AM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
+                        View Details
+                    </button>
+                </div>
+
+                <!-- Active Delivery Card 3 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Ana Reyes</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112503</p>
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                            <i class="bi bi-truck mr-1"></i> On the Way
+                        </span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">789 Mabini St., Tanauan City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">11:00 AM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
+                        View Details
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- PENDING DELIVERIES -->
         <div class="px-5 pb-20 hidden relative" id="pending-deliveries">
             <h3 class="text-md font-semibold text-blue-600 mb-3">Pending Deliveries</h3>
 
-            <!-- TABS - No gap between buttons -->
             <div class="flex mb-4 bg-gray-200 rounded-lg overflow-hidden">
-                <button id="pending-tab-pickup"
-                    class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200"
-                    onclick="showPendingTab('pickup')">
+                <button id="pending-tab-pickup" class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200" onclick="showPendingTab('pickup')">
                     For Pickup
                 </button>
-
-                <button id="pending-tab-delivery"
-                    class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200"
-                    onclick="showPendingTab('delivery')">
+                <button id="pending-tab-delivery" class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200" onclick="showPendingTab('delivery')">
                     For Delivery
                 </button>
             </div>
 
             <!-- PICKUP LIST -->
-            <div id="pickup-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2"></div>
+            <div id="pickup-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2">
+                <!-- Pickup Card 1 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Pedro Garcia</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112504</p>
+                        </div>
+                        <span class="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-semibold">Pickup</span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">321 Luna St., Batangas City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">08:00 AM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                        Start Delivery
+                    </button>
+                </div>
 
-            <!-- DELIVERY LIST -->
-            <div id="delivery-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden"></div>
+                <!-- Pickup Card 2 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Sofia Mendoza</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112505</p>
+                        </div>
+                        <span class="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-semibold">Pickup</span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">654 Aguinaldo Blvd., Lipa City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">08:45 AM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                        Start Delivery
+                    </button>
+                </div>
 
-            <!-- Floating Period Switcher for Pickup -->
-            <div id="time-switcher-pickup"
-                class="absolute bottom-7 left-1/2 -translate-x-1/2 
-                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
-                       flex items-center space-x-6 z-50 border">
-                <button id="prev-period-pickup"
-                    class="w-7 h-7 flex items-center justify-center 
-                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
-                    ←
-                </button>
-                <span id="current-period-pickup" class="text-xs text-white font-semibold">
-                    Morning
-                </span>
-                <button id="next-period-pickup"
-                    class="w-7 h-7 flex items-center justify-center 
-                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
-                    →
-                </button>
+                <!-- Pickup Card 3 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Carlos Ramos</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112506</p>
+                        </div>
+                        <span class="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-semibold">Pickup</span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">987 Bonifacio St., Tanauan City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">09:30 AM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                        Start Delivery
+                    </button>
+                </div>
+
+                <!-- Pickup Card 4 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Elena Cruz</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112507</p>
+                        </div>
+                        <span class="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-semibold">Pickup</span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">147 Del Pilar Ave., Batangas City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">10:15 AM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                        Start Delivery
+                    </button>
+                </div>
             </div>
 
-            <!-- Floating Period Switcher for Delivery -->
-            <div id="time-switcher-delivery"
-                class="absolute bottom-7 left-1/2 -translate-x-1/2 
-                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
-                       flex items-center space-x-6 z-50 border hidden">
-                <button id="prev-period-delivery"
-                    class="w-7 h-7 flex items-center justify-center 
-                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
-                    ←
-                </button>
-                <span id="current-period-delivery" class="text-xs text-white font-semibold">
-                    Morning
-                </span>
-                <button id="next-period-delivery"
-                    class="w-7 h-7 flex items-center justify-center 
-                           rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
-                    →
-                </button>
+            <!-- DELIVERY LIST -->
+            <div id="delivery-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden">
+                <!-- Delivery Card 1 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Rosa Fernandez</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112508</p>
+                        </div>
+                        <span class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold">Delivery</span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">258 Marasigan St., Lipa City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">02:00 PM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                        Start Delivery
+                    </button>
+                </div>
+
+                <!-- Delivery Card 2 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Miguel Torres</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112509</p>
+                        </div>
+                        <span class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold">Delivery</span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">369 Santos Ave., Tanauan City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">03:30 PM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                        Start Delivery
+                    </button>
+                </div>
+
+                <!-- Delivery Card 3 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Isabel Gomez</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112510</p>
+                        </div>
+                        <span class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full font-semibold">Delivery</span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">741 Laurel St., Batangas City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-orange-500 mr-2"></i>
+                            <span class="font-medium">04:00 PM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
+                        Start Delivery
+                    </button>
+                </div>
+            </div>
+
+            <!-- Time Switcher for Pickup -->
+            <div id="time-switcher-pickup" class="absolute bottom-7 left-1/2 -translate-x-1/2 bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 flex items-center space-x-6 z-50 border">
+                <button id="prev-period-pickup" class="w-7 h-7 flex items-center justify-center rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">←</button>
+                <span id="current-period-pickup" class="text-xs text-white font-semibold">Morning</span>
+                <button id="next-period-pickup" class="w-7 h-7 flex items-center justify-center rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">→</button>
+            </div>
+
+            <!-- Time Switcher for Delivery -->
+            <div id="time-switcher-delivery" class="absolute bottom-7 left-1/2 -translate-x-1/2 bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 flex items-center space-x-6 z-50 border hidden">
+                <button id="prev-period-delivery" class="w-7 h-7 flex items-center justify-center rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">←</button>
+                <span id="current-period-delivery" class="text-xs text-white font-semibold">Morning</span>
+                <button id="next-period-delivery" class="w-7 h-7 flex items-center justify-center rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">→</button>
             </div>
         </div>
 
-        <!-- HISTORY SECTION (previously COMPLETED DELIVERIES) -->
+        <!-- COMPLETED DELIVERIES -->
         <div class="px-5 pb-20 hidden relative" id="completed-deliveries">
             <h3 class="text-md font-semibold text-blue-600 mb-3">Order History</h3>
 
-            <!-- TABS - Delayed and Completed -->
             <div class="flex mb-4 bg-gray-200 rounded-lg overflow-hidden">
-                <button id="history-tab-delayed"
-                    class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200"
-                    onclick="showHistoryTab('delayed')">
-                    Delayed
-                </button>
-
-                <button id="history-tab-completed"
-                    class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200"
-                    onclick="showHistoryTab('completed')">
-                    Completed
-                </button>
+                <button id="history-tab-delayed" class="flex-1 py-2 text-xs font-semibold bg-blue-500 text-white transition-colors duration-200" onclick="showHistoryTab('delayed')">Delayed</button>
+                <button id="history-tab-completed" class="flex-1 py-2 text-xs font-semibold bg-gray-200 text-gray-700 transition-colors duration-200" onclick="showHistoryTab('completed')">Completed</button>
             </div>
 
             <!-- DELAYED LIST -->
-            <div id="delayed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2"></div>
+            <div id="delayed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2">
+                <!-- Delayed Card 1 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Roberto Sanchez</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112401</p>
+                        </div>
+                        <span class="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                            <i class="bi bi-clock-history mr-1"></i> Delayed
+                        </span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">852 Gomez St., Batangas City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-yellow-500 mr-2"></i>
+                            <span class="font-medium">Nov 24, 03:00 PM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-yellow-50 text-yellow-700 cursor-default">
+                        <i class="bi bi-exclamation-triangle mr-1"></i> Delivery Delayed
+                    </button>
+                </div>
+
+                <!-- Delayed Card 2 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Linda Pascual</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112402</p>
+                        </div>
+                        <span class="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                            <i class="bi bi-clock-history mr-1"></i> Delayed
+                        </span>
+                    </div>
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-start text-sm text-gray-600">
+                            <i class="bi bi-geo-alt-fill text-blue-500 mr-2 mt-0.5"></i>
+                            <span class="flex-1">963 Evangelista Ave., Lipa City</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="bi bi-clock-fill text-yellow-500 mr-2"></i>
+                            <span class="font-medium">Nov 24, 04:30 PM</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-yellow-50 text-yellow-700 cursor-default">
+                        <i class="bi bi-exclamation-triangle mr-1"></i> Delivery Delayed
+                    </button>
+                </div>
+            </div>
 
             <!-- COMPLETED LIST -->
-            <div id="completed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden"></div>
-
+            <div id="completed-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[450px] pb-5 pr-2 hidden">
+                <!-- Completed Card 1 -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="font-bold text-gray-900 text-base">Teresa Diaz</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">Order #ORD-112301</p>
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold flex items-center">
+                            <i class="bi bi-check-circle-fill mr-1"></i> Completed
+                        </span>
+                    </div>
             <!-- Floating Period Switcher for Delayed -->
             <div id="time-switcher-delayed"
                 class="absolute bottom-7 left-1/2 -translate-x-1/2 

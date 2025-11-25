@@ -16,6 +16,7 @@
             padding-left: 5rem;
             transition: padding-left 0.5s ease-in-out;
         }
+
         .tab-button.active {
             background-color: #2563eb;
             color: white;
@@ -24,51 +25,21 @@
     </style>
 </head>
 
-<bodysd class="bg-gray-100 overflow-hidden">
+<body class="bg-gray-100 overflow-hidden">
+    <script src="includes/sidebar.js"></script>
 
-    <!-- SIDEBAR -->
-    <aside class="group bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg fixed left-0 top-0 h-full w-20 hover:w-64 transition-all duration-500 text-white flex flex-col z-50">
-        <div class="px-7 py-7 border-b border-blue-400 flex items-center gap-2">
-            <i class="fas fa-tint text-3xl"></i>
-            <span class="text-2xl font-semibold opacity-0 group-hover:opacity-100">RCH Water</span>
-        </div>
-
-        <nav class="mt-6 flex-1">
-            <ul class="space-y-1 px-4">
-                <li>
-                    <a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-white/20">
-                        <i class="fas fa-tint text-lg"></i>
-                        <span class="ml-3 opacity-0 group-hover:opacity-100">Order Water Refill</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="flex items-center px-4 py-3 rounded-lg hover:bg-white/20">
-                        <i class="fas fa-shopping-basket text-lg"></i>
-                        <span class="ml-3 opacity-0 group-hover:opacity-100">Browse Products</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#" class="flex items-center px-4 py-3 rounded-lg bg-white/20">
-                        <i class="fas fa-box text-lg"></i>
-                        <span class="ml-3 opacity-0 group-hover:opacity-100">My Orders</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <div class="border-t border-blue-400 p-4">
-            <a href="#" class="flex items-center gap-3 hover:bg-white/20 px-4 py-3 rounded-lg">
-                <i class="fas fa-sign-out-alt text-lg"></i>
-                <span class="opacity-0 group-hover:opacity-100">Logout</span>
-            </a>
-        </div>
-    </aside>
 
     <!-- MAIN CONTENT -->
     <div class="flex h-screen">
         <div class="flex-1">
             <main class="bg-white rounded-xl shadow-lg overflow-y-auto h-[calc(100vh-2rem)]">
-
+                <div class="main-header">
+                    <?php
+                    $pageTitle = "My Orders";
+                    $pageSubtitle = "Hydrate made easy—order and we'll handle the rest!";
+                    include 'includes/header.php';
+                    ?>
+                </div>
                 <div class="p-6">
 
                     <!-- TABS -->
@@ -84,86 +55,92 @@
                     <!-- TO PAY -->
                     <div id="topay" class="tab-content space-y-6">
                         <?php for ($i = 1; $i <= 2; $i++): ?>
-                        <div class="p-4 border rounded-lg shadow-sm bg-white">
-                            <div class="flex justify-between mb-2">
-                                <span class="font-semibold">ORDER-000<?= $i ?></span>
-                                <span class="text-yellow-500 font-medium">Pending</span>
+                            <div class="p-4 border rounded-lg shadow-sm bg-white">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-semibold">ORDER-000<?= $i ?></span>
+                                    <span class="text-yellow-500 font-medium">Pending</span>
+                                </div>
+
+                                <hr class="my-2">
+
+                                <p class="text-sm text-gray-600 mb-2">2 items</p>
+                                <p class="text-lg font-bold">₱150.00</p>
+
+                                <div class="flex justify-end mt-3 space-x-2">
+                                    <button class="bg-red-500 text-white px-4 py-2 rounded">Cancel</button>
+                                    <a href="order_details.php" class="bg-blue-600 text-white px-4 py-2 rounded inline-block">
+                                        View Details
+                                    </a>
+                                </div>
                             </div>
-
-                            <hr class="my-2">
-
-                            <p class="text-sm text-gray-600 mb-2">2 items</p>
-                            <p class="text-lg font-bold">₱150.00</p>
-
-                            <div class="flex justify-end mt-3 space-x-2">
-                                <button class="bg-red-500 text-white px-4 py-2 rounded">Cancel</button>
-                                <button class="bg-blue-600 text-white px-4 py-2 rounded">View Details</button>
-                            </div>
-                        </div>
                         <?php endfor; ?>
                     </div>
 
                     <!-- TO RECEIVE -->
                     <div id="toreceive" class="tab-content space-y-6 hidden">
                         <?php for ($i = 1; $i <= 2; $i++): ?>
-                        <div class="p-4 border rounded-lg shadow-sm bg-white">
-                            <div class="flex justify-between mb-2">
-                                <span class="font-semibold">ORDER-100<?= $i ?></span>
-                                <span class="text-blue-600 font-medium">On Delivery</span>
+                            <div class="p-4 border rounded-lg shadow-sm bg-white">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-semibold">ORDER-100<?= $i ?></span>
+                                    <span class="text-blue-600 font-medium">On Delivery</span>
+                                </div>
+
+                                <hr class="my-2">
+
+                                <p class="text-sm text-gray-600 mb-2">1 item</p>
+                                <p class="text-lg font-bold">₱80.00</p>
+
+                                <div class="flex justify-end">
+                                    <button class="bg-blue-600 text-white px-4 py-2 rounded">Track Delivery</button>
+                                </div>
                             </div>
-
-                            <hr class="my-2">
-
-                            <p class="text-sm text-gray-600 mb-2">1 item</p>
-                            <p class="text-lg font-bold">₱80.00</p>
-
-                            <div class="flex justify-end">
-                                <button class="bg-blue-600 text-white px-4 py-2 rounded">Track Delivery</button>
-                            </div>
-                        </div>
                         <?php endfor; ?>
                     </div>
 
                     <!-- COMPLETED -->
                     <div id="completed" class="tab-content space-y-6 hidden">
                         <?php for ($i = 1; $i <= 2; $i++): ?>
-                        <div class="p-4 border rounded-lg shadow-sm bg-white">
-                            <div class="flex justify-between mb-2">
-                                <span class="font-semibold">ORDER-200<?= $i ?></span>
-                                <span class="text-green-600 font-medium">Delivered</span>
+                            <div class="p-4 border rounded-lg shadow-sm bg-white">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-semibold">ORDER-200<?= $i ?></span>
+                                    <span class="text-green-600 font-medium">Delivered</span>
+                                </div>
+
+                                <hr class="my-2">
+
+                                <p class="text-sm text-gray-600 mb-2">3 items</p>
+                                <p class="text-lg font-bold">₱230.00</p>
+
+                                <div class="flex justify-end space-x-2">
+                                    <button class="bg-blue-600 text-white px-4 py-2 rounded">Reorder</button>
+                                    <a href="order_details.php" class="bg-blue-600 text-white px-4 py-2 rounded inline-block">
+                                        View Details
+                                    </a>
+                                </div>
                             </div>
-
-                            <hr class="my-2">
-
-                            <p class="text-sm text-gray-600 mb-2">3 items</p>
-                            <p class="text-lg font-bold">₱230.00</p>
-
-                            <div class="flex justify-end space-x-2">
-                                <button class="bg-blue-600 text-white px-4 py-2 rounded">Reorder</button>
-                                <button class="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded">View Details</button>
-                            </div>
-                        </div>
                         <?php endfor; ?>
                     </div>
 
                     <!-- CANCELLED -->
                     <div id="cancelled" class="tab-content space-y-6 hidden">
                         <?php for ($i = 1; $i <= 2; $i++): ?>
-                        <div class="p-4 border rounded-lg shadow-sm bg-white">
-                            <div class="flex justify-between mb-2">
-                                <span class="font-semibold">ORDER-300<?= $i ?></span>
-                                <span class="text-red-600 font-medium">Cancelled</span>
+                            <div class="p-4 border rounded-lg shadow-sm bg-white">
+                                <div class="flex justify-between mb-2">
+                                    <span class="font-semibold">ORDER-300<?= $i ?></span>
+                                    <span class="text-red-600 font-medium">Cancelled</span>
+                                </div>
+
+                                <hr class="my-2">
+
+                                <p class="text-sm text-gray-600 mb-2">1 item</p>
+                                <p class="text-lg font-bold">₱60.00</p>
+
+                                <div class="flex justify-end">
+                                    <a href="order_details.php" class="bg-blue-600 text-white px-4 py-2 rounded inline-block">
+                                        View Details
+                                    </a>
+                                </div>
                             </div>
-
-                            <hr class="my-2">
-
-                            <p class="text-sm text-gray-600 mb-2">1 item</p>
-                            <p class="text-lg font-bold">₱60.00</p>
-
-                            <div class="flex justify-end">
-                                <button class="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded">View Details</button>
-                            </div>
-                        </div>
                         <?php endfor; ?>
                     </div>
 
@@ -196,4 +173,5 @@
     </script>
 
 </body>
+
 </html>

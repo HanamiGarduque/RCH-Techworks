@@ -31,7 +31,7 @@ function getProjectRootUrl() {
 
 // Redirect if not logged in
 if (!isLoggedIn()) {
-    header("Location: " . getProjectRootUrl() . "/index.php");
+    header(header: "Location: " . getProjectRootUrl() . "/index.php");
     exit();
 }
 
