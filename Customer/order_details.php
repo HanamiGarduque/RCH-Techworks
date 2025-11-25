@@ -173,6 +173,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
             border-radius: 0.75rem;
             overflow: hidden;
         }
+
     </style>
 </head>
 
