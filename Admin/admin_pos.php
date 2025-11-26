@@ -77,7 +77,7 @@ redirectIfRoleMismatch('admin'); // only admins can access
                         <h1 class="text-3xl font-semibold text-blue-500">Point of Sale</h1>
                         <p class="text-sm text-gray-700 mt-1">Process walk-in customer transactions</p>
                     </div>
-                    <div class="flex items-center gap-4">                        
+                    <div class="flex items-center gap-4">
                         <div class="text-right">
                             <p class="text-sm text-gray-500">Current Date</p>
                             <p id="currentDate" class="font-semibold text-gray-800"></p>
@@ -105,23 +105,41 @@ redirectIfRoleMismatch('admin'); // only admins can access
                             </div>
                         </div>
 
-                        <div class="flex gap-2 flex-wrap">
-                            <button class="category-btn px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-medium" data-category="all">
-                                All Products
+                        <div class="flex gap-3 flex-wrap">
+
+                            <button id="allTab"
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
+                                data-category="all">
+                                <i class="fas fa-th mr-2"></i> All Products
                             </button>
-                            <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300" data-category="services">
-                                Services
+
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                data-category="services">
+                                <i class="fas fa-concierge-bell mr-2"></i> Services
                             </button>
-                            <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300" data-category="gallons">
-                                Gallons
+
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                data-category="gallons">
+                                <i class="fas fa-water mr-2"></i> Gallons
                             </button>
-                            <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300" data-category="accessories">
-                                Accessories
+
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                data-category="accessories">
+                                <i class="fas fa-cube mr-2"></i> Accessories
                             </button>
-                            <button class="category-btn px-4 py-2 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300" data-category="others">
-                                Others
+
+                            <button
+                                class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-50 text-blue-500 hover:bg-gray-200"
+                                data-category="others">
+                                <i class="fas fa-ellipsis-h mr-2"></i> Others
                             </button>
+
                         </div>
+
+
                     </div>
 
                     <!-- Products Grid -->
@@ -254,6 +272,8 @@ redirectIfRoleMismatch('admin'); // only admins can access
             </div>
         </div>
     </div>
+    <script src="..Admin/includes/admin_toast.js"></script>
+
 
     <!-- Receipt Template (Hidden, for printing) -->
     <div class="receipt-print" id="receiptPrint"></div>
@@ -309,16 +329,23 @@ redirectIfRoleMismatch('admin'); // only admins can access
         }
 
         function setupEventListeners() {
-            document.getElementById('productSearch').addEventListener('input', filterProducts);
+            const searchInput = document.getElementById('productSearch');
+            searchInput.addEventListener('input', filterProducts);
 
-            document.querySelectorAll('.category-btn').forEach(btn => {
+            const categoryButtons = document.querySelectorAll('.flex.gap-3 button');
+
+            categoryButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    document.querySelectorAll('.category-btn').forEach(b => {
+                    // Remove active styles from all buttons
+                    categoryButtons.forEach(b => {
                         b.classList.remove('bg-blue-600', 'text-white');
-                        b.classList.add('bg-gray-200', 'text-gray-700');
+                        b.classList.add('bg-blue-50', 'text-blue-500');
                     });
-                    this.classList.remove('bg-gray-200', 'text-gray-700');
+
+                    // Add active styles to clicked button
+                    this.classList.remove('bg-blue-50', 'text-blue-500');
                     this.classList.add('bg-blue-600', 'text-white');
+
                     filterProducts();
                 });
             });
@@ -326,17 +353,23 @@ redirectIfRoleMismatch('admin'); // only admins can access
 
         function filterProducts() {
             const searchTerm = document.getElementById('productSearch').value.toLowerCase();
-            const activeCategory = document.querySelector('.category-btn.bg-blue-600').dataset.category;
+            const activeCategoryBtn = document.querySelector('.flex.gap-3 button.bg-blue-600');
+            const activeCategory = activeCategoryBtn ? activeCategoryBtn.dataset.category : 'all';
 
             document.querySelectorAll('.product-card').forEach(card => {
                 const name = card.dataset.name.toLowerCase();
                 const category = card.dataset.category.toLowerCase();
+
                 const matchesSearch = name.includes(searchTerm);
                 const matchesCategory = activeCategory === 'all' || category === activeCategory;
 
                 card.style.display = (matchesSearch && matchesCategory) ? 'block' : 'none';
             });
         }
+
+        // Initialize event listeners
+        setupEventListeners();
+
 
         function addToCart(itemId, category) {
             const card = document.getElementById("card-" + itemId);

@@ -43,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['verify'])) {
         if ($stmt->execute()) {
 
             // Send registration email
-            require_once "email.php";
+            require_once "Notification/email.php";
             sendCustomerRegistration($reg['email'], $reg['fullName']);
 
             unset($_SESSION['reg_data']);

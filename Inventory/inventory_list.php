@@ -26,19 +26,40 @@ $db = $database->getConnect();
         body {
             font-family: 'Poppins', sans-serif;
         }
+
+        .page-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Main content area that will scroll */
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Table container with scroll */
+        .table-scroll-container {
+            overflow-y: auto;
+            overflow-x: auto;
+            flex: 1;
+        }
     </style>
 </head>
 
 
-<body class="bg-gray-50 overflow-hidden">
-    <div class="flex h-screen">
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <script src="../Admin/includes/sidebar.js"></script>
 
         <!-- Main Content -->
-
-        <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
-            <div class="flex flex-col h-screen">
+        <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out overflow-hidden">
+            <div class="page-container">
                 <!-- Header -->
                 <?php
                 $pageTitle = "Inventory";
@@ -46,20 +67,18 @@ $db = $database->getConnect();
                 include '../Admin/includes/header.php';
                 ?>
 
-
-                <div class="m-3 flex flex-col flex-1 overflow-hidden">
-                    <!-- Search and Buttons -->
-                    <div class="flex items-center gap-2 mb-4">
+                <!-- Content Wrapper -->
+                <div class="content-wrapper p-3">
+                    <!-- Search and Buttons - Fixed -->
+                    <div class="flex items-center gap-2 mb-4 flex-shrink-0">
                         <div class="flex-1 relative">
                             <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                             <input
                                 type="text"
                                 id="searchInput"
                                 placeholder="Search by Item, Quantity, or Price..."
-                                class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-sm"
-                                style="font-style: italic;"
-                                oninput="this.style.fontStyle = this.value ? 'normal' : 'italic';"
-                                onkeyup="searchCards()">
+                                class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                oninput="searchCards()">
 
                         </div>
                         <button
@@ -72,7 +91,7 @@ $db = $database->getConnect();
                     </div>
 
                     <!-- Content Area -->
-                    <div class="p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 rounded-lg">
+                    <div class=" p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 flex flex-col overflow-hidden flex-1">
                         <!-- Filter Tabs -->
                         <div class="flex gap-3 mb-6 flex-wrap">
                             <button id="allTab"
@@ -99,9 +118,9 @@ $db = $database->getConnect();
                         </div>
 
                         <!-- Cards -->
-                        <div class="bg-white rounded-lg overflow-hidden">
+                        <div class="flex flex-col overflow-hidden flex-1">
                             <!-- Scroll wrapper -->
-                            <div class="overflow-x-auto max-h-[550px]">
+                            <div class="table-scroll-container">
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                     <?php
@@ -191,9 +210,10 @@ $db = $database->getConnect();
             </div>
 
         </div>
+    </div>
+    </div>
+    <script src="..Admin/includes/admin_toast.js"></script>
 
-    </div>
-    </div>
     <script>
         function searchCards() {
             const input = document.getElementById("searchInput");
@@ -278,7 +298,7 @@ $db = $database->getConnect();
             const modal = document.createElement('div');
             modal.className = "fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50";
 
-           const qtyField = (category === "gallons") ? `
+            const qtyField = (category === "gallons") ? `
     <div class="flex flex-col items-start mb-4 w-full">
         <span class="font-medium text-blue-500 mb-1">Quantity:</span>
 

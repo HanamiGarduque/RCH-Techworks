@@ -1,82 +1,88 @@
 <?php
-// File: Order/cancel_order.php
-
-header('Content-Type: application/json');
-
 require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
+
 require_once '../Database/db_connection.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
-}
-
-$userId = $_SESSION['user_id'];
-
-// Get JSON input
-$input = json_decode(file_get_contents('php://input'), true);
-$orderNumber = isset($input['order_number']) ? $input['order_number'] : null;
-
-if (!$orderNumber) {
-    echo json_encode(['success' => false, 'error' => 'Order number is required']);
-    exit;
-}
+header('Content-Type: application/json');
 
 $database = new Database();
 $db = $database->getConnect();
 
+// Get JSON input
+$data = json_decode(file_get_contents("php://input"), true);
+$orderNumber = $data['order_number'] ?? null;
+$reason = $data['reason'] ?? null;
+
+// Validate inputs
+if (!$orderNumber) {
+    echo json_encode(['success' => false, 'message' => 'Order number is required.']);
+    exit;
+}
+
+if (!$reason || trim($reason) === '') {
+    echo json_encode(['success' => false, 'message' => 'Cancellation reason is required.']);
+    exit;
+}
+
 try {
-    // Start transaction
     $db->beginTransaction();
+
+    // Verify the order exists
+    $checkOrder = $db->prepare("SELECT refill_id, order_status FROM water_refills WHERE order_number = :order_number LIMIT 1");
+    $checkOrder->bindParam(':order_number', $orderNumber);
+    $checkOrder->execute();
     
-    // Verify order belongs to user and is in Pending status
-    $checkQuery = "
-        SELECT refill_id, order_status 
-        FROM water_refills 
-        WHERE order_number = :order_number 
-        AND user_id = :user_id
-    ";
-    
-    $checkStmt = $db->prepare($checkQuery);
-    $checkStmt->bindParam(':order_number', $orderNumber);
-    $checkStmt->bindParam(':user_id', $userId);
-    $checkStmt->execute();
-    
-    $order = $checkStmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$order) {
+    if ($checkOrder->rowCount() === 0) {
         $db->rollBack();
-        echo json_encode(['success' => false, 'error' => 'Order not found']);
+        echo json_encode(['success' => false, 'message' => 'Order not found.']);
         exit;
     }
-    
-    if ($order['order_status'] !== 'Pending') {
+
+    $order = $checkOrder->fetch(PDO::FETCH_ASSOC);
+
+    // Check if order is already cancelled
+    if ($order['order_status'] === 'cancelled') {
         $db->rollBack();
-        echo json_encode(['success' => false, 'error' => 'Only pending orders can be cancelled']);
+        echo json_encode(['success' => false, 'message' => 'Order is already cancelled.']);
         exit;
     }
+
+    // Check if order is already delivered
+    if ($order['order_status'] === 'delivered') {
+        $db->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Cannot cancel a delivered order.']);
+        exit;
+    }
+
+    // Update the order status to cancelled and save the reason
+    $updateQuery = "UPDATE water_refills 
+                    SET order_status = 'cancelled', 
+                        delay_reason = :reason 
+                    WHERE order_number = :order_number";
     
-    // Update order status to Cancelled
-    $updateQuery = "
-        UPDATE water_refills 
-        SET order_status = 'Cancelled' 
-        WHERE order_number = :order_number 
-        AND user_id = :user_id
-    ";
+    $stmt = $db->prepare($updateQuery);
+    $stmt->bindParam(':reason', $reason);
+    $stmt->bindParam(':order_number', $orderNumber);
     
-    $updateStmt = $db->prepare($updateQuery);
-    $updateStmt->bindParam(':order_number', $orderNumber);
-    $updateStmt->bindParam(':user_id', $userId);
-    $updateStmt->execute();
-    
-    // Commit transaction
-    $db->commit();
-    
-    echo json_encode(['success' => true, 'message' => 'Order cancelled successfully']);
-    
+    if ($stmt->execute()) {
+        $db->commit();
+        echo json_encode([
+            'success' => true,
+            'message' => 'Order cancelled successfully.'
+        ]);
+    } else {
+        $db->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Failed to cancel order.']);
+    }
+
 } catch (PDOException $e) {
     $db->rollBack();
-    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    error_log('Database Error in cancel_order.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Database error occurred.']);
+} catch (Exception $e) {
+    $db->rollBack();
+    error_log('Error in cancel_order.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'An error occurred while cancelling order.']);
 }
 ?>

@@ -1060,7 +1060,7 @@ $user_id = $_SESSION['id'] ?? null;
             const subtotal = unit * state.quantity;
 
             const order = {
-                productId: state.productId, 
+                productId: state.productId,
                 type: (state.chosenType === 'slim') ? 'Slim' : 'Round',
                 size: sizeLabel,
                 quantity: state.quantity,
@@ -1211,7 +1211,11 @@ $user_id = $_SESSION['id'] ?? null;
         function onPlaceOrder() {
             const addr = state.userAddress;
             const addrFilled = addr.house && addr.street && addr.barangay && addr.city && addr.province && addr.postal;
-
+            const placeBtn = document.getElementById("placeOrderBtn");
+            if (placeBtn) {
+                placeBtn.disabled = true;
+                placeBtn.classList.add("opacity-60", "cursor-not-allowed");
+            }
             if (!addrFilled) {
                 Swal.fire('Please provide a full delivery address before placing the order', '', 'warning');
                 return;

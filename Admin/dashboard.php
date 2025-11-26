@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../session.php';
 require_once '../Database/db_connection.php';
 redirectIfRoleMismatch('admin'); // only admins can access
+include_once '../Cron/check_delays.php';
 
 
 $database = new Database();
@@ -349,6 +350,8 @@ $db = $database->getConnect();
 
         </div>
     </div>
+    <script src="..Admin/includes/admin_toast.js"></script>
+        
     <script>
         function initializeCharts() {
             // Ensure all canvas elements exist before creating charts

@@ -1,53 +1,71 @@
 <?php
-// order_details.php
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('admin'); // only admins can access
 
-// ============================================================================
-// 1. GET STATUS FROM URL
-// ============================================================================
-$rawStatus = isset($_GET['status']) ? strtolower($_GET['status']) : 'pending';
+require_once '../Database/db_connection.php';
 
-switch ($rawStatus) {
-    case 'pending':
-        $orderStatus = "Pending"; // To Pay
-        break;
-    case 'on_delivery':
-        $orderStatus = "On Delivery"; // To Receive
-        break;
-    case 'completed':
-        $orderStatus = "Delivered"; // Completed
-        break;
-    default:
-        $orderStatus = "Cancelled"; // Cancelled
-        break;
+$database = new Database();
+$db = $database->getConnect();
+
+// Get the order_number from the query string
+$orderNumber = isset($_GET['order_number']) ? $_GET['order_number'] : '';
+
+if (empty($orderNumber)) {
+    header('Location: customer_orders.php');
+    exit;
 }
 
-// ============================================================================
-// 2. PAGE INFORMATION
-// ============================================================================
-$pageTitle = "My Orders";
-$pageSubtitle = "View and track your orders and deliveries in real time.";
-$currentPage = 'order_details.php';
+// Fetch order details with customer and rider information
+$orderQuery = "SELECT 
+    r.refill_id,
+    r.order_number,
+    r.total_amount,
+    r.pickup_datetime,
+    r.delivery_datetime,
+    r.order_status,
+    r.gallon_owner,
+    r.created_at,
+    r.delay_reason,
+    u.name as customer_name,
+    u.phone_number as customer_phone,
+    u.address as customer_address,
+    rider.name as rider_name,
+    rider.phone_number as rider_phone
+FROM water_refills r
+LEFT JOIN users u ON r.user_id = u.user_id
+LEFT JOIN users rider ON r.rider_id = rider.user_id
+WHERE r.order_number = :order_number
+LIMIT 1";
 
-// Customer & Delivery Information
-$customerName = "Christine May Padua";
-$customerPhone = "09161891555";
-$deliveryAddress = "116 Purok 1, Tibig, Lipa City, Batangas 4217";
+$stmt = $db->prepare($orderQuery);
+$stmt->bindParam(':order_number', $orderNumber);
+$stmt->execute();
+$order = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Order Metadata
-$orderId = "ORD-110325001";
-$paymentMethod = "Cash on Delivery";
-$orderDateTime = "03-11-2025 | 8:38";
-$shipDateTime = "05-11-2025 | 11:00";
+if (!$order) {
+    header('Location: customer_orders.php');
+    exit;
+}
 
-// Order Items
-$orderItems = [
-    ['name' => '20L Slim Container Gallon', 'qty' => 2, 'unitPrice' => 170.00, 'totalPrice' => 340.00],
-    ['name' => 'Slim Gallon Faucet - Press', 'qty' => 10, 'unitPrice' => 25.00, 'totalPrice' => 250.00]
-];
+// Fetch order items
+$itemsQuery = "SELECT 
+    ri.product_id,
+    ri.gallon_type,
+    ri.gallon_size,
+    ri.quantity,
+    ri.unit_price,
+    ri.subtotal
+FROM water_refill_items ri
+WHERE ri.refill_id = :refill_id";
 
-// Totals
-$subtotal = array_sum(array_column($orderItems, 'totalPrice'));
-$taxRate = 0.08;
+$itemsStmt = $db->prepare($itemsQuery);
+$itemsStmt->bindParam(':refill_id', $order['refill_id']);
+$itemsStmt->execute();
+$orderItems = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Calculate totals
+$subtotal = array_sum(array_column($orderItems, 'subtotal'));
+$taxRate = 0.00; // 0% tax
 $taxAmount = $subtotal * $taxRate;
 $deliveryFee = 40.00;
 $totalCost = $subtotal + $taxAmount + $deliveryFee;
@@ -57,31 +75,11 @@ function formatCurrency($amount)
     return '₱' . number_format($amount, 2);
 }
 
-// ============================================================================
-// 3. STATUS COLORS & BUTTON LOGIC
-// ============================================================================
-$statusColor = '';
-$buttonText = '';
-$buttonClass = '';
-
-if ($orderStatus === 'Pending') {
-    $statusColor = 'text-yellow-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} elseif ($orderStatus === 'On Delivery') {
-    $statusColor = 'text-blue-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} elseif ($orderStatus === 'Delivered') {
-    $statusColor = 'text-green-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} elseif ($orderStatus === 'Cancelled') {
-    $statusColor = 'text-red-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-}
-
+// Fetch available riders for assignment
+$ridersQuery = "SELECT user_id, name, phone_number FROM users WHERE role = 'rider' AND status = 'active' ORDER BY name ASC";
+$ridersStmt = $db->prepare($ridersQuery);
+$ridersStmt->execute();
+$availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -90,164 +88,450 @@ if ($orderStatus === 'Pending') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RCH Water - <?= htmlspecialchars($pageTitle) ?></title>
+    <title>RCH Water - Order Details</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            padding-left: 5rem;
-            transition: .5s;
         }
 
-        .group:hover+.content-area {
-            padding-left: 16rem;
+        .page-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        .content-area {
-            min-height: 100vh;
+        .content-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
         }
     </style>
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <script src="../Admin/includes/sidebar.js"></script>
 
-    <!-- SIDEBAR -->
-            <script src="../Admin/includes/sidebar.js"></script>
-
-
-    <!-- MAIN CONTENT -->
-    <div class="content-area">
-        <main class="bg-white rounded-xl shadow-lg h-[calc(100vh-2rem)] overflow-y-auto">
-
-            <?php
+        <!-- Main Content -->
+        <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out overflow-hidden">
+            <div class="page-container">
+                <!-- Header -->
+                <?php
                 $pageTitle = "Order Management";
                 $pageSubtitle = "View and manage customer orders and details.";
                 include '../Admin/includes/header.php';
                 ?>
 
-            <div class="">
-                <div class="bg-white w-full mx-auto rounded-2xl shadow-sm border">
+                <!-- Content Wrapper - Scrollable Area -->
+                <div class="content-wrapper p-6">
+                    <!-- Back Button and Title -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <button onclick="window.history.back()"
+                                class="flex items-center text-blue-600 hover:text-blue-700 text-2xl transition-colors">
+                                <i class="bi bi-arrow-left-circle-fill"></i>
+                            </button>
+                            <h1 class="text-2xl text-gray-700 font-semibold">Order Details - <?= htmlspecialchars($order['order_number']) ?></h1>
+                        </div>
 
-                    <!-- BACK BUTTON (UPPER LEFT) -->
-                    <div class="flex items-center gap-3 mb-6">
-                        <button onclick="window.history.back()"
-                            class="flex items-center text-blue-600 hover:text-blue-700 text-2xl">
-                            <i class="bi bi-arrow-left-circle-fill"></i>
-                        </button>
-
-                        <h1 class="text-2xl text-gray-700 font-semibold">Order Details</h1>
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3">
+                            <button onclick="openAssignRiderModal()" 
+                                class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-md">
+                                <i class="fas fa-user-plus"></i>
+                                <?= $order['rider_name'] ? 'Reassign Rider' : 'Assign Rider' ?>
+                            </button>
+                            
+                            <button onclick="cancelOrder()" 
+                                class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-md">
+                                <i class="fas fa-times-circle"></i>
+                                Cancel Order
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- REAL-TIME RIDER LOCATION + RIDER INFO (MOVE THIS TO TOP) -->
-                    <div class="border rounded-xl p-5 mb-6">
+                    <!-- Main Content Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- Left Column - Order Items and Details -->
+                        <div class="lg:col-span-2 space-y-6">
+                            
+                            <!-- Real-Time Rider Location -->
+                            <div class="bg-white border rounded-xl shadow-sm p-5">
+                                <div class="flex items-center gap-2 text-blue-600 font-semibold mb-3">
+                                    <i class="fas fa-location-arrow"></i> Real-Time Rider Location
+                                </div>
 
-                        <div class="flex items-center gap-2 text-blue-600 font-semibold mb-3">
-                            <i class="fas fa-location-arrow"></i> Real-Time Rider Location
-                        </div>
+                                <div class="w-full h-[300px] bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 mb-4 border border-gray-200">
+                                    <span>Map will be displayed here</span>
+                                </div>
 
-                        <!-- MAP CONTAINER ONLY (NO IMAGE) -->
-                        <div class="w-full h-[300px] bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 mb-4">
-                            <span>Map will be displayed here</span>
-                        </div>
-
-                        <div class="border rounded-xl p-4 bg-gray-50">
-                            <div class="font-semibold text-gray-700 mb-1">Rider Information</div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="font-medium">Ramon Fontelera</span>
-                                <span><i class="fa fa-phone mr-1"></i>09123456789</span>
+                                <div class="border rounded-xl p-4 bg-gray-50">
+                                    <div class="font-semibold text-gray-700 mb-1">Rider Information</div>
+                                    <?php if ($order['rider_name']): ?>
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="font-medium"><?= htmlspecialchars($order['rider_name']) ?></span>
+                                            <span><i class="fa fa-phone mr-1"></i><?= htmlspecialchars($order['rider_phone']) ?></span>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="text-sm text-gray-500 italic">No rider assigned yet</div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
-                        </div>
 
-                    </div>
+                            <!-- Order Items -->
+                            <div class="bg-white border rounded-xl shadow-sm p-5">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2">
+                                    <i class="fas fa-shopping-cart text-blue-600"></i>
+                                    Order Items
+                                </h3>
 
-                    <!-- DELIVERY INFORMATION -->
-                    <div class="border rounded-xl p-5 mb-6">
-                        <div class="flex items-center gap-2 text-blue-600 font-medium mb-2">
-                            <i class="fas fa-map-marker-alt text-lg"></i> Delivery Information
-                        </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="text-gray-600 border-b">
+                                                <th class="text-left pb-2 px-2">Product</th>
+                                                <th class="text-center pb-2 px-2">Qty</th>
+                                                <th class="text-right pb-2 px-2">Unit</th>
+                                                <th class="text-right pb-2 px-2">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($orderItems as $i => $item): ?>
+                                                <tr class="<?= $i < count($orderItems) - 1 ? 'border-b' : '' ?>">
+                                                    <td class="py-3 px-2">
+                                                        <?= htmlspecialchars($item['gallon_type'] . ' - ' . $item['gallon_size']) ?>
+                                                    </td>
+                                                    <td class="text-center font-semibold px-2"><?= $item['quantity'] ?></td>
+                                                    <td class="text-right px-2"><?= formatCurrency($item['unit_price']) ?></td>
+                                                    <td class="text-right font-semibold px-2"><?= formatCurrency($item['subtotal']) ?></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                        <div class="flex justify-between text-sm">
-                            <div class="font-semibold">
-                                <?= $customerName ?><br>
-                                <span class="font-normal"><?= $customerPhone ?></span>
+                                <!-- Order Summary -->
+                                <div class="mt-4 text-sm space-y-2 pt-4 border-t">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Subtotal</span>
+                                        <span><?= formatCurrency($subtotal) ?></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Tax (<?= $taxRate * 100 ?>%)</span>
+                                        <span><?= formatCurrency($taxAmount) ?></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Delivery Fee</span>
+                                        <span><?= formatCurrency($deliveryFee) ?></span>
+                                    </div>
+
+                                    <div class="flex justify-between pt-3 text-lg font-semibold border-t">
+                                        <span>Total Cost</span>
+                                        <span class="text-blue-600"><?= formatCurrency($order['total_amount']) ?></span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="text-right max-w-xs"><?= $deliveryAddress ?></div>
                         </div>
-                    </div>
 
-                    <!-- ORDER SUMMARY -->
-                    <div class="border rounded-xl p-5 mb-6">
+                        <!-- Right Column - Delivery Info and Metadata -->
+                        <div class="space-y-6">
+                            
+                            <!-- Delivery Information -->
+                            <div class="bg-white border rounded-xl shadow-sm p-5">
+                                <div class="flex items-center gap-2 text-blue-600 font-semibold mb-4 border-b pb-2">
+                                    <i class="fas fa-map-marker-alt text-lg"></i> Delivery Information
+                                </div>
 
-                        <p class="<?= $statusColor ?> text-sm font-semibold"><?= $orderStatus ?></p>
+                                <div class="space-y-3">
+                                    <div>
+                                        <div class="text-xs text-gray-500 mb-1">Customer Name</div>
+                                        <div class="font-semibold text-gray-800"><?= htmlspecialchars($order['customer_name']) ?></div>
+                                    </div>
 
-                        <table class="w-full text-sm mt-3">
-                            <thead>
-                                <tr class="text-gray-600">
-                                    <th class="text-left pb-2">Product</th>
-                                    <th class="text-center pb-2">Qty</th>
-                                    <th class="text-right pb-2">Unit</th>
-                                    <th class="text-right pb-2">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody class="border-t">
-                                <?php foreach ($orderItems as $i => $item): ?>
-                                    <tr class="<?= $i < count($orderItems) - 1 ? 'border-b' : '' ?>">
-                                        <td class="py-3"><?= $item['name'] ?></td>
-                                        <td class="text-center font-semibold"><?= $item['qty'] ?></td>
-                                        <td class="text-right"><?= formatCurrency($item['unitPrice']) ?></td>
-                                        <td class="text-right"><?= formatCurrency($item['totalPrice']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                    <div>
+                                        <div class="text-xs text-gray-500 mb-1">Contact Number</div>
+                                        <div class="font-medium text-gray-700"><?= htmlspecialchars($order['customer_phone']) ?></div>
+                                    </div>
 
-                        <div class="mt-4 text-sm space-y-2">
-                            <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span><?= formatCurrency($subtotal) ?></span></div>
-                            <div class="flex justify-between"><span class="text-gray-500">Tax (<?= $taxRate * 100 ?>%)</span><span><?= formatCurrency($taxAmount) ?></span></div>
-                            <div class="flex justify-between"><span class="text-gray-500">Delivery Fee</span><span><?= formatCurrency($deliveryFee) ?></span></div>
-
-                            <div class="flex justify-between pt-3 text-lg font-semibold">
-                                <span>Total Cost</span>
-                                <span class="text-blue-600"><?= formatCurrency($totalCost) ?></span>
+                                    <div>
+                                        <div class="text-xs text-gray-500 mb-1">Delivery Address</div>
+                                        <div class="text-sm text-gray-700"><?= htmlspecialchars($order['customer_address']) ?></div>
+                                    </div>
+                                </div>
                             </div>
+
+                            <!-- Order Metadata -->
+                            <div class="bg-white border rounded-xl shadow-sm p-5">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2">
+                                    <i class="fas fa-info-circle text-blue-600"></i>
+                                    Order Metadata
+                                </h3>
+
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex justify-between items-center py-2 border-b">
+                                        <span class="text-gray-500">Order Number</span>
+                                        <span class="font-semibold text-gray-800"><?= htmlspecialchars($order['order_number']) ?></span>
+                                    </div>
+
+                                    <div class="flex justify-between items-center py-2 border-b">
+                                        <span class="text-gray-500">Payment Method</span>
+                                        <span class="font-medium text-gray-700">Cash on Delivery</span>
+                                    </div>
+
+                                    <div class="flex justify-between items-center py-2 border-b">
+                                        <span class="text-gray-500">Order Placed</span>
+                                        <span class="font-medium text-gray-700"><?= date('M d, Y | H:i', strtotime($order['created_at'])) ?></span>
+                                    </div>
+
+                                    <div class="flex justify-between items-center py-2 border-b">
+                                        <span class="text-gray-500">Pickup Time</span>
+                                        <span class="font-medium text-gray-700"><?= date('M d, Y | H:i', strtotime($order['pickup_datetime'])) ?></span>
+                                    </div>
+
+                                    <div class="flex justify-between items-center py-2">
+                                        <span class="text-gray-500">Delivery Time</span>
+                                        <span class="font-medium text-gray-700"><?= date('M d, Y | H:i', strtotime($order['delivery_datetime'])) ?></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Order Status -->
+                            <div class="bg-white border rounded-xl shadow-sm p-5">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2">
+                                    <i class="fas fa-tasks text-blue-600"></i>
+                                    Order Status
+                                </h3>
+
+                                <div class="space-y-3">
+                                    <?php
+                                    $statuses = [
+                                        'pending' => 'Order Pending',
+                                        'assigned' => 'Rider Assigned',
+                                        'pickup_in_progress' => 'Pickup In Progress',
+                                        'picked_up' => 'Picked Up',
+                                        'on_delivery' => 'On Delivery',
+                                        'delivered' => 'Delivered'
+                                    ];
+
+                                    $currentStatus = $order['order_status'];
+                                    $statusKeys = array_keys($statuses);
+                                    $currentIndex = array_search($currentStatus, $statusKeys);
+
+                                    foreach ($statuses as $key => $label):
+                                        $keyIndex = array_search($key, $statusKeys);
+                                        $isCompleted = $keyIndex <= $currentIndex;
+                                        $isCurrent = $key === $currentStatus;
+                                    ?>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-2 h-2 rounded-full <?= $isCompleted ? 'bg-green-500' : ($isCurrent ? 'bg-blue-500 animate-pulse' : 'bg-gray-300') ?>"></div>
+                                            <span class="text-sm <?= $isCurrent ? 'font-semibold text-gray-700' : ($isCompleted ? 'text-gray-700' : 'text-gray-400') ?>">
+                                                <?= $label ?>
+                                            </span>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
-
-                    <!-- ORDER META -->
-                    <div class="border rounded-xl p-5">
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="font-semibold">Order ID</span>
-                            <span><?= $orderId ?></span>
-                        </div>
-
-                        <div class="flex justify-between text-sm border-b pb-3 mb-3">
-                            <span class="font-normal">Paid by</span>
-                            <span><?= $paymentMethod ?></span>
-                        </div>
-
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-gray-500">Order Date</span>
-                            <span><?= $orderDateTime ?></span>
-                        </div>
-
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Ship Date</span>
-                            <span><?= $shipDateTime ?></span>
-                        </div>
-                    </div>
-
                 </div>
             </div>
-
-        </main>
+        </div>
     </div>
 
+    <script>
+        // Assign Rider Modal
+        function openAssignRiderModal() {
+            const riders = <?= json_encode($availableRiders) ?>;
+            
+            if (riders.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Riders Available',
+                    text: 'There are no active riders to assign.',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
+            // Build rider options
+            let riderOptions = '<select id="riderSelect" class="swal2-input" style="width: 90%; padding: 10px;">';
+            riderOptions += '<option value="">-- Select a Rider --</option>';
+            riders.forEach(rider => {
+                riderOptions += `<option value="${rider.user_id}">${rider.name} - ${rider.phone_number}</option>`;
+            });
+            riderOptions += '</select>';
+
+            Swal.fire({
+                title: 'Assign Rider',
+                html: `
+                    <div style="text-align: left; padding: 10px;">
+                        <label style="font-weight: 500; margin-bottom: 8px; display: block;">Select Rider:</label>
+                        ${riderOptions}
+                    </div>
+                `,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Assign',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#6b7280',
+                preConfirm: () => {
+                    const riderId = document.getElementById('riderSelect').value;
+                    if (!riderId) {
+                        Swal.showValidationMessage('Please select a rider');
+                        return false;
+                    }
+                    return riderId;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    assignRider(result.value);
+                }
+            });
+        }
+
+        function assignRider(riderId) {
+            fetch('assign_rider.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    order_number: '<?= $orderNumber ?>',
+                    rider_id: riderId
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Rider Assigned!',
+                        text: 'The rider has been successfully assigned to this order.',
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'Failed to assign rider.',
+                        confirmButtonColor: '#dc2626'
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Request failed. Please check your connection.',
+                    confirmButtonColor: '#dc2626'
+                });
+            });
+        }
+
+        function cancelOrder() {
+            Swal.fire({
+                title: 'Cancel Order?',
+                html: `
+                    <p style="margin-bottom: 15px;">Are you sure you want to cancel this order? This action cannot be undone.</p>
+                    <label style="font-weight: 500; margin-bottom: 8px; display: block; text-align: left;">Reason for Cancellation:</label>
+                    <textarea id="cancelReason" class="swal2-textarea" placeholder="Enter reason..." style="width: 90%; height: 100px;"></textarea>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Cancel Order',
+                cancelButtonText: 'No, Keep Order',
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                preConfirm: () => {
+                    const reason = document.getElementById('cancelReason').value.trim();
+                    if (!reason) {
+                        Swal.showValidationMessage('Please provide a reason for cancellation');
+                        return false;
+                    }
+                    return reason;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performCancelOrder(result.value);
+                }
+            });
+        }
+
+        function performCancelOrder(reason) {
+            fetch('cancel_order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    order_number: '<?= $orderNumber ?>',
+                    reason: reason
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Order Cancelled',
+                        text: 'The order has been successfully cancelled.',
+                        confirmButtonColor: '#3b82f6'
+                    }).then(() => {
+                        window.location.href = 'customer_orders.php';
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'Failed to cancel order.',
+                        confirmButtonColor: '#dc2626'
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Request failed. Please check your connection.',
+                    confirmButtonColor: '#dc2626'
+                });
+            });
+        }
+    </script>
 </body>
 
 </html>

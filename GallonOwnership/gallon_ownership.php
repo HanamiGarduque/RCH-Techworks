@@ -96,9 +96,9 @@ $db = $database->getConnect();
                     </div>
 
                     <!-- Card Container - Flexible -->
-                    <div class="bg-white rounded-lg shadow-lg ring-3 ring-gray-200 flex flex-col overflow-hidden flex-1">
+                    <div class=" p-6 bg-white rounded-lg shadow-lg ring-3 ring-gray-200 flex flex-col overflow-hidden flex-1">
                         <!-- Filter Tabs -->
-                        <div class="flex gap-3 mb-6 flex-wrap flex-shrink-0">
+                        <div class="flex gap-3 mb-6 flex-wrap">
 
                             <button id="allTab"
                                 class="px-4 py-2 rounded-full border-none cursor-pointer font-semibold transition-all duration-300 bg-blue-600 text-white"
@@ -128,7 +128,7 @@ $db = $database->getConnect();
 
 
                         <!-- Table with Scrollable Body -->
-                        <div class="px-6 pb-6 flex flex-col overflow-hidden flex-1">
+                        <div class="pb-6 flex flex-col overflow-hidden flex-1">
                             <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col flex-1">
                                 <!-- Scrollable table container -->
                                 <div class="table-scroll-container">
@@ -204,6 +204,8 @@ $db = $database->getConnect();
                     </div>
                 </div>
             </div>
+            <script src="..Admin/includes/admin_toast.js"></script>
+
             <script>
                 // for sorting table
                 function sortTable(columnIndex) {

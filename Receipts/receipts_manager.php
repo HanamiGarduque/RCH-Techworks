@@ -78,6 +78,7 @@ redirectIfRoleMismatch('admin'); // only admins can access
             </div>
         </div>
     </div>
+    <script src="..Admin/includes/admin_toast.js"></script>
 
     <script>
         let allReceipts = [];

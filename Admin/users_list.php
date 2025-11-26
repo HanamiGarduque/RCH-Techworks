@@ -69,19 +69,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         body {
             font-family: 'Poppins', sans-serif;
         }
+
+        /* Ensure the page layout uses full viewport height */
+        .page-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Main content area that will scroll */
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Table container with scroll */
+        .table-scroll-container {
+            overflow-y: auto;
+            overflow-x: auto;
+            flex: 1;
+        }
     </style>
 </head>
 
 
-<body class="bg-gray-50 overflow-hidden">
-    <div class="flex h-screen">
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <script src="../Admin/includes/sidebar.js"></script>
 
         <!-- Main Content -->
-
-        <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
-            <div class="flex flex-col h-screen">
+        <<div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out overflow-hidden">
+            <div class="page-container">
                 <!-- Header -->
                 <?php
                 $pageTitle = "Manage System Users";
@@ -89,19 +111,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 include '../Admin/includes/header.php';
                 ?>
 
-                <div class="m-3 flex flex-col flex-1 overflow-hidden">
-                    <!-- Search and Buttons -->
-                    <div class="flex items-center gap-2 mb-4">
+                <!-- Content Wrapper -->
+                <div class="content-wrapper p-3">
+                    <!-- Search and Buttons - Fixed -->
+                    <div class="flex items-center gap-2 mb-4 flex-shrink-0">
                         <div class="flex-1 relative">
                             <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                             <input
                                 type="text"
                                 id="searchInput"
                                 placeholder="Search by Name, Email, Phone, Address..."
-                                class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-sm"
-                                style="font-style: italic;"
-                                oninput="this.style.fontStyle = this.value ? 'normal' : 'italic';"
-                                onkeyup="searchTable()">
+                                class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                oninput="searchTable()">
                         </div>
 
                     </div>
@@ -128,29 +149,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         </div>
 
 
-                        <!-- Table -->
-                        <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col flex-1">
-                            <!-- Scroll wrapper -->
-                            <div class="overflow-x-auto overflow-y-auto flex-1">
+                        <!-- Table with Scrollable Body -->
+                        <div class="pb-6 flex flex-col overflow-hidden flex-1">
+                            <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col flex-1">
+                                <!-- Scrollable table container -->
+                                <div class="table-scroll-container">
 
-                                <table id="usersTable" class="min-w-full text-sm text-left text-gray-700">
-                                    <thead class="bg-blue-50 border-b border-gray-200 sticky top-0 z-10">
-                                        <tr>
-                                            <th class="px-4 py-3 font-semibold text-center cursor-pointer min-w-[100px]" onclick="sortTable(0)" title="User ID">User ID ⬍</th>
-                                            <th class="px-4 py-3 font-semibold text-center cursor-pointer min-w-[180px]" onclick="sortTable(1)" title="Name">Name ⬍</th>
-                                            <th class="px-4 py-3 font-semibold text-center cursor-pointer min-w-[160px]" onclick="sortTable(2)" title="Email">Email ⬍</th>
-                                            <th class="px-4 py-3 font-semibold text-center min-w-[130px]" title="Phone Number">Phone Number</th>
-                                            <th class="px-4 py-3 font-semibold text-center min-w-[160px]" title="Address">Address</th>
-                                            <th class="px-4 py-3 font-semibold text-center min-w-[80px]" title="User Type">User Type</th>
-                                            <th class="px-4 py-3 font-semibold text-center min-w-[80px]" title="Status">Status</th>
-                                            <th class="px-4 py-3 font-semibold text-center min-w-[160px]" title="Signup Date">Signup Date</th>
-                                            <th class="px-4 py-3 font-semibold text-center min-w-[80px]" title="Actions">Actions</th>
-                                        </tr>
-                                    </thead>
+                                    <table id="usersTable" class="min-w-full text-sm text-left text-gray-700">
+                                        <thead class="bg-blue-50 border-b border-gray-200 sticky top-0 z-10">
+                                            <tr>
+                                                <th class="px-4 py-3 font-semibold text-center cursor-pointer min-w-[100px]" onclick="sortTable(0)" title="User ID">User ID ⬍</th>
+                                                <th class="px-4 py-3 font-semibold text-center cursor-pointer min-w-[180px]" onclick="sortTable(1)" title="Name">Name ⬍</th>
+                                                <th class="px-4 py-3 font-semibold text-center cursor-pointer min-w-[160px]" onclick="sortTable(2)" title="Email">Email ⬍</th>
+                                                <th class="px-4 py-3 font-semibold text-center min-w-[130px]" title="Phone Number">Phone Number</th>
+                                                <th class="px-4 py-3 font-semibold text-center min-w-[160px]" title="Address">Address</th>
+                                                <th class="px-4 py-3 font-semibold text-center min-w-[80px]" title="User Type">User Type</th>
+                                                <th class="px-4 py-3 font-semibold text-center min-w-[80px]" title="Status">Status</th>
+                                                <th class="px-4 py-3 font-semibold text-center min-w-[160px]" title="Signup Date">Signup Date</th>
+                                                <th class="px-4 py-3 font-semibold text-center min-w-[80px]" title="Actions">Actions</th>
+                                            </tr>
+                                        </thead>
 
-                                    <tbody>
-                                        <?php
-                                        $query = "SELECT 
+                                        <tbody>
+                                            <?php
+                                            $query = "SELECT 
                                             user_id,
                                             name,
                                             email,
@@ -162,60 +184,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                         FROM users  
                                         ORDER BY created_at DESC";
 
-                                        $stmt = $db->prepare($query);
-                                        $stmt->execute();
+                                            $stmt = $db->prepare($query);
+                                            $stmt->execute();
 
-                                        if ($stmt->rowCount() > 0) {
-                                            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                                                $statusClass = $row['status'] === 'banned' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
-                                                $statusText = ucfirst($row['status']);
+                                            if ($stmt->rowCount() > 0) {
+                                                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                                    $statusClass = $row['status'] === 'banned' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+                                                    $statusText = ucfirst($row['status']);
 
-                                                echo "<tr class='border-b divide-x divide-gray-200 hover:bg-gray-50'>";
-                                                echo "<td class='px-6 py-4 text-center'>" . htmlspecialchars($row['user_id']) . "</td>";
-                                                echo "<td class='px-6 py-4 font-medium'>" . htmlspecialchars($row['name']) . "</td>";
-                                                echo "<td class='px-6 py-4'>" . htmlspecialchars($row['email']) . "</td>";
-                                                echo "<td class='px-6 py-4 text-center'>" . htmlspecialchars($row['phone_number']) . "</td>";
-                                                echo "<td class='px-6 py-4'>" . htmlspecialchars($row['address']) . "</td>";
-                                                echo "<td class='px-6 py-4 text-center usertype-cell'><span class='inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700'>" . ucfirst(htmlspecialchars($row['user_type'])) . "</span></td>";
-                                                echo "<td class='px-6 py-4 text-center userstatus-cell'><span class='inline-block px-3 py-1 rounded-full text-xs font-semibold {$statusClass}'>{$statusText}</span></td>";
-                                                echo "<td class='px-6 py-4 text-center text-sm'>" . date('M d, Y', strtotime($row['created_at'])) . "</td>";
+                                                    echo "<tr class='border-b divide-x divide-gray-200 hover:bg-gray-50'>";
+                                                    echo "<td class='px-6 py-4 text-center'>" . htmlspecialchars($row['user_id']) . "</td>";
+                                                    echo "<td class='px-6 py-4 font-medium'>" . htmlspecialchars($row['name']) . "</td>";
+                                                    echo "<td class='px-6 py-4'>" . htmlspecialchars($row['email']) . "</td>";
+                                                    echo "<td class='px-6 py-4 text-center'>" . htmlspecialchars($row['phone_number']) . "</td>";
+                                                    echo "<td class='px-6 py-4'>" . htmlspecialchars($row['address']) . "</td>";
+                                                    echo "<td class='px-6 py-4 text-center usertype-cell'><span class='inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700'>" . ucfirst(htmlspecialchars($row['user_type'])) . "</span></td>";
+                                                    echo "<td class='px-6 py-4 text-center userstatus-cell'><span class='inline-block px-3 py-1 rounded-full text-xs font-semibold {$statusClass}'>{$statusText}</span></td>";
+                                                    echo "<td class='px-6 py-4 text-center text-sm'>" . date('M d, Y', strtotime($row['created_at'])) . "</td>";
 
-                                                $userId = htmlspecialchars($row['user_id']);
-                                                $userName = htmlspecialchars($row['name']);
-                                                $userStatus = htmlspecialchars($row['status']);
+                                                    $userId = htmlspecialchars($row['user_id']);
+                                                    $userName = htmlspecialchars($row['name']);
+                                                    $userStatus = htmlspecialchars($row['status']);
 
 
-                                                echo '<td class="px-6 py-4 text-center">';
+                                                    echo '<td class="px-6 py-4 text-center">';
 
-                                                echo "<div class='flex items-center justify-center gap-3'>";
+                                                    echo "<div class='flex items-center justify-center gap-3'>";
 
-                                                $banBtnClass = $userStatus === 'banned' ? 'text-green-600' : 'text-red-600';
-                                                $banBtnTitle = $userStatus === 'banned' ? 'Unban Account' : 'Ban Account';
+                                                    $banBtnClass = $userStatus === 'banned' ? 'text-green-600' : 'text-red-600';
+                                                    $banBtnTitle = $userStatus === 'banned' ? 'Unban Account' : 'Ban Account';
 
-                                                // Change Role button
-                                                echo "<i class='fas fa-user-cog text-blue-600 hover:scale-125 transition-transform cursor-pointer'
+                                                    // Change Role button
+                                                    echo "<i class='fas fa-user-cog text-blue-600 hover:scale-125 transition-transform cursor-pointer'
                                                         title='Change Role'
                                                         onclick=\"openRoleModal({$userId}, '{$row['user_type']}')\"></i>";
 
-                                                // Ban / Unban button
-                                                echo "<i class=\"fas fa-lock {$banBtnClass} hover:scale-125 transition-transform cursor-pointer\" 
+                                                    // Ban / Unban button
+                                                    echo "<i class=\"fas fa-lock {$banBtnClass} hover:scale-125 transition-transform cursor-pointer\" 
                                                         title=\"{$banBtnTitle}\" 
                                                         onclick=\"toggleBanUser({$userId}, '{$userName}', '{$userStatus}')\"></i>";
 
-                                                echo "</div>";
+                                                    echo "</div>";
 
-                                                echo '</td>';
+                                                    echo '</td>';
 
 
 
-                                                echo "</tr>";
+                                                    echo "</tr>";
+                                                }
+                                            } else {
+                                                echo "<tr><td colspan='9' class='px-6 py-4 text-center text-gray-500'>No users found</td></tr>";
                                             }
-                                        } else {
-                                            echo "<tr><td colspan='9' class='px-6 py-4 text-center text-gray-500'>No users found</td></tr>";
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
+                                            ?>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 
@@ -223,10 +246,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 </div>
             </div>
 
-        </div>
+    </div>
 
     </div>
     </div>
+    <script src="..Admin/includes/admin_toast.js"></script>
+
     <script>
         // Smooth page transition
         document.querySelectorAll('.sidebar-link').forEach(link => {
