@@ -68,9 +68,7 @@ $db = $database->getConnect();
                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
                 <input type="text" id="searchInput"
                   placeholder="Search for Qr Image using Code Value ..."
-                  class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-sm"
-                  style="font-style: italic;"
-                  oninput="this.style.fontStyle = this.value ? 'normal' : 'italic';"
+                  class="w-full pl-10 pr-4 py-2 font-light border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onkeyup="searchTable()">
               </div>
 
