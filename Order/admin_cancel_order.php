@@ -3,6 +3,8 @@ require_once __DIR__ . '/../session.php';
 redirectIfRoleMismatch('admin'); // only admins can access
 
 require_once '../Database/db_connection.php';
+require_once '../Notification/send_notification.php';
+require_once '../Notification/email.php';
 
 header('Content-Type: application/json');
 
@@ -29,7 +31,10 @@ try {
     $db->beginTransaction();
 
     // Verify the order exists
-    $checkOrder = $db->prepare("SELECT refill_id, order_status FROM water_refills WHERE order_number = :order_number LIMIT 1");
+    $checkOrder = $db->prepare("SELECT r.refill_id, r.order_status, u.user_id, u.name, u.email 
+                                FROM water_refills r
+                                LEFT JOIN users u ON r.user_id = u.user_id
+                                WHERE r.order_number = :order_number LIMIT 1");
     $checkOrder->bindParam(':order_number', $orderNumber);
     $checkOrder->execute();
     
@@ -41,14 +46,13 @@ try {
 
     $order = $checkOrder->fetch(PDO::FETCH_ASSOC);
 
-    // Check if order is already cancelled
+    // Check if order is already cancelled or delivered
     if ($order['order_status'] === 'cancelled') {
         $db->rollBack();
         echo json_encode(['success' => false, 'message' => 'Order is already cancelled.']);
         exit;
     }
 
-    // Check if order is already delivered
     if ($order['order_status'] === 'delivered') {
         $db->rollBack();
         echo json_encode(['success' => false, 'message' => 'Cannot cancel a delivered order.']);
@@ -57,24 +61,28 @@ try {
 
     // Update the order status to cancelled and save the reason
     $updateQuery = "UPDATE water_refills 
-                    SET order_status = 'cancelled', 
-                        delay_reason = :reason 
+                    SET order_status = 'cancelled', delay_reason = :reason 
                     WHERE order_number = :order_number";
-    
     $stmt = $db->prepare($updateQuery);
     $stmt->bindParam(':reason', $reason);
     $stmt->bindParam(':order_number', $orderNumber);
-    
-    if ($stmt->execute()) {
-        $db->commit();
-        echo json_encode([
-            'success' => true,
-            'message' => 'Order cancelled successfully.'
-        ]);
-    } else {
-        $db->rollBack();
-        echo json_encode(['success' => false, 'message' => 'Failed to cancel order.']);
-    }
+    $stmt->execute();
+
+    // Create a notification for the customer
+    $notificationTitle = "Order Cancelled - #$orderNumber";
+    $notificationMessage = "Your order #$orderNumber has been cancelled. Reason: $reason";
+    $notificationLink = "Customer/order_details.php?order_number=" . $orderNumber;
+    createNotification($db, $order['user_id'], $notificationTitle, $notificationMessage, $notificationLink);
+
+    // Send email to customer
+    notifyCustomerDeliveryCancelled($order['email'], $order['name'], $orderNumber, $reason);
+
+    $db->commit();
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Order cancelled successfully.'
+    ]);
 
 } catch (PDOException $e) {
     $db->rollBack();

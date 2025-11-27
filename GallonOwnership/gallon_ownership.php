@@ -23,33 +23,68 @@ $db = $database->getConnect();
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-        }
+    body {
+        font-family: 'Poppins', sans-serif;
+        overflow-x: hidden;
+    }
 
-        /* Ensure the page layout uses full viewport height */
-        .page-container {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+    /* Use scrollbar-gutter to reserve space without forcing scrollbar */
+    html {
+        scrollbar-gutter: stable;
+    }
 
-        /* Main content area that will scroll */
-        .content-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+    /* Override SweetAlert2's body modifications */
+    body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
+        overflow: hidden !important;
+        padding-right: 0 !important;
+    }
 
-        /* Table container with scroll */
-        .table-scroll-container {
-            overflow-y: auto;
-            overflow-x: auto;
-            flex: 1;
-        }
-    </style>
+    body.swal2-height-auto {
+        height: 100% !important;
+    }
+
+    /* Ensure the page layout uses full viewport height */
+    .page-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Main content area that will scroll */
+    .content-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Table container with scroll */
+    .table-scroll-container {
+        overflow-y: auto;
+        overflow-x: auto;
+        flex: 1;
+    }
+
+    /* Custom scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+</style>
 </head>
 
 <body class="bg-gray-50">
@@ -185,9 +220,11 @@ $db = $database->getConnect();
                                                     $codeValue = htmlspecialchars($row['Code Value'] ?? '');
                                                     $gallonID = htmlspecialchars($row['Gallon ID']);
                                                     $ownerName = htmlspecialchars($row['Owner'] ?? 'N/A');
+                                                    $gallonType = htmlspecialchars($row['Gallon Type'] ?? 'N/A');
+
 
                                                     echo '<td class="px-6 py-4 text-center">';
-                                                    echo "<i class=\"fas fa-eye mx-1 text-blue-600 hover:scale-125 transition-transform\" title=\"View\" style=\"cursor:pointer;\" onclick=\"viewQR('{$ownerName}', '{$codeValue}', '{$qrImage}')\"></i>";
+                                                    echo "<i class=\"fas fa-eye mx-1 text-blue-600 hover:scale-125 transition-transform\" title=\"View\" style=\"cursor:pointer;\" onclick=\"viewQR('{$ownerName}', '{$codeValue}', '{$qrImage}', '{$gallonType}')\"></i>";
                                                     echo "<i class=\"fas fa-edit mx-1 text-orange-500 hover:scale-125 transition-transform\" title=\"Edit\" style=\"cursor:pointer;\" onclick=\"editGallon({$gallonID})\"></i>";
                                                     echo "<i class=\"fas fa-trash mx-1 text-red-600 hover:scale-125 transition-transform cursor-pointer\" title=\"Delete\" onclick=\"deleteGallon({$gallonID})\"></i>";
                                                     echo '</td>';
@@ -585,7 +622,7 @@ $db = $database->getConnect();
                     });
                 }
                 // VIEW FUNCTION
-                function viewQR(ownerName, codeValue, qrImage) {
+                function viewQR(ownerName, codeValue, qrImage, gallonType) {
                     if (!qrImage || qrImage === 'null') {
                         Swal.fire({
                             icon: 'info',
@@ -602,7 +639,9 @@ $db = $database->getConnect();
                             title: 'QR Code Details',
                             html: `
                 <div style="text-align:center;">
-                    <p><strong>Owner:</strong> ${ownerName}</p>
+                    <p><strong>Gallon Type:</strong> ${gallonType}</p>
+                                        <p><strong>Owner:</strong> ${ownerName}</p>
+
                     <p><strong>Code Value:</strong> ${codeValue}</p>
                     <p><strong>File Name:</strong> ${fileName}</p>
                     <img src="${qrImage}" 
@@ -885,7 +924,36 @@ $db = $database->getConnect();
                         }
                     });
                 }
+                (function() {
+                    const originalSwalFire = Swal.fire;
+                    let scrollPosition = 0;
+
+                    Swal.fire = function(...args) {
+                        scrollPosition = window.pageYOffset;
+                        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+                        document.body.style.overflow = 'hidden';
+                        document.body.style.position = 'fixed';
+                        document.body.style.top = `-${scrollPosition}px`;
+                        document.body.style.width = '100%';
+                        document.body.style.paddingRight = scrollbarWidth + 'px';
+
+                        const result = originalSwalFire.apply(this, args);
+
+                        result.finally(() => {
+                            document.body.style.overflow = '';
+                            document.body.style.position = '';
+                            document.body.style.top = '';
+                            document.body.style.width = '';
+                            document.body.style.paddingRight = '';
+                            window.scrollTo(0, scrollPosition);
+                        });
+
+                        return result;
+                    };
+                })();
             </script>
+
 </body>
 
 </html>

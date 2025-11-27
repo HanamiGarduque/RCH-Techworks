@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../session.php';
 redirectIfRoleMismatch('admin');
+date_default_timezone_set('Asia/Manila');
 
 require_once '../Database/db_connection.php';
 
@@ -89,11 +90,45 @@ $user_name = $_SESSION['name'] ?? 'Admin';
             position: absolute;
             top: 8px;
             right: 8px;
-            width: 12px;
-            height: 12px;
+            min-width: 18px;
+            height: 18px;
             background: #ef4444;
-            border-radius: 50%;
+            border-radius: 9px;
             border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            padding: 0 4px;
+        }
+
+        .image-preview-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .image-preview-container img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+        }
+
+        .image-preview-close {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -166,6 +201,16 @@ $user_name = $_SESSION['name'] ?? 'Admin';
                             </div>
                         </div>
 
+                        <!-- Image Preview Area (hidden by default) -->
+                        <div id="image-preview-area" class="hidden p-4 border-t border-gray-100 bg-gray-50">
+                            <div class="image-preview-container">
+                                <img id="preview-image" src="" alt="Preview">
+                                <div class="image-preview-close" onclick="clearImagePreview()">
+                                    <i class="fas fa-times"></i>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Chat Input -->
                         <div class="p-4 border-t border-gray-100 bg-white" id="chat-input-area">
                             <div class="flex items-end gap-3">
@@ -218,6 +263,7 @@ $user_name = $_SESSION['name'] ?? 'Admin';
         let searchTimeout = null;
         let contactsRefreshInterval = null;
         let messagesRefreshInterval = null;
+        let selectedImageFile = null;
 
         // Validate session
         if (!currentUserId) {
@@ -228,6 +274,15 @@ $user_name = $_SESSION['name'] ?? 'Admin';
                 confirmButtonColor: '#3b82f6'
             }).then(() => {
                 window.location.href = '../login.php';
+            });
+        }
+
+        function formatMessageDate(timestamp) {
+            const date = new Date(timestamp.replace(" ", "T"));
+            return date.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
             });
         }
 
@@ -247,87 +302,98 @@ $user_name = $_SESSION['name'] ?? 'Admin';
                 return "";
             }
         }
-            function formatLastMessageTime(timestamp) {
-                if (!timestamp) return "";
 
-                try {
-                    // Handle both formats: "YYYY-MM-DD HH:MM:SS" and ISO format
-                    const date = new Date(timestamp.replace(" ", "T"));
+        function formatLastMessageTime(timestamp) {
+            if (!timestamp) return "";
 
-                    if (isNaN(date.getTime())) return "—";
+            try {
+                const date = new Date(timestamp.replace(" ", "T").split(".")[0]);
+                if (isNaN(date.getTime())) return "—";
 
-                    const now = new Date();
-                    const diffMs = now - date;
-                    const diffMins = Math.floor(diffMs / 60000);
-                    const diffHours = Math.floor(diffMs / 3600000);
-                    const diffDays = Math.floor(diffMs / 86400000);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffSecs = Math.floor(diffMs / 1000);
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
 
-                    if (diffMins < 1) return 'just now';
-                    if (diffMins < 60) return `${diffMins}m`;
-                    if (diffHours < 24) return `${diffHours}h`;
-                    if (diffDays < 7) return `${diffDays}d`;
-                    if (diffDays < 365) {
-                        return date.toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric'
-                        });
-                    }
+                if (diffSecs < 60) return 'just now';
+                if (diffMins < 60) return `${diffMins}m`;
+                if (diffHours < 24) return `${diffHours}h`;
+                if (diffDays < 7) return `${diffDays}d`;
+                if (diffDays < 365) {
                     return date.toLocaleDateString('en-US', {
                         month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
+                        day: 'numeric'
                     });
-                } catch (e) {
-                    console.error("Error formatting time:", e, timestamp);
-                    return "—";
                 }
-            }
-
-            function showError(message) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: message,
-                    confirmButtonColor: '#3b82f6',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
                 });
+            } catch (e) {
+                console.error("Error formatting time:", e, timestamp);
+                return "—";
             }
+        }
 
-            function loadContacts(searchQuery = '') {
-                const params = new URLSearchParams({
-                    search: searchQuery
-                });
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: message,
+                confirmButtonColor: '#3b82f6',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
 
-                fetch(`get_contacts.php?${params}`)
-                    .then(res => {
-                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                        return res.json();
-                    })
-                    .then(response => {
-                        console.log("Contacts response:", response);
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: message,
+                confirmButtonColor: '#3b82f6',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
 
-                        // Handle both old format (array) and new format (object with data property)
-                        let data = Array.isArray(response) ? response : (response.data || []);
+        function loadContacts(searchQuery = '') {
+            const params = new URLSearchParams({
+                search: searchQuery
+            });
 
-                        if (response.success === false) {
-                            console.error("API Error:", response.message);
-                            showError(response.message || 'Failed to load contacts');
-                            return;
-                        }
+            fetch(`get_contacts.php?${params}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(response => {
+                    console.log("Contacts response:", response);
 
-                        allContacts = data;
-                        renderContacts(data);
-                    })
-                    .catch(err => {
-                        console.error("Error loading contacts:", err);
-                        showError('Failed to load contacts. Please check console for details.');
+                    let data = Array.isArray(response) ? response : (response.data || []);
 
-                        // Show empty state
-                        const container = document.getElementById('chat-list-container');
-                        container.innerHTML = `
+                    if (response.success === false) {
+                        console.error("API Error:", response.message);
+                        showError(response.message || 'Failed to load contacts');
+                        return;
+                    }
+
+                    allContacts = data;
+                    renderContacts(data);
+                })
+                .catch(err => {
+                    console.error("Error loading contacts:", err);
+                    showError('Failed to load contacts. Please check console for details.');
+
+                    const container = document.getElementById('chat-list-container');
+                    container.innerHTML = `
                         <div class="flex items-center justify-center h-full p-4">
                             <div class="text-center">
                                 <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
@@ -336,138 +402,141 @@ $user_name = $_SESSION['name'] ?? 'Admin';
                             </div>
                         </div>
                     `;
-                    });
-            }
+                });
+        }
 
-            function renderContacts(data) {
-                const container = document.getElementById('chat-list-container');
+        function renderContacts(data) {
+            const container = document.getElementById('chat-list-container');
 
-                if (data.length === 0) {
-                    container.innerHTML = `
+            if (data.length === 0) {
+                container.innerHTML = `
                     <div class="flex items-center justify-center h-full p-4">
                         <p class="text-gray-400 text-center">No contacts found</p>
                     </div>
                 `;
-                    return;
-                }
-
-                container.innerHTML = '';
-
-                // Organize by type
-                const customers = data.filter(c => c.type === 'customer');
-                const riders = data.filter(c => c.type === 'rider');
-                const admins = data.filter(c => c.type === 'admin');
-
-                // Render customers
-                if (customers.length > 0) {
-                    container.innerHTML += renderContactSection('Customers', customers, 'fa-user-circle', 'blue');
-                }
-
-                // Render riders
-                if (riders.length > 0) {
-                    container.innerHTML += renderContactSection('Riders', riders, 'fa-motorcycle', 'orange');
-                }
-
-                // Render admins
-                if (admins.length > 0) {
-                    container.innerHTML += renderContactSection('Admins', admins, 'fa-shield-alt', 'purple');
-                }
-
-                attachContactListeners();
-                restoreActiveContact();
+                return;
             }
 
-            function renderContactSection(title, contacts, icon, color) {
-                let html = `
-                <div class="px-3 py-2 ${title !== 'Customers' ? 'border-t border-gray-200' : ''}">
-                    <p class="text-xs font-semibold text-gray-600 px-2 mb-2 uppercase tracking-wide">
-                        <i class="fas ${icon} text-${color}-500 mr-1"></i>
-                        ${title}
-                    </p>
-            `;
+            container.innerHTML = '';
 
-                contacts.forEach(contact => {
-                    const isActive = activeReceiverId == contact.user_id;
-                    const unreadClass = contact.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
-                    const lastMsgClass = contact.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
+            // Organize by type
+            const customers = data.filter(c => c.type === 'customer');
+            const riders = data.filter(c => c.type === 'rider');
+            const admins = data.filter(c => c.type === 'admin');
 
-                    html += `
-                    <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" 
-                         data-receiver-id="${contact.user_id}" 
-                         data-receiver-name="${contact.name}"
-                         data-receiver-initials="${contact.initials}">
-                        ${contact.has_unread ? '<div class="contact-badge"></div>' : ''}
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start gap-2 flex-1">
-                                <div class="w-10 h-10 bg-gradient-to-br ${contact.avatar_color} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-                                    ${contact.initials}
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="${unreadClass} text-sm truncate">${contact.name}</p>
-                                    <p class="text-xs truncate ${lastMsgClass}">${contact.last_message || 'No messages yet'}</p>
-                                </div>
-                            </div>
-                            <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${contact.time_ago || ''}</span>
+            // Render customers
+            if (customers.length > 0) {
+                container.innerHTML += renderContactSection('Customers', customers, 'fa-user-circle', 'blue');
+            }
+
+            // Render riders
+            if (riders.length > 0) {
+                container.innerHTML += renderContactSection('Riders', riders, 'fa-motorcycle', 'orange');
+            }
+
+            // Render admins
+            if (admins.length > 0) {
+                container.innerHTML += renderContactSection('Admins', admins, 'fa-shield-alt', 'purple');
+            }
+
+            attachContactListeners();
+            restoreActiveContact();
+        }
+
+        function renderContactSection(title, contacts, icon, color) {
+            let html = `
+        <div class="px-3 py-2 ${title !== 'Customers' ? 'border-t border-gray-200' : ''}">
+            <p class="text-xs font-semibold text-gray-600 px-2 mb-2 uppercase tracking-wide">
+                <i class="fas ${icon} text-${color}-500 mr-1"></i>
+                ${title}
+            </p>
+    `;
+
+            contacts.forEach(contact => {
+                const isActive = activeReceiverId == contact.user_id;
+                const unreadClass = contact.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
+                const lastMsgClass = contact.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
+
+                // Use JavaScript to format the time instead of PHP's time_ago
+                const timeDisplay = formatLastMessageTime(contact.last_message_time);
+
+                html += `
+            <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" 
+                 data-receiver-id="${contact.user_id}" 
+                 data-receiver-name="${contact.name}"
+                 data-receiver-initials="${contact.initials}">
+                ${contact.unread_count > 0 ? `<div class="contact-badge">${contact.unread_count}</div>` : ''}
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start gap-2 flex-1">
+                        <div class="w-10 h-10 bg-gradient-to-br ${contact.avatar_color} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
+                            ${contact.initials}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="${unreadClass} text-sm truncate">${contact.name}</p>
+                            <p class="text-xs truncate ${lastMsgClass}">${contact.last_message || 'No messages yet'}</p>
                         </div>
                     </div>
-                `;
-                });
+                    <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${timeDisplay}</span>
+                </div>
+            </div>
+        `;
+            });
 
-                html += `</div>`;
-                return html;
-            }
+            html += `</div>`;
+            return html;
+        }
 
-            function restoreActiveContact() {
-                if (activeReceiverId) {
-                    const activeItem = document.querySelector(`.chat-item[data-receiver-id="${activeReceiverId}"]`);
-                    if (activeItem) {
-                        activeItem.classList.remove('hover:bg-gray-50');
-                        activeItem.classList.add('bg-blue-50', 'border-l-4', 'border-blue-500');
-                    }
+        function restoreActiveContact() {
+            if (activeReceiverId) {
+                const activeItem = document.querySelector(`.chat-item[data-receiver-id="${activeReceiverId}"]`);
+                if (activeItem) {
+                    activeItem.classList.remove('hover:bg-gray-50');
+                    activeItem.classList.add('bg-blue-50', 'border-l-4', 'border-blue-500');
                 }
             }
+        }
 
-            function attachContactListeners() {
-                document.querySelectorAll('.chat-item').forEach(item => {
-                    item.addEventListener('click', function() {
-                        const receiverId = this.getAttribute('data-receiver-id');
-                        const receiverName = this.getAttribute('data-receiver-name');
-                        const receiverInitials = this.getAttribute('data-receiver-initials');
+        function attachContactListeners() {
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const receiverId = this.getAttribute('data-receiver-id');
+                    const receiverName = this.getAttribute('data-receiver-name');
+                    const receiverInitials = this.getAttribute('data-receiver-initials');
 
-                        // Update active state
-                        document.querySelectorAll('.chat-item').forEach(el => {
-                            el.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
-                            el.classList.add('hover:bg-gray-50');
-                        });
-                        this.classList.add('bg-blue-50', 'border-l-4', 'border-blue-500');
-                        this.classList.remove('hover:bg-gray-50');
-
-                        // Update active receiver
-                        activeReceiverId = receiverId;
-                        activeReceiverName = receiverName;
-                        activeReceiverInitials = receiverInitials;
-
-                        // Enable input
-                        document.getElementById('message-input').disabled = false;
-                        document.getElementById('message-input').placeholder = 'Type your message...';
-                        document.getElementById('send-btn').disabled = false;
-                        document.getElementById('attach-btn').disabled = false;
-
-                        // Update chat header
-                        updateChatHeader(receiverName, receiverInitials);
-
-                        // Mark as read
-                        markAsRead(receiverId);
-
-                        // Load messages
-                        loadMessages();
+                    // Update active state
+                    document.querySelectorAll('.chat-item').forEach(el => {
+                        el.classList.remove('bg-blue-50', 'border-l-4', 'border-blue-500');
+                        el.classList.add('hover:bg-gray-50');
                     });
-                });
-            }
+                    this.classList.add('bg-blue-50', 'border-l-4', 'border-blue-500');
+                    this.classList.remove('hover:bg-gray-50');
 
-            function updateChatHeader(name, initials) {
-                const header = document.getElementById('chat-header');
-                header.innerHTML = `
+                    // Update active receiver
+                    activeReceiverId = receiverId;
+                    activeReceiverName = receiverName;
+                    activeReceiverInitials = receiverInitials;
+
+                    // Enable input
+                    document.getElementById('message-input').disabled = false;
+                    document.getElementById('message-input').placeholder = 'Type your message...';
+                    document.getElementById('send-btn').disabled = false;
+                    document.getElementById('attach-btn').disabled = false;
+
+                    // Update chat header
+                    updateChatHeader(receiverName, receiverInitials);
+
+                    // Mark as read
+                    markAsRead(receiverId);
+
+                    // Load messages and force scroll to bottom for new contact
+                    loadMessages(true);
+                });
+            });
+        }
+
+        function updateChatHeader(name, initials) {
+            const header = document.getElementById('chat-header');
+            header.innerHTML = `
                 <div class="flex items-center gap-3 w-full">
                     <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                         ${initials}
@@ -481,63 +550,62 @@ $user_name = $_SESSION['name'] ?? 'Admin';
                     </div>
                 </div>
             `;
-            }
+        }
 
-            function markAsRead(contactId) {
-                fetch('mark_read.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: new URLSearchParams({
-                            contact_id: contactId
-                        })
+        function markAsRead(contactId) {
+            fetch('mark_read.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        contact_id: contactId
                     })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            loadContacts(); // Refresh to remove unread badge
-                        }
-                    })
-                    .catch(console.error);
-            }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        loadContacts();
+                    }
+                })
+                .catch(console.error);
+        }
 
-            function loadMessages() {
-                if (!activeReceiverId) return;
+        function loadMessages(forceScrollToBottom = false) {
+            if (!activeReceiverId) return;
 
-                fetch(`get_messages.php?sender_id=${currentUserId}&receiver_id=${activeReceiverId}`)
-                    .then(res => {
-                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                        return res.json();
-                    })
-                    .then(response => {
-                        console.log("Messages response:", response);
+            fetch(`get_messages.php?sender_id=${currentUserId}&receiver_id=${activeReceiverId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(response => {
+                    console.log("Messages response:", response);
 
-                        // Handle both old format (array) and new format (object with data property)
-                        let data = Array.isArray(response) ? response : (response.data || []);
+                    let data = Array.isArray(response) ? response : (response.data || []);
 
-                        if (response.success === false) {
-                            console.error("API Error:", response.message);
-                            showError(response.message || 'Failed to load messages');
-                            return;
-                        }
+                    if (response.success === false) {
+                        console.error("API Error:", response.message);
+                        showError(response.message || 'Failed to load messages');
+                        return;
+                    }
 
-                        renderMessages(data);
-                    })
-                    .catch(err => {
-                        console.error("Error loading messages:", err);
-                        showError('Failed to load messages. Please check console for details.');
-                    });
-            }
+                    renderMessages(data, forceScrollToBottom);
+                })
+                .catch(err => {
+                    console.error("Error loading messages:", err);
+                    showError('Failed to load messages. Please check console for details.');
+                });
+        }
 
-            function renderMessages(data) {
-                const container = document.getElementById('messages-container');
-                const wasScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+        function renderMessages(data, forceScrollToBottom = false) {
+            const container = document.getElementById('messages-container');
+            const wasScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
 
-                container.innerHTML = '';
+            container.innerHTML = '';
 
-                if (data.length === 0) {
-                    container.innerHTML = `
+            if (data.length === 0) {
+                container.innerHTML = `
             <div class="flex items-center justify-center h-full">
                 <div class="text-center">
                     <i class="fas fa-comment-slash text-gray-300 text-5xl mb-3"></i>
@@ -545,278 +613,265 @@ $user_name = $_SESSION['name'] ?? 'Admin';
                 </div>
             </div>
         `;
-                    return;
+                return;
+            }
+
+            const sortedData = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            let lastDate = null;
+
+            sortedData.forEach(msg => {
+                const msgDate = formatMessageDate(msg.created_at);
+                const isSelf = msg.sender_id == currentUserId;
+
+                // === Insert date divider if new day ===
+                if (msgDate !== lastDate) {
+                    container.insertAdjacentHTML('beforeend', `
+                <div class="flex justify-center my-4">
+                    <div class="text-gray-500 text-sm font-medium px-4 py-1 border border-gray-300 bg-white rounded-full shadow-sm">
+                        ${msgDate}
+                    </div>
+                </div>
+            `);
+                    lastDate = msgDate;
                 }
 
-                const sortedData = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                // === Bubble content ===
+                let bubbleContent = '';
+                if (msg.image_path && msg.image_path.trim() !== '') {
+                    let imagePath = msg.image_path;
 
-                sortedData.forEach(msg => {
-                    const isSelf = msg.sender_id == currentUserId;
+                    console.log('Loading image from:', imagePath);
 
-                    let bubbleContent = '';
-                    if (msg.image_path && msg.image_path.trim() !== '') {
-                        // FIXED: Properly construct image path
-                        // The image_path from DB is stored as "uploads/filename"
-                        // Since we're in /Admin/admin_messages.php, images are in /Admin/uploads/
-                        let imagePath = msg.image_path;
-
-                        console.log('Original image path from DB:', imagePath);
-
-                        // If it doesn't start with http/https and doesn't start with /, it's relative
-                        if (!imagePath.startsWith('http') && !imagePath.startsWith('/')) {
-                            // Image path is "uploads/filename", which is correct for current location
-                            imagePath = imagePath;
-                        }
-
-                        console.log('Final image path:', imagePath);
-
-                        bubbleContent = `<img src="${imagePath}" 
+                    bubbleContent = `<img src="${imagePath}" 
                 alt="Sent image" 
-                class="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition shadow-sm" 
-                onerror="console.error('Failed to load image:', this.src); this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2214%22%3EImage not found%3C/text%3E%3Ctext x=%2250%25%22 y=%2265%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E${imagePath}%3C/text%3E%3C/svg%3E';">`;
-                    } else if (msg.message && msg.message.trim() !== '') {
-                        const escapedMessage = msg.message
-                            .replace(/&/g, '&amp;')
-                            .replace(/</g, '&lt;')
-                            .replace(/>/g, '&gt;')
-                            .replace(/"/g, '&quot;')
-                            .replace(/'/g, '&#039;')
-                            .replace(/\n/g, '<br>');
-                        bubbleContent = `<p class="text-sm break-words">${escapedMessage}</p>`;
-                    }
+                class="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition shadow-sm"
+                onerror="console.error('Failed to load image:', this.src); this.style.display='none'; this.parentElement.innerHTML='<p class=\\'text-xs text-gray-500 italic\\'>Image not available</p>';">`;
+                } else if (msg.message && msg.message.trim() !== '') {
+                    const escapedMessage = msg.message
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;')
+                        .replace(/\n/g, '<br>');
+                    bubbleContent = `<p class="text-sm break-words">${escapedMessage}</p>`;
+                }
 
-                    const messageHTML = `
+                // === TIME ONLY ===
+                const timeOnly = new Date(msg.created_at.replace(" ", "T"))
+                    .toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit'
+                    });
+
+                // === Final message bubble ===
+                const messageHTML = `
             <div class="flex ${isSelf ? 'justify-end' : 'justify-start'} mb-3">
                 <div class="max-w-xs lg:max-w-md">
                     <div class="flex items-end gap-2">
-                        ${!isSelf ? `<div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                            ${activeReceiverInitials}
-                        </div>` : ''}
-                        <div class="${isSelf 
+                        ${!isSelf ? `
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full 
+                            flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                ${activeReceiverInitials}
+                            </div>` 
+                        : ''}
+
+                        <div class="${isSelf
                             ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl rounded-tr-sm px-4 py-2.5 shadow-sm'
                             : 'bg-white border border-gray-200 text-gray-800 rounded-3xl rounded-tl-sm px-4 py-2.5 shadow-sm'}">
                             ${bubbleContent}
                         </div>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1 ${isSelf ? 'text-right' : 'ml-10'}">
-                        ${formatMessageTime(msg.created_at)}
+
+                    <p class="text-[11px] text-gray-400 mt-1 ${isSelf ? 'text-right' : 'ml-10'}">
+                        ${timeOnly}
                     </p>
                 </div>
             </div>
         `;
 
-                    container.insertAdjacentHTML('beforeend', messageHTML);
-                });
+                container.insertAdjacentHTML('beforeend', messageHTML);
+            });
 
-                // Attach image click listeners
-                container.querySelectorAll('img').forEach(img => {
-                    img.addEventListener('click', () => openImageModal(img.src));
-                });
+            // Attach modal open for images
+            container.querySelectorAll('img').forEach(img => {
+                img.addEventListener('click', () => openImageModal(img.src));
+            });
 
-                if (wasScrolledToBottom) {
+            // Auto-scroll
+            if (forceScrollToBottom || wasScrolledToBottom) {
+                setTimeout(() => {
                     container.scrollTop = container.scrollHeight;
-                }
+                }, 100);
+            }
+        }
+
+        function sendMessage(formData) {
+            fetch('send_message.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    console.log("Send message response:", data);
+
+                    if (data.success) {
+                        document.getElementById('message-input').value = '';
+                        document.getElementById('image-input').value = '';
+                        clearImagePreview();
+
+                        // Load messages with forced scroll after sending
+                        loadMessages(true);
+                        loadContacts();
+                    } else {
+                        showError(data.message || 'Failed to send message');
+                    }
+                })
+                .catch(err => {
+                    console.error("Error sending message:", err);
+                    showError('Failed to send message. Please try again.');
+                });
+        }
+
+        function clearImagePreview() {
+            selectedImageFile = null;
+            document.getElementById('image-preview-area').classList.add('hidden');
+            document.getElementById('preview-image').src = '';
+            document.getElementById('image-input').value = '';
+        }
+
+        // Event Listeners
+        document.getElementById('send-btn').addEventListener('click', () => {
+            if (!activeReceiverId) {
+                showError('Please select a contact first');
+                return;
             }
 
-            function sendMessage(formData) {
-                fetch('send_message.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(res => {
-                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                        return res.json();
-                    })
-                    .then(data => {
-                        console.log("Send message response:", data);
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
 
-                        if (data.success) {
-                            document.getElementById('message-input').value = '';
-                            document.getElementById('image-input').value = '';
-                            loadMessages();
-                            loadContacts(); // Update last message in contact list
-                        } else {
-                            showError(data.message || 'Failed to send message');
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Error sending message:", err);
-                        showError('Failed to send message. Please try again.');
-                    });
+            // Check if we have either a message or an image
+            if (message === '' && !selectedImageFile) {
+                showError('Please enter a message or select an image');
+                return;
             }
 
-            // Event Listeners
-            document.getElementById('send-btn').addEventListener('click', () => {
-                if (!activeReceiverId) {
-                    showError('Please select a contact first');
-                    return;
-                }
+            const formData = new FormData();
+            formData.append('sender_id', currentUserId);
+            formData.append('receiver_id', activeReceiverId);
+            formData.append('message', message);
 
-                const input = document.getElementById('message-input');
-                const message = input.value.trim();
-
-                if (message === '') return;
-
-                const formData = new FormData();
-                formData.append('sender_id', currentUserId);
-                formData.append('receiver_id', activeReceiverId);
-                formData.append('message', message);
-
-                sendMessage(formData);
-            });
-
-            // Send on Enter key
-            document.getElementById('message-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    document.getElementById('send-btn').click();
-                }
-            });
-
-            document.getElementById('attach-btn').addEventListener('click', () => {
-                if (!activeReceiverId) {
-                    showError('Please select a contact first');
-                    return;
-                }
-                document.getElementById('image-input').click();
-            });
-
-            document.getElementById('image-input').addEventListener('change', function() {
-                if (!activeReceiverId) return;
-
-                const file = this.files[0];
-                if (!file) return;
-
-                console.log('File selected:', file.name, file.type, file.size);
-
-                // Validate file type
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-                if (!allowedTypes.includes(file.type)) {
-                    showError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
-                    this.value = '';
-                    return;
-                }
-
-                // Validate file size (5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    showError('Image size must be less than 5MB');
-                    this.value = '';
-                    return;
-                }
-
-                // Show loading indicator
-                const messagesContainer = document.getElementById('messages-container');
-                const loadingHTML = `
-        <div id="upload-indicator" class="flex justify-end mb-3">
-            <div class="bg-blue-100 rounded-lg px-4 py-2 flex items-center gap-2">
-                <div class="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <span class="text-xs text-blue-600">Uploading image...</span>
-            </div>
-        </div>
-    `;
-                messagesContainer.insertAdjacentHTML('beforeend', loadingHTML);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-                const formData = new FormData();
-                formData.append('sender_id', currentUserId);
-                formData.append('receiver_id', activeReceiverId);
-                formData.append('image', file);
-
-                console.log('Uploading image...');
-
-                fetch('send_message.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(res => {
-                        console.log('Response status:', res.status);
-                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                        return res.json();
-                    })
-                    .then(data => {
-                        console.log('Upload response:', data);
-
-                        // Remove loading indicator
-                        const indicator = document.getElementById('upload-indicator');
-                        if (indicator) indicator.remove();
-
-                        if (data.success) {
-                            console.log('Image uploaded successfully:', data.image_path);
-                            this.value = '';
-
-                            // Small delay before reloading to ensure DB is updated
-                            setTimeout(() => {
-                                loadMessages();
-                                loadContacts();
-                            }, 300);
-                        } else {
-                            console.error('Upload failed:', data.message);
-                            showError(data.message || 'Failed to upload image');
-                        }
-                    })
-                    .catch(err => {
-                        // Remove loading indicator
-                        const indicator = document.getElementById('upload-indicator');
-                        if (indicator) indicator.remove();
-
-                        console.error("Error uploading image:", err);
-                        showError('Failed to upload image. Please try again.');
-                        this.value = '';
-                    });
-            });
-            // Search handler
-            document.getElementById('search-input').addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                const searchQuery = this.value.trim();
-
-                isSearching = searchQuery.length > 0;
-
-                searchTimeout = setTimeout(() => {
-                    loadContacts(searchQuery);
-                    isSearching = false;
-                }, 500);
-            });
-
-            // Image modal
-            function openImageModal(src) {
-                const modal = document.getElementById('imageModal');
-                const modalImage = document.getElementById('modalImage');
-                modalImage.src = src;
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+            if (selectedImageFile) {
+                formData.append('image', selectedImageFile);
             }
 
-            document.getElementById('imageModal').addEventListener('click', () => {
-                const modal = document.getElementById('imageModal');
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
-            });
+            sendMessage(formData);
+        });
 
-            // Initialize
-            loadContacts();
+        // Send on Enter key
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('send-btn').click();
+            }
+        });
 
-            // Auto-refresh intervals
-            contactsRefreshInterval = setInterval(() => {
-                if (!isSearching) {
-                    loadContacts();
-                }
-            }, 5000);
+        document.getElementById('attach-btn').addEventListener('click', () => {
+            if (!activeReceiverId) {
+                showError('Please select a contact first');
+                return;
+            }
+            document.getElementById('image-input').click();
+        });
 
-            messagesRefreshInterval = setInterval(() => {
-                if (activeReceiverId) {
-                    loadMessages();
-                }
-            }, 3000);
+        document.getElementById('image-input').addEventListener('change', function() {
+            if (!activeReceiverId) return;
 
-            // Cleanup on page unload
-            window.addEventListener('beforeunload', () => {
-                clearInterval(contactsRefreshInterval);
-                clearInterval(messagesRefreshInterval);
-            });
+            const file = this.files[0];
+            if (!file) return;
+
+            console.log('File selected:', file.name, file.type, file.size);
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                this.value = '';
+                return;
+            }
+
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showError('Image size must be less than 5MB');
+                this.value = '';
+                return;
+            }
+
+            // Store the selected file
+            selectedImageFile = file;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-image').src = e.target.result;
+                document.getElementById('image-preview-area').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Search handler
+        document.getElementById('search-input').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const searchQuery = this.value.trim();
+
+            isSearching = searchQuery.length > 0;
+
+            searchTimeout = setTimeout(() => {
+                loadContacts(searchQuery);
+                isSearching = false;
+            }, 500);
+        });
+
+        // Image modal
+        function openImageModal(src) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            modalImage.src = src;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        document.getElementById('imageModal').addEventListener('click', () => {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        });
+
+        // Initialize
+        loadContacts();
+
+        // Auto-refresh intervals
+        contactsRefreshInterval = setInterval(() => {
+            if (!isSearching) {
+                loadContacts();
+            }
+        }, 5000);
+
+        messagesRefreshInterval = setInterval(() => {
+            if (activeReceiverId) {
+                loadMessages();
+            }
+        }, 3000);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            clearInterval(contactsRefreshInterval);
+            clearInterval(messagesRefreshInterval);
+        });
     </script>
 
 </body>

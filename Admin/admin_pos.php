@@ -20,6 +20,20 @@ redirectIfRoleMismatch('admin'); // only admins can access
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+        }
+
+        html {
+            scrollbar-gutter: stable;
+        }
+
+        body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
+            overflow: hidden !important;
+            padding-right: 0 !important;
+        }
+
+        body.swal2-height-auto {
+            height: 100% !important;
         }
 
         .product-card {
@@ -912,6 +926,36 @@ redirectIfRoleMismatch('admin'); // only admins can access
                 .replaceAll('<', '&lt;')
                 .replaceAll('>', '&gt;');
         }
+
+
+        (function() {
+            const originalSwalFire = Swal.fire;
+            let scrollPosition = 0;
+
+            Swal.fire = function(...args) {
+                scrollPosition = window.pageYOffset;
+                const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.top = `-${scrollPosition}px`;
+                document.body.style.width = '100%';
+                document.body.style.paddingRight = scrollbarWidth + 'px';
+
+                const result = originalSwalFire.apply(this, args);
+
+                result.finally(() => {
+                    document.body.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    document.body.style.paddingRight = '';
+                    window.scrollTo(0, scrollPosition);
+                });
+
+                return result;
+            };
+        })();
     </script>
 
 

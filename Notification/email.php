@@ -5,8 +5,9 @@
 function sendEmail($toEmail, $toName, $subject, $htmlContent, $attachmentPath = null)
 {
 
-    $apiKey = "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"; 
+    $apiKey = "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";
 
+    // $apiKey = "key"; 
 
     // Brevo endpoint
     $url = "https://api.brevo.com/v3/smtp/email";
@@ -177,7 +178,7 @@ function emailPickupDelayedCustomer($email, $fullName, $orderNumber)
 {
     $html = "
     <div style='font-family: Arial, sans-serif; line-height: 1.6; color:#1F2937; max-width: 600px; margin: auto; border: 1px solid #FEE2E2; padding: 20px; border-radius: 8px;'>
-        <h2 style='color:#DC2626; border-bottom: 2px solid #FEE2E2; padding-bottom: 10px;'>⚠️ Pickup Delayed for Order #$orderNumber</h2>
+        <h2 style='color:#DC2626; border-bottom: 2px solid #FEE2E2; padding-bottom: 10px;'>Pickup Delayed for Order #$orderNumber</h2>
         <p>Hi $fullName,</p>
         <p>We are writing to inform you that the **scheduled pickup** for your order, **#$orderNumber**, has been slightly delayed due to unforeseen circumstances or route adjustments.</p>
 
@@ -308,6 +309,84 @@ function emailDeliveryReminderCustomer($email, $fullName, $orderNumber, $schedul
 
     return sendEmail($email, $fullName, "Delivery Reminder — Order #$orderNumber", $html);
 }
+function notifyCustomerDeliveryCancelled($email, $fullName, $orderNumber, $reason = null)
+{
+    // Set a default reason if none is provided
+    $cancellationReason = $reason ?
+        "The reason for this cancellation is: **$reason**." :
+        "The reason for the cancellation will be communicated to you shortly by our support team.";
+
+    $html = "
+        <div style='font-family: Arial, sans-serif; color:#1F2937; line-height:1.6; max-width: 600px; margin: auto; border: 1px solid #FEE2E2; padding: 20px; border-radius: 8px;'>
+            <h2 style='color:#EF4444; border-bottom: 2px solid #FEE2E2; padding-bottom: 10px;'>🚨 Order Delivery Cancelled</h2>
+            <p>Hi $fullName,</p>
+            <p>We regret to inform you that the delivery for your order **#$orderNumber** has been **cancelled**.</p>
+
+            <div style='background-color: #FEF2F2; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #FCA5A5;'>
+                <h3 style='margin-top: 0; color: #B91C1C; font-size: 18px;'>Cancellation Details</h3>
+                <p>Order Number: **#$orderNumber**</p>
+                <p>$cancellationReason</p>
+            </div>
+
+            <p>If you did not initiate this cancellation, please contact our support team immediately.</p>
+
+            <p style='text-align:center; margin: 30px 0;'>
+                <a href='http://localhost/Tin_RCH-Techworks/Order/order_details.php?order_number=$orderNumber'
+                style='background:#EF4444; color:white; padding:12px 28px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block; font-size: 16px;'>
+                View Order Details
+                </a>
+            </p>
+
+            <p>We apologize for any inconvenience this may cause.</p>
+            <p style='margin-top:20px;'>Warm regards,<br>RCH Water Team</p>
+        </div>";
+
+    return sendEmail($email, $fullName, "Cancellation Notice — Order #$orderNumber", $html);
+}
+function notifyCustomerRescheduled($email, $fullName, $orderNumber, $rescheduleType, $oldDatetime, $newDatetime, $delayReason = null)
+{
+    // Format the date/time for readability
+    $formattedOld = date("l, M d, Y \a\t h:i A", strtotime($oldDatetime));
+    $formattedNew = date("l, M d, Y \a\t h:i A", strtotime($newDatetime));
+
+
+    // Capitalize first letter of type
+    $typeLabel = ucfirst($rescheduleType);
+
+    // Determine message regarding the delay reason
+    $reasonMessage = $delayReason ?
+        "<p>Reason for Reschedule: <strong>$delayReason</strong></p>" :
+        "<p>We apologize for the inconvenience and are working to ensure your order is updated accordingly.</p>";
+
+    $html = "
+    <div style='font-family: Arial, sans-serif; color:#1F2937; line-height:1.6; max-width: 600px; margin: auto; border: 1px solid #FFF3B3; padding: 20px; border-radius: 8px;'>
+        <h2 style='color:#F59E0B; border-bottom: 2px solid #FFF3B3; padding-bottom: 10px;'>🕒 {$typeLabel} Reschedule for Order #$orderNumber</h2>
+        <p>Hi $fullName,</p>
+        <p>Please be advised that the <strong>$rescheduleType</strong> for your order <strong>#$orderNumber</strong> has been <strong>rescheduled</strong>.</p>
+
+        <div style='background-color: #FFFBEB; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #FCD34D;'>
+            <h3 style='margin-top: 0; color: #D97706; font-size: 18px;'>Updated {$typeLabel} Schedule</h3>
+            <p>Previous Scheduled Time: <span style='float: right; text-decoration: line-through;'>$formattedOld</span></p>
+            <p style='padding-top: 8px; border-top: 1px dashed #FDE68A;'><strong>New Scheduled Time:</strong> <span style='float: right; font-weight: bold; color: #F59E0B;'>$formattedNew</span></p>
+            $reasonMessage
+        </div>
+
+        <p>Please adjust your schedule accordingly. You can view the order details below:</p>
+
+        <p style='text-align:center; margin: 30px 0;'>
+            <a href='http://localhost/Tin_RCH-Techworks/Order/order_details.php?order_number=$orderNumber'
+            style='background:#F59E0B; color:white; padding:12px 28px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block; font-size: 16px;'>
+            View Updated Details
+            </a>
+        </p>
+
+        <p>Thank you for your understanding.</p>
+        <p style='margin-top:20px;'>Warm regards,<br>RCH Water Team</p>
+    </div>";
+
+    return sendEmail($email, $fullName, "{$typeLabel} Rescheduled — Order #$orderNumber", $html);
+}
+
 
 // =====================================
 //  ADMIN NOTIFICATIONS
@@ -615,3 +694,81 @@ function emailDeliveryReminderRider($email, $fullName, $orderNumber, $scheduledD
 
     return sendEmail($email, $fullName, "Delivery Task Reminder — Order #$orderNumber", $html);
 }
+function notifyRiderRescheduled($email, $riderName, $orderNumber, $rescheduleType, $oldDatetime, $newDatetime, $delayReason = null)
+{
+    // Format the date/time for readability
+    $formattedOld = date("l, M d, Y \a\t h:i A", strtotime($oldDatetime));
+    $formattedNew = date("l, M d, Y \a\t h:i A", strtotime($newDatetime));
+
+    // Capitalize first letter of type
+    $typeLabel = ucfirst($rescheduleType);
+
+    // Determine message regarding the delay reason
+    $reasonMessage = $delayReason ?
+        "<p>Reason for Reschedule: <strong>$delayReason</strong></p>" :
+        "<p>Please be aware and adjust your schedule accordingly.</p>";
+
+    $html = "
+    <div style='font-family: Arial, sans-serif; color:#1F2937; line-height:1.6; max-width: 600px; margin: auto; border: 1px solid #FFF3B3; padding: 20px; border-radius: 8px;'>
+        <h2 style='color:#F59E0B; border-bottom: 2px solid #FFF3B3; padding-bottom: 10px;'>🕒 {$typeLabel} Reschedule for Order #$orderNumber</h2>
+        <p>Hi $riderName,</p>
+        <p>The <strong>$rescheduleType</strong> for order <strong>#$orderNumber</strong> has been <strong>rescheduled</strong>. Please see the updated schedule below:</p>
+
+        <div style='background-color: #FFFBEB; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #FCD34D;'>
+            <h3 style='margin-top: 0; color: #D97706; font-size: 18px;'>Updated {$typeLabel} Schedule</h3>
+            <p>Previous Scheduled Time: <span style='float: right; text-decoration: line-through;'>$formattedOld</span></p>
+            <p style='padding-top: 8px; border-top: 1px dashed #FDE68A;'><strong>New Scheduled Time:</strong> <span style='float: right; font-weight: bold; color: #F59E0B;'>$formattedNew</span></p>
+            $reasonMessage
+        </div>
+
+        <p>Make sure to update your route and plan accordingly. You can view the order details below:</p>
+
+        <p style='text-align:center; margin: 30px 0;'>
+            <a href='http://localhost/Tin_RCH-Techworks/Order/order_details.php?order_number=$orderNumber'
+            style='background:#F59E0B; color:white; padding:12px 28px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block; font-size: 16px;'>
+            View Updated Details
+            </a>
+        </p>
+
+        <p>Thank you for your cooperation.</p>
+        <p style='margin-top:20px;'>Warm regards,<br>RCH Water Team</p>
+    </div>";
+
+    return sendEmail($email, $riderName, "{$typeLabel} Rescheduled — Order #$orderNumber", $html);
+}
+
+function notifyRiderDeliveryCancelled($email, $fullName, $orderNumber, $reason = null)
+{
+    // Set a default reason if none is provided
+    $cancellationReason = $reason ?
+        "The reason for this cancellation is: **$reason**." :
+        "The reason for the cancellation will be communicated to you shortly by our support team.";
+
+    $html = "
+        <div style='font-family: Arial, sans-serif; color:#1F2937; line-height:1.6; max-width: 600px; margin: auto; border: 1px solid #DBEAFE; padding: 20px; border-radius: 8px;'>
+            <h2 style='color:#3B82F6; border-bottom: 2px solid #DBEAFE; padding-bottom: 10px;'>⚠️ Assigned Order Cancelled</h2>
+            <p>Hi $fullName,</p>
+            <p>We wanted to inform you that the order **#$orderNumber** assigned to you has been **cancelled**.</p>
+
+            <div style='background-color: #DBEAFE; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #93C5FD;'>
+                <h3 style='margin-top: 0; color: #1E40AF; font-size: 18px;'>Cancellation Details</h3>
+                <p>Order Number: **#$orderNumber**</p>
+                <p>$cancellationReason</p>
+            </div>
+
+            <p>If you have already prepared for this order, please disregard or notify your supervisor if necessary.</p>
+
+            <p style='text-align:center; margin: 30px 0;'>
+                <a href='http://localhost/Tin_RCH-Techworks/Rider/order_details.php?order_number=$orderNumber'
+                style='background:#3B82F6; color:white; padding:12px 28px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block; font-size: 16px;'>
+                View Order Details
+                </a>
+            </p>
+
+            <p>Thank you for your attention.</p>
+            <p style='margin-top:20px;'>Warm regards,<br>RCH Water Team</p>
+        </div>";
+
+    return sendEmail($email, $fullName, "Assigned Order Cancelled — Order #$orderNumber", $html);
+}
+?>

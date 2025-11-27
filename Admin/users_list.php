@@ -68,7 +68,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
         }
+
+        html {
+            scrollbar-gutter: stable;
+        }
+
+        
 
         /* Ensure the page layout uses full viewport height */
         .page-container {
@@ -438,6 +445,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             });
         }
+        (function() {
+            const originalSwalFire = Swal.fire;
+            let scrollPosition = 0;
+
+            Swal.fire = function(...args) {
+                scrollPosition = window.pageYOffset;
+                const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.top = `-${scrollPosition}px`;
+                document.body.style.width = '100%';
+                document.body.style.paddingRight = scrollbarWidth + 'px';
+
+                const result = originalSwalFire.apply(this, args);
+
+                result.finally(() => {
+                    document.body.style.overflow = '';
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.width = '';
+                    document.body.style.paddingRight = '';
+                    window.scrollTo(0, scrollPosition);
+                });
+
+                return result;
+            };
+        })();
     </script>
 
 </body>

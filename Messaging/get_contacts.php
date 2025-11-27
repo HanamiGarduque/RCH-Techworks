@@ -47,14 +47,37 @@ try {
     // Get search query (if any)
     $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-    // Base SQL: fetch all users except current one
+    // Modified query to get users with their last message info directly
     $sql = "
         SELECT 
             u.user_id,
             u.name,
-            u.role
+            u.role,
+            (SELECT m.message 
+             FROM messages m 
+             WHERE (m.sender_id = u.user_id AND m.receiver_id = :current_user_id1)
+                OR (m.sender_id = :current_user_id2 AND m.receiver_id = u.user_id)
+             ORDER BY m.created_at DESC 
+             LIMIT 1) as last_message,
+            (SELECT m.image_path 
+             FROM messages m 
+             WHERE (m.sender_id = u.user_id AND m.receiver_id = :current_user_id3)
+                OR (m.sender_id = :current_user_id4 AND m.receiver_id = u.user_id)
+             ORDER BY m.created_at DESC 
+             LIMIT 1) as last_image_path,
+            (SELECT m.created_at 
+             FROM messages m 
+             WHERE (m.sender_id = u.user_id AND m.receiver_id = :current_user_id5)
+                OR (m.sender_id = :current_user_id6 AND m.receiver_id = u.user_id)
+             ORDER BY m.created_at DESC 
+             LIMIT 1) as last_message_time,
+            (SELECT COUNT(*) 
+             FROM messages m 
+             WHERE m.receiver_id = :current_user_id7 
+               AND m.sender_id = u.user_id 
+               AND m.is_read = 0) as unread_count
         FROM users u
-        WHERE u.user_id != :current_user_id
+        WHERE u.user_id != :current_user_id8
     ";
 
     // Add search condition if query is provided
@@ -62,10 +85,18 @@ try {
         $sql .= " AND u.name LIKE :search";
     }
 
-    $sql .= " ORDER BY u.name ASC";
+    // Order by last message time (most recent first), then by name
+    $sql .= " ORDER BY last_message_time DESC, u.name ASC";
 
     $stmt = $db->prepare($sql);
-    $stmt->bindValue(':current_user_id', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':current_user_id1', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':current_user_id2', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':current_user_id3', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':current_user_id4', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':current_user_id5', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':current_user_id6', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':current_user_id7', $current_user_id, PDO::PARAM_INT);
+    $stmt->bindValue(':current_user_id8', $current_user_id, PDO::PARAM_INT);
 
     if (!empty($search)) {
         $stmt->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
@@ -77,43 +108,6 @@ try {
     $contacts = [];
 
     foreach ($users as $user) {
-        // Get last message between current user and this contact
-        $msgQuery = "
-            SELECT 
-                message,
-                image_path,
-                sender_id,
-                created_at
-            FROM messages
-            WHERE 
-                (sender_id = :current_user AND receiver_id = :contact)
-                OR (sender_id = :contact AND receiver_id = :current_user)
-            ORDER BY created_at DESC
-            LIMIT 1
-        ";
-        $msgStmt = $db->prepare($msgQuery);
-        $msgStmt->execute([
-            ':current_user' => $current_user_id,
-            ':contact' => $user['user_id']
-        ]);
-        $lastMessage = $msgStmt->fetch(PDO::FETCH_ASSOC);
-
-        // Check if there are unread messages
-        $unreadQuery = "
-            SELECT COUNT(*) as unread_count
-            FROM messages
-            WHERE receiver_id = :current_user
-              AND sender_id = :contact
-              AND is_read = 0
-        ";
-        $unreadStmt = $db->prepare($unreadQuery);
-        $unreadStmt->execute([
-            ':current_user' => $current_user_id,
-            ':contact' => $user['user_id']
-        ]);
-        $unreadResult = $unreadStmt->fetch(PDO::FETCH_ASSOC);
-        $hasUnread = ($unreadResult && $unreadResult['unread_count'] > 0);
-
         // Compute initials
         $nameParts = explode(' ', trim($user['name']));
         $initials = strtoupper(substr($nameParts[0], 0, 1));
@@ -121,18 +115,19 @@ try {
             $initials .= strtoupper(substr($nameParts[1], 0, 1));
         }
 
-        // Format time ago
+        // Format time ago with better accuracy
         $timeAgo = '';
-        if (!empty($lastMessage['created_at'])) {
-            $createdTime = strtotime($lastMessage['created_at']);
+        if (!empty($user['last_message_time'])) {
+            $createdTime = strtotime($user['last_message_time']);
             $now = time();
             $diff = $now - $createdTime;
 
+            $diffSecs = $diff;
             $diffMins = floor($diff / 60);
             $diffHours = floor($diff / 3600);
             $diffDays = floor($diff / 86400);
 
-            if ($diffMins < 1) {
+            if ($diffSecs < 60) {
                 $timeAgo = 'just now';
             } elseif ($diffMins < 60) {
                 $timeAgo = $diffMins . 'm';
@@ -140,26 +135,29 @@ try {
                 $timeAgo = $diffHours . 'h';
             } elseif ($diffDays < 7) {
                 $timeAgo = $diffDays . 'd';
-            } else {
+            } elseif ($diffDays < 365) {
                 $timeAgo = date('M j', $createdTime);
+            } else {
+                $timeAgo = date('M j, Y', $createdTime);
             }
         }
 
         // Determine last message text
         $lastMsgText = '';
-        if ($lastMessage) {
-            if (!empty($lastMessage['image_path'])) {
-                $lastMsgText = "📷 Photo";
-            } elseif (!empty($lastMessage['message'])) {
-                $lastMsgText = htmlspecialchars($lastMessage['message'], ENT_QUOTES, 'UTF-8');
-                // Truncate long messages
-                if (strlen($lastMsgText) > 50) {
-                    $lastMsgText = substr($lastMsgText, 0, 50) . '...';
-                }
-            } else {
-                $lastMsgText = '';
+        if (!empty($user['last_image_path'])) {
+            $lastMsgText = "📷 Photo";
+        } elseif (!empty($user['last_message'])) {
+            $lastMsgText = htmlspecialchars($user['last_message'], ENT_QUOTES, 'UTF-8');
+            // Truncate long messages
+            if (strlen($lastMsgText) > 50) {
+                $lastMsgText = substr($lastMsgText, 0, 50) . '...';
             }
+        } else {
+            $lastMsgText = 'No messages yet';
         }
+
+        // Check for unread messages
+        $hasUnread = ($user['unread_count'] > 0);
 
         // Determine avatar color based on role
         $avatarColor = 'from-gray-400 to-gray-600'; // default
@@ -180,9 +178,9 @@ try {
             'name' => htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8'),
             'type' => strtolower($user['role']),
             'last_message' => $lastMsgText,
-            'last_message_time' => $lastMessage['created_at'] ?? null,
-            'time_ago' => $timeAgo,
+            'last_message_time' => $user['last_message_time'],
             'has_unread' => $hasUnread,
+            'unread_count' => (int)$user['unread_count'],
             'initials' => $initials,
             'avatar_color' => $avatarColor
         ];

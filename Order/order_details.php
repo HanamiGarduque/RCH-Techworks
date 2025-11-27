@@ -1,13 +1,12 @@
 <?php
 require_once __DIR__ . '/../session.php';
-redirectIfRoleMismatch('admin'); // only admins can access
+redirectIfRoleMismatch('admin');
 
 require_once '../Database/db_connection.php';
 
 $database = new Database();
 $db = $database->getConnect();
 
-// Get the order_number from the query string
 $orderNumber = isset($_GET['order_number']) ? $_GET['order_number'] : '';
 
 if (empty($orderNumber)) {
@@ -23,7 +22,6 @@ $orderQuery = "SELECT
     r.pickup_datetime,
     r.delivery_datetime,
     r.order_status,
-    r.gallon_owner,
     r.created_at,
     r.delay_reason,
     u.name as customer_name,
@@ -47,15 +45,19 @@ if (!$order) {
     exit;
 }
 
-// Fetch order items
+// Fetch order items with inventory details
 $itemsQuery = "SELECT 
     ri.product_id,
     ri.gallon_type,
     ri.gallon_size,
     ri.quantity,
     ri.unit_price,
-    ri.subtotal
+    ri.subtotal,
+    ri.gallon_owner,
+    ri.processed_quantity,
+    i.item_name
 FROM water_refill_items ri
+LEFT JOIN inventory i ON ri.product_id = i.item_id
 WHERE ri.refill_id = :refill_id";
 
 $itemsStmt = $db->prepare($itemsQuery);
@@ -63,11 +65,25 @@ $itemsStmt->bindParam(':refill_id', $order['refill_id']);
 $itemsStmt->execute();
 $orderItems = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Check if all station-owned gallons are processed
+$stationGallons = array_filter($orderItems, function ($item) {
+    return $item['gallon_owner'] === 'station';
+});
+
+$allGallonsProcessed = true;
+foreach ($stationGallons as $item) {
+    $processed = $item['processed_quantity'] ?? 0;
+    if ($processed < $item['quantity']) {
+        $allGallonsProcessed = false;
+        break;
+    }
+}
+
 // Calculate totals
 $subtotal = array_sum(array_column($orderItems, 'subtotal'));
-$taxRate = 0.00; // 0% tax
+$taxRate = 0.00;
 $taxAmount = $subtotal * $taxRate;
-$deliveryFee = 40.00;
+$deliveryFee = 0.00;
 $totalCost = $subtotal + $taxAmount + $deliveryFee;
 
 function formatCurrency($amount)
@@ -99,6 +115,21 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+            scrollbar-gutter: stable;
+        }
+
+        html {
+            overflow-y: scroll;
+        }
+
+        body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
+            overflow-y: hidden !important;
+            padding-right: 0 !important;
+        }
+
+        body.swal2-height-auto {
+            height: 100% !important;
         }
 
         .page-container {
@@ -153,7 +184,7 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                     <!-- Back Button and Title -->
                     <div class="flex items-center justify-between mb-6">
                         <div class="flex items-center gap-3">
-                            <button onclick="window.history.back()"
+                            <button onclick="window.location.href='../Order/orders_list.php'"
                                 class="flex items-center text-blue-600 hover:text-blue-700 text-2xl transition-colors">
                                 <i class="bi bi-arrow-left-circle-fill"></i>
                             </button>
@@ -162,26 +193,46 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
 
                         <!-- Action Buttons -->
                         <div class="flex gap-3">
-                            <button onclick="openAssignRiderModal()" 
-                                class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-md">
-                                <i class="fas fa-user-plus"></i>
-                                <?= $order['rider_name'] ? 'Reassign Rider' : 'Assign Rider' ?>
-                            </button>
-                            
-                            <button onclick="cancelOrder()" 
-                                class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-md">
-                                <i class="fas fa-times-circle"></i>
-                                Cancel Order
-                            </button>
+                            <?php if (!$allGallonsProcessed && $order['order_status'] !== 'cancelled'): ?>
+                                <a href="process_order.php?order_number=<?= urlencode($orderNumber) ?>"
+                                    class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-md">
+                                    <i class="fas fa-qrcode"></i>
+                                    Process Order
+                                </a>
+                            <?php endif; ?>
+
+                            <?php if ($allGallonsProcessed && $order['order_status'] !== 'cancelled'): ?>
+                                <button onclick="openAssignRiderModal()"
+                                    class="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-md">
+                                    <i class="fas fa-user-plus"></i>
+                                    <?= $order['rider_name'] ? 'Reassign Rider' : 'Assign Rider' ?>
+                                </button>
+                            <?php endif; ?>
+
+                            <?php if ($order['order_status'] !== 'cancelled' && $order['order_status'] !== 'delivered'): ?>
+                                <button onclick="openRescheduleModal()"
+                                    class="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-md">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Reschedule
+                                </button>
+                            <?php endif; ?>
+
+                            <?php if ($order['order_status'] !== 'cancelled' && $order['order_status'] !== 'delivered'): ?>
+                                <button id="cancelOrderBtn"
+                                    class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition shadow-md">
+                                    <i class="fas fa-times-circle"></i>
+                                    Cancel Order
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
 
                     <!-- Main Content Grid -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        
+
                         <!-- Left Column - Order Items and Details -->
                         <div class="lg:col-span-2 space-y-6">
-                            
+
                             <!-- Real-Time Rider Location -->
                             <div class="bg-white border rounded-xl shadow-sm p-5">
                                 <div class="flex items-center gap-2 text-blue-600 font-semibold mb-3">
@@ -217,6 +268,7 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                                         <thead>
                                             <tr class="text-gray-600 border-b">
                                                 <th class="text-left pb-2 px-2">Product</th>
+                                                <th class="text-center pb-2 px-2">Owner</th>
                                                 <th class="text-center pb-2 px-2">Qty</th>
                                                 <th class="text-right pb-2 px-2">Unit</th>
                                                 <th class="text-right pb-2 px-2">Total</th>
@@ -226,7 +278,12 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                                             <?php foreach ($orderItems as $i => $item): ?>
                                                 <tr class="<?= $i < count($orderItems) - 1 ? 'border-b' : '' ?>">
                                                     <td class="py-3 px-2">
-                                                        <?= htmlspecialchars($item['gallon_type'] . ' - ' . $item['gallon_size']) ?>
+                                                        <?= htmlspecialchars($item['item_name'] ?: ($item['gallon_type'] . ' - ' . $item['gallon_size'])) ?>
+                                                    </td>
+                                                    <td class="text-center px-2">
+                                                        <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full <?= $item['gallon_owner'] === 'station' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700' ?>">
+                                                            <?= ucfirst($item['gallon_owner']) ?>
+                                                        </span>
                                                     </td>
                                                     <td class="text-center font-semibold px-2"><?= $item['quantity'] ?></td>
                                                     <td class="text-right px-2"><?= formatCurrency($item['unit_price']) ?></td>
@@ -263,7 +320,7 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
 
                         <!-- Right Column - Delivery Info and Metadata -->
                         <div class="space-y-6">
-                            
+
                             <!-- Delivery Information -->
                             <div class="bg-white border rounded-xl shadow-sm p-5">
                                 <div class="flex items-center gap-2 text-blue-600 font-semibold mb-4 border-b pb-2">
@@ -334,6 +391,7 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                                     <?php
                                     $statuses = [
                                         'pending' => 'Order Pending',
+                                        'processed' => 'Order Processed',
                                         'assigned' => 'Rider Assigned',
                                         'pickup_in_progress' => 'Pickup In Progress',
                                         'picked_up' => 'Picked Up',
@@ -343,12 +401,23 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
 
                                     $currentStatus = $order['order_status'];
                                     $statusKeys = array_keys($statuses);
+
+                                    // Determine if order is processed (all gallons scanned)
+                                    $isProcessed = $allGallonsProcessed;
+
                                     $currentIndex = array_search($currentStatus, $statusKeys);
 
                                     foreach ($statuses as $key => $label):
                                         $keyIndex = array_search($key, $statusKeys);
-                                        $isCompleted = $keyIndex <= $currentIndex;
-                                        $isCurrent = $key === $currentStatus;
+
+                                        // Special handling for 'processed' status
+                                        if ($key === 'processed') {
+                                            $isCompleted = $isProcessed;
+                                            $isCurrent = $isProcessed && $currentStatus === 'pending';
+                                        } else {
+                                            $isCompleted = $keyIndex <= $currentIndex;
+                                            $isCurrent = $key === $currentStatus;
+                                        }
                                     ?>
                                         <div class="flex items-center gap-3">
                                             <div class="w-2 h-2 rounded-full <?= $isCompleted ? 'bg-green-500' : ($isCurrent ? 'bg-blue-500 animate-pulse' : 'bg-gray-300') ?>"></div>
@@ -371,7 +440,7 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
         // Assign Rider Modal
         function openAssignRiderModal() {
             const riders = <?= json_encode($availableRiders) ?>;
-            
+
             if (riders.length === 0) {
                 Swal.fire({
                     icon: 'warning',
@@ -382,7 +451,6 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                 return;
             }
 
-            // Build rider options
             let riderOptions = '<select id="riderSelect" class="swal2-input" style="width: 90%; padding: 10px;">';
             riderOptions += '<option value="">-- Select a Rider --</option>';
             riders.forEach(rider => {
@@ -421,116 +489,253 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
 
         function assignRider(riderId) {
             fetch('assign_rider.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    order_number: '<?= $orderNumber ?>',
-                    rider_id: riderId
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        order_number: '<?= $orderNumber ?>',
+                        rider_id: riderId
+                    })
                 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Rider Assigned!',
-                        text: 'The rider has been successfully assigned to this order.',
-                        confirmButtonColor: '#3b82f6'
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Rider Assigned!',
+                            text: 'The rider has been successfully assigned to this order.',
+                            confirmButtonColor: '#3b82f6'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'Failed to assign rider.',
+                            confirmButtonColor: '#dc2626'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: data.message || 'Failed to assign rider.',
+                        text: 'Request failed. Please check your connection.',
                         confirmButtonColor: '#dc2626'
                     });
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Request failed. Please check your connection.',
-                    confirmButtonColor: '#dc2626'
                 });
-            });
         }
 
         function cancelOrder() {
-            Swal.fire({
-                title: 'Cancel Order?',
-                html: `
-                    <p style="margin-bottom: 15px;">Are you sure you want to cancel this order? This action cannot be undone.</p>
-                    <label style="font-weight: 500; margin-bottom: 8px; display: block; text-align: left;">Reason for Cancellation:</label>
-                    <textarea id="cancelReason" class="swal2-textarea" placeholder="Enter reason..." style="width: 90%; height: 100px;"></textarea>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Cancel Order',
-                cancelButtonText: 'No, Keep Order',
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#6b7280',
-                preConfirm: () => {
-                    const reason = document.getElementById('cancelReason').value.trim();
-                    if (!reason) {
-                        Swal.showValidationMessage('Please provide a reason for cancellation');
-                        return false;
-                    }
-                    return reason;
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    performCancelOrder(result.value);
-                }
-            });
+    Swal.fire({
+        title: 'Cancel Order?',
+        html: `
+            <p style="margin-bottom: 15px;">Are you sure you want to cancel this order? This action cannot be undone.</p>
+            <label style="font-weight: 500; margin-bottom: 8px; display: block; text-align: left;">Reason for Cancellation:</label>
+            <textarea id="cancelReason" class="swal2-textarea" placeholder="Enter reason..." 
+                style="width: 87%; height: 100px; font-size: 1rem;"></textarea>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Cancel Order',
+        cancelButtonText: 'No, Keep Order',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        preConfirm: () => {
+            const reason = document.getElementById('cancelReason').value.trim();
+            if (!reason) {
+                Swal.showValidationMessage('Please provide a reason for cancellation');
+                return false;
+            }
+            return reason;
         }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            performCancelOrder(result.value);
+        }
+    });
+}
 
         function performCancelOrder(reason) {
-            fetch('cancel_order.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    order_number: '<?= $orderNumber ?>',
-                    reason: reason
+            fetch('admin_cancel_order.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        order_number: '<?= $orderNumber ?>',
+                        reason: reason
+                    })
                 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Order Cancelled',
-                        text: 'The order has been successfully cancelled.',
-                        confirmButtonColor: '#3b82f6'
-                    }).then(() => {
-                        window.location.href = 'customer_orders.php';
-                    });
-                } else {
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Order Cancelled',
+                            text: 'The order has been successfully cancelled.',
+                            confirmButtonColor: '#3b82f6'
+                        }).then(() => {
+                            window.location.href = 'orders_list.php';
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'Failed to cancel order.',
+                            confirmButtonColor: '#dc2626'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: data.message || 'Failed to cancel order.',
+                        text: 'Request failed. Please check your connection.',
                         confirmButtonColor: '#dc2626'
                     });
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Request failed. Please check your connection.',
-                    confirmButtonColor: '#dc2626'
                 });
+        }
+
+        function openRescheduleModal() {
+            Swal.fire({
+                title: 'Reschedule Order',
+                html: ` <div style="text-align: left; display: flex; flex-direction: column; gap: 8px; font-size: 0.875rem;"> <label for="rescheduleType" style="font-weight: 500;">Reschedule Type:</label> <select id="rescheduleType" class="swal2-input" style="width: 100%; padding: 6px; font-size: 0.875rem; color: #3b82f6; border: 1px solid #d1d5db; border-radius: 4px;"  
+                 onfocus="this.style.outline='2px solid #3b82f6'; this.style.outlineOffset='2px';"  
+                 onblur="this.style.outline='';"> <option value="">-- Select Type --</option> <option value="pickup">Pickup Date & Time</option> <option value="delivery">Delivery Date & Time</option> </select>
+
+
+            <label for="newDate" style="font-weight: 500;">New Date:</label>  
+            <input type="date" id="newDate" class="swal2-input" style="width: 87%; padding: 6px; font-size: 0.875rem;" min="${new Date().toISOString().split('T')[0]}">  
+
+            <label for="timeSlot" style="font-weight: 500;">Time Slot:</label>  
+            <select id="timeSlot" class="swal2-input" style="width: 100%; padding: 6px; font-size: 0.875rem; color: #3b82f6; border: 1px solid #d1d5db; border-radius: 4px;" disabled  
+                onfocus="this.style.outline='2px solid #3b82f6'; this.style.outlineOffset='2px';"  
+                onblur="this.style.outline='';">  
+                <option value="">-- Select time slot first --</option>  
+            </select>  
+
+            <label for="rescheduleReason" style="font-weight: 500;">Reason for Rescheduling:</label>  
+            <textarea id="rescheduleReason" class="swal2-textarea" placeholder="Enter reason for rescheduling..." style="width: 87%; padding: 6px; font-size: 0.875rem; height: 90px; resize: vertical;"></textarea>  
+        </div>  
+    `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Reschedule',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6b7280',
+                didOpen: () => {
+                    const rescheduleType = document.getElementById('rescheduleType');
+                    const timeSlotSelect = document.getElementById('timeSlot');
+
+                    rescheduleType.addEventListener('change', function() {
+                        const type = this.value;
+                        timeSlotSelect.disabled = false;
+                        timeSlotSelect.innerHTML = '<option value="">-- Select Time Slot --</option>';
+
+                        if (type === 'pickup') {
+                            timeSlotSelect.innerHTML += `  
+                    <option value="morning">Morning - 7:30 AM</option>  
+                    <option value="afternoon">Afternoon - 1:00 PM</option>  
+                `;
+                        } else if (type === 'delivery') {
+                            timeSlotSelect.innerHTML += `  
+                    <option value="morning_early">Morning - 9:00 AM</option>  
+                    <option value="morning_late">Morning - 11:00 AM</option>  
+                    <option value="afternoon_early">Afternoon - 2:00 PM</option>  
+                    <option value="afternoon_late">Afternoon - 4:00 PM</option>  
+                `;
+                        }
+                    });
+                },
+                preConfirm: () => {
+                    const rescheduleTypeVal = document.getElementById('rescheduleType').value;
+                    const newDateVal = document.getElementById('newDate').value;
+                    const timeSlotVal = document.getElementById('timeSlot').value;
+                    const reasonVal = document.getElementById('rescheduleReason').value.trim();
+
+                    if (!rescheduleTypeVal) return Swal.showValidationMessage('Please select reschedule type');
+                    if (!newDateVal) return Swal.showValidationMessage('Please select a new date');
+                    if (!timeSlotVal) return Swal.showValidationMessage('Please select a time slot');
+                    if (!reasonVal) return Swal.showValidationMessage('Please provide a reason for rescheduling');
+
+                    return {
+                        reschedule_type: rescheduleTypeVal,
+                        new_date: newDateVal,
+                        new_time_slot: timeSlotVal,
+                        reason: reasonVal
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) performReschedule(result.value);
             });
         }
+
+
+        function performReschedule(data) {
+            // Show loading
+            Swal.fire({
+                title: 'Rescheduling...',
+                text: 'Please wait while we update the schedule.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch('reschedule_order.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        order_number: '<?= $orderNumber ?>',
+                        ...data
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Rescheduled Successfully!',
+                            text: data.message,
+                            confirmButtonColor: '#3b82f6'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'Failed to reschedule order.',
+                            confirmButtonColor: '#dc2626'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Request failed. Please check your connection.',
+                        confirmButtonColor: '#dc2626'
+                    });
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const cancelBtn = document.getElementById('cancelOrderBtn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', cancelOrder);
+            }
+        });
     </script>
 </body>
 

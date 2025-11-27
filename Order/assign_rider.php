@@ -3,7 +3,6 @@ require_once __DIR__ . '/../session.php';
 redirectIfRoleMismatch('admin'); // only admins can access
 
 require_once '../Database/db_connection.php';
-// Include the notification functions
 require_once '../Notification/send_notification.php';
 require_once '../Notification/email.php'; // Assuming email functions are here
 
@@ -26,9 +25,7 @@ if (!$orderNumber || !$riderId) {
 try {
     $db->beginTransaction();
 
-    // 1. Verify the order exists and fetch customer_id, status, and delivery details
-    // Note: Removed delivery_address from this query
-    $checkOrder = $db->prepare("SELECT user_id, order_status, scheduled_delivery_datetime FROM water_refills WHERE order_number = :order_number LIMIT 1");
+    $checkOrder = $db->prepare("SELECT user_id, order_status, delivery_datetime FROM water_refills WHERE order_number = :order_number LIMIT 1");
     $checkOrder->bindParam(':order_number', $orderNumber);
     $checkOrder->execute();
     
@@ -40,7 +37,7 @@ try {
 
     $order = $checkOrder->fetch(PDO::FETCH_ASSOC);
     $customerId = $order['user_id'];
-    $scheduledDeliveryDatetime = $order['scheduled_delivery_datetime'];
+    $scheduledDeliveryDatetime = $order['delivery_datetime'];
 
     // Check if order is already cancelled or delivered
     if (in_array($order['order_status'], ['cancelled', 'delivered'])) {
@@ -55,17 +52,15 @@ try {
     $getAddress->execute();
     
     if ($getAddress->rowCount() === 0) {
-        // This is a safety check, implying the customer user record is missing
         $db->rollBack();
         echo json_encode(['success' => false, 'message' => 'Customer user record not found.']);
         exit;
     }
     
     $customer = $getAddress->fetch(PDO::FETCH_ASSOC);
-    $deliveryAddress = $customer['address']; // <<< Address fetched here
+    $deliveryAddress = $customer['address']; 
 
-    // 3. Verify the rider exists, is active, and fetch their details (email, full name)
-    $checkRider = $db->prepare("SELECT user_id, email, full_name FROM users WHERE user_id = :rider_id AND role = 'rider' AND status = 'active' LIMIT 1");
+    $checkRider = $db->prepare("SELECT user_id, email, name FROM users WHERE user_id = :rider_id AND role = 'rider' AND status = 'active' LIMIT 1");
     $checkRider->bindParam(':rider_id', $riderId, PDO::PARAM_INT);
     $checkRider->execute();
     
@@ -77,9 +72,8 @@ try {
     
     $rider = $checkRider->fetch(PDO::FETCH_ASSOC);
     $riderEmail = $rider['email'];
-    $riderFullName = $rider['full_name'];
+    $riderFullName = $rider['name'];
 
-    // 4. Update the Order Status
     $newStatus = $order['order_status'] === 'pending' ? 'assigned' : $order['order_status'];
     
     $updateQuery = "UPDATE water_refills 

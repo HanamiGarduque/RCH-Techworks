@@ -237,6 +237,17 @@ $user_id = $_SESSION['id'] ?? null;
                         </div>
                     </div>
 
+                    <!-- Gallon Ownership Summary Display -->
+                    <div class="mb-4 p-4 border rounded-lg bg-blue-50">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                            <div>
+                                <span class="font-medium text-blue-700">Gallon Ownership: </span>
+                                <span id="gallonOwnershipDisplay" class="font-semibold text-gray-800"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-4">
                         <table class="w-full text-sm border rounded-lg">
                             <thead>
@@ -246,6 +257,7 @@ $user_id = $_SESSION['id'] ?? null;
                                     <th class="text-center">Quantity</th>
                                     <th class="text-center">Unit Price</th>
                                     <th class="text-center">Subtotal</th>
+                                    <th class="text-center">Ownership</th>
                                 </tr>
                             </thead>
                             <tbody id="ordersTbody"></tbody>
@@ -1046,6 +1058,7 @@ $user_id = $_SESSION['id'] ?? null;
         }
 
         // ---------- Orders & Step 6 rendering ----------
+        // ---------- Orders & Step 6 rendering ----------
         function saveCurrentOrder(commit = true) {
             if (!state.chosenType || !state.chosenPrice || !state.quantity) return null;
 
@@ -1065,17 +1078,18 @@ $user_id = $_SESSION['id'] ?? null;
                 size: sizeLabel,
                 quantity: state.quantity,
                 unitPrice: unit,
-                subtotal: subtotal
+                subtotal: subtotal,
+                gallonOwner: state.hasOwnGallon ? 'customer' : 'station' // ADD THIS LINE
             };
 
             if (commit) state.orders.push(order);
             return order;
         }
 
-
         function renderOrdersInStep6() {
             const tbody = document.getElementById('ordersTbody');
             const totalEl = document.getElementById('totalCost');
+            const gallonOwnershipDisplay = document.getElementById('gallonOwnershipDisplay');
 
             // Always use saved orders
             const rows = state.orders ? state.orders.slice() : [];
@@ -1089,19 +1103,42 @@ $user_id = $_SESSION['id'] ?? null;
             let html = '';
             let total = 0;
 
+            // Modified to include gallon ownership in the table
             rows.forEach(o => {
+                const ownershipBadge = o.gallonOwner === 'customer' ?
+                    '<span class="inline-block px-2 py-1 text-xs bg-green-100 text-green-700 rounded">Own Gallon</span>' :
+                    '<span class="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Borrowed</span>';
+
                 html += `<tr>
             <td class="py-2 text-center">${o.type}</td>
             <td class="text-center">${o.size}</td>
             <td class="text-center">${o.quantity}</td>
             <td class="text-center">₱${o.unitPrice.toFixed(2)}</td>
             <td class="text-center">₱${o.subtotal.toFixed(2)}</td>
+            <td class="text-center">${ownershipBadge}</td>
         </tr>`;
                 total += o.subtotal;
             });
 
             if (tbody) tbody.innerHTML = html;
             if (totalEl) totalEl.textContent = total.toFixed(2);
+
+            // Display summary of gallon ownership
+            if (gallonOwnershipDisplay) {
+                const ownCount = rows.filter(o => o.gallonOwner === 'customer').length;
+                const borrowCount = rows.filter(o => o.gallonOwner === 'station').length;
+
+                let summaryText = '';
+                if (ownCount > 0 && borrowCount > 0) {
+                    summaryText = `<i class="fas fa-boxes text-blue-600 mr-1"></i>Mixed: ${ownCount} Own, ${borrowCount} Borrowed`;
+                } else if (ownCount > 0) {
+                    summaryText = `<i class="fas fa-user-check text-green-600 mr-1"></i>Using Own Gallon (${ownCount})`;
+                } else if (borrowCount > 0) {
+                    summaryText = `<i class="fas fa-building text-blue-600 mr-1"></i>Borrowing from Station (${borrowCount})`;
+                }
+
+                gallonOwnershipDisplay.innerHTML = summaryText;
+            }
 
             // Refresh the address & summaries shown in Step 6
             const userNameDisplay = document.getElementById('userNameDisplay');
@@ -1113,13 +1150,13 @@ $user_id = $_SESSION['id'] ?? null;
             if (userNameDisplay) userNameDisplay.textContent = state.userName || '';
             if (userContactDisplay) userContactDisplay.textContent = state.userContact || '';
             addressDisplay.innerHTML = `
-                ${state.userAddress.house || ''},
-                ${state.userAddress.street || ''},
-                ${state.userAddress.barangay || ''},
-                ${state.userAddress.city || ''},
-                ${state.userAddress.province || ''}
-                ${state.userAddress.postal || ''}
-            `;
+        ${state.userAddress.house || ''},
+        ${state.userAddress.street || ''},
+        ${state.userAddress.barangay || ''},
+        ${state.userAddress.city || ''},
+        ${state.userAddress.province || ''}
+        ${state.userAddress.postal || ''}
+    `;
 
             if (pickupSummary) pickupSummary.textContent = `${pickupDate?.value || ''} ${state.chosenPickupTime || ''}`;
             if (deliverySummary) deliverySummary.textContent = `${deliveryDate?.value || ''} ${state.chosenDeliveryTime || ''}`;
