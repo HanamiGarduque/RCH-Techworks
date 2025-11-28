@@ -1,130 +1,289 @@
 <?php
-// order_details.php
+    require_once __DIR__ . '/../session.php';
+    redirectIfRoleMismatch('customer');
+    require_once '../Database/db_connection.php';
 
-session_start();
-require_once '../Database/db_connection.php';
 $db = new Database();
 $conn = $db->getConnect();
 
 // ============================================================================
-// 1. GET STATUS FROM URL
+// AJAX ENDPOINT FOR RIDER LOCATION
 // ============================================================================
-$rawStatus = isset($_GET['status']) ? strtolower($_GET['status']) : 'pending';
-
-switch ($rawStatus) {
-    case 'pending':
-        $orderStatus = "Pending";
-        break;
-    case 'on_delivery':
-        $orderStatus = "On Delivery";
-        break;
-    case 'completed':
-        $orderStatus = "Delivered";
-        break;
-    default:
-        $orderStatus = "Cancelled";
-        break;
-}
-
-// ============================================================================
-// 2. PAGE INFORMATION
-// ============================================================================
-$pageTitle = "My Orders";
-$pageSubtitle = "View and track your orders and deliveries in real time.";
-$currentPage = 'order_details.php';
-
-// Default customer & order info (if DB fetch fails)
-$customerName = "Christine May Padua";
-$customerPhone = "09161891555";
-$deliveryAddress = "116 Purok 1, Tibig, Lipa City, Batangas 4217";
-$orderId = "ORD-110325001";
-$paymentMethod = "Cash on Delivery";
-$orderDateTime = "03-11-2025 | 8:38";
-$shipDateTime = "05-11-2025 | 11:00";
-
-$orderItems = [
-    ['name' => '20L Slim Container Gallon', 'qty' => 2, 'unitPrice' => 170.00, 'totalPrice' => 340.00],
-    ['name' => 'Slim Gallon Faucet - Press', 'qty' => 10, 'unitPrice' => 25.00, 'totalPrice' => 250.00]
-];
-$subtotal = array_sum(array_column($orderItems, 'totalPrice'));
-$taxRate = 0.08;
-$taxAmount = $subtotal * $taxRate;
-$deliveryFee = 40.00;
-$totalCost = $subtotal + $taxAmount + $deliveryFee;
-
-function formatCurrency($amount)
-{
-    return '₱' . number_format($amount, 2);
-}
-
-// ============================================================================
-// 3. STATUS COLORS & BUTTON LOGIC
-// ============================================================================
-$statusColor = '';
-$buttonText = '';
-$buttonClass = '';
-
-if ($orderStatus === 'Pending') {
-    $statusColor = 'text-yellow-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} elseif ($orderStatus === 'On Delivery') {
-    $statusColor = 'text-blue-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} elseif ($orderStatus === 'Delivered') {
-    $statusColor = 'text-green-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-} else {
-    $statusColor = 'text-red-600 font-semibold';
-    $buttonText = "Back";
-    $buttonClass = "bg-blue-600 hover:bg-blue-700";
-}
-
-// ============================================================================
-// 4. MAP / LOCATION HANDLING
-//    - Hardcode customer lat/lng
-//    - Fetch rider location by AJAX via loc_history
-// ============================================================================
-$refill_id = isset($_GET['refill_id']) ? intval($_GET['refill_id']) : null;
-
-$customerLat = 13.9587;   // Tibig, Lipa City (hardcoded) :contentReference[oaicite:1]{index=1}
-$customerLng = 121.1444;
-
-$rider_user_id = null;
-if ($refill_id) {
-    $qr = $conn->prepare("SELECT rider_id, order_number, user_id FROM water_refills WHERE refill_id = :rid LIMIT 1");
-    $qr->bindParam(':rid', $refill_id, PDO::PARAM_INT);
-    $qr->execute();
-    if ($row = $qr->fetch(PDO::FETCH_ASSOC)) {
-        $rider_user_id = $row['rider_id'];
-        $orderId = $row['order_number'] ?: $orderId;
-    }
-}
-
-// AJAX endpoint for rider location
-if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_user_id) {
+if (isset($_GET['action']) && $_GET['action'] === 'rider_location') {
     header('Content-Type: application/json; charset=utf-8');
+    $order_number = isset($_GET['order_number']) ? $_GET['order_number'] : '';
+    
     try {
-        $s = $conn->prepare("SELECT latitude, longitude, created_at FROM loc_history WHERE user_id = :rid ORDER BY created_at DESC LIMIT 1");
-        $s->bindParam(':rid', $rider_user_id, PDO::PARAM_INT);
-        $s->execute();
-        $loc = $s->fetch(PDO::FETCH_ASSOC);
-        if ($loc && $loc['latitude'] !== null && $loc['longitude'] !== null) {
-            echo json_encode([
-                'latitude' => (float)$loc['latitude'],
-                'longitude' => (float)$loc['longitude'],
-                'timestamp' => $loc['created_at']
-            ]);
+        $stmt = $conn->prepare("
+            SELECT wr.rider_id 
+            FROM water_refills wr 
+            WHERE wr.order_number = :order_number
+        ");
+        $stmt->execute([':order_number' => $order_number]);
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($order && $order['rider_id']) {
+            $locStmt = $conn->prepare("
+                SELECT latitude, longitude, created_at 
+                FROM loc_history 
+                WHERE user_id = :rider_id 
+                ORDER BY created_at DESC 
+                LIMIT 1
+            ");
+            $locStmt->execute([':rider_id' => $order['rider_id']]);
+            $loc = $locStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($loc && $loc['latitude'] !== null && $loc['longitude'] !== null) {
+                echo json_encode([
+                    'latitude' => (float)$loc['latitude'],
+                    'longitude' => (float)$loc['longitude'],
+                    'timestamp' => $loc['created_at']
+                ]);
+            } else {
+                echo json_encode(['error' => 'No rider location found']);
+            }
         } else {
-            echo json_encode(['error' => 'No rider location found']);
+            echo json_encode(['error' => 'No rider assigned']);
         }
     } catch (Exception $e) {
         echo json_encode(['error' => $e->getMessage()]);
     }
     exit;
 }
+
+// ============================================================================
+// AJAX ENDPOINT FOR CANCELLING ORDER
+// ============================================================================
+if (isset($_POST['action']) && $_POST['action'] === 'cancel_order') {
+    header('Content-Type: application/json; charset=utf-8');
+    $order_number = isset($_POST['order_number']) ? $_POST['order_number'] : '';
+    $cancel_reason = isset($_POST['cancel_reason']) ? trim($_POST['cancel_reason']) : '';
+    
+    try {
+        // Start transaction
+        $conn->beginTransaction();
+        
+        // Verify order belongs to user and is cancellable
+        $stmt = $conn->prepare("
+            SELECT wr.refill_id, wr.order_status, wr.rider_id, u.name as customer_name
+            FROM water_refills wr
+            INNER JOIN users u ON wr.user_id = u.user_id
+            WHERE wr.order_number = :order_number AND wr.user_id = :user_id
+        ");
+        $stmt->execute([
+            ':order_number' => $order_number,
+            ':user_id' => $_SESSION['id']
+        ]);
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$order) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Order not found']);
+            exit;
+        }
+        
+        // Check if order can be cancelled
+        if (!in_array($order['order_status'], ['pending', 'assigned'])) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Order cannot be cancelled at this stage']);
+            exit;
+        }
+        
+        // Prepare cancellation reason
+        $finalReason = $cancel_reason ?: 'Cancelled by customer';
+        
+        // Update order status to cancelled
+        $updateStmt = $conn->prepare("
+            UPDATE water_refills 
+            SET order_status = 'cancelled', 
+                delay_reason = :cancel_reason,
+                rider_id = NULL
+            WHERE order_number = :order_number AND user_id = :user_id
+        ");
+        
+        $updateStmt->execute([
+            ':cancel_reason' => $finalReason,
+            ':order_number' => $order_number,
+            ':user_id' => $_SESSION['id']
+        ]);
+        
+        // Commit transaction
+        $conn->commit();
+        
+        // Send notifications and emails
+        require_once __DIR__ . '/../Notification/send_notification.php';
+        require_once __DIR__ . '/../Notification/email.php';
+        
+        // Get admin users
+        $adminStmt = $conn->prepare("SELECT user_id FROM users WHERE role = 'admin'");
+        $adminStmt->execute();
+        $admins = $adminStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Notify all admins
+        foreach ($admins as $admin) {
+            createNotification(
+                $conn,
+                $admin['user_id'],
+                'Order Cancelled',
+                "Order #$order_number has been cancelled by customer {$order['customer_name']}. Reason: $finalReason",
+                "Order/order_details.php?order_number=" . $order_number
+            );
+        }
+        
+        // Notify customer (confirmation)
+        createNotification(
+            $conn,
+            $_SESSION['id'],
+            'Order Cancelled',
+            "Your order #$order_number has been cancelled successfully.",
+            "Customer/order_details.php?order_number=" . $order_number
+        );
+        
+        // Notify rider if assigned
+        if ($order['rider_id']) {
+            createNotification(
+                $conn,
+                $order['rider_id'],
+                'Order Cancelled',
+                "Order #$order_number has been cancelled by the customer.",
+                "Rider/order_details.php?order_number=" . $order_number
+            );
+        }
+        
+        // Send email to admin
+        notifyAdminOrderCancelled(
+            $order['refill_id'],
+            $order_number,
+            $order['customer_name'],
+            $finalReason
+        );
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Order cancelled successfully',
+            'order_number' => $order_number
+        ]);
+        
+    } catch (Exception $e) {
+        // Rollback on error
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// ============================================================================
+// GET ORDER DETAILS FROM DATABASE
+// ============================================================================
+$order_number = isset($_GET['order_number']) ? $_GET['order_number'] : '';
+
+if (!$order_number) {
+    header("Location: my_orders.php");
+    exit;
+}
+
+try {
+    // Fetch order details with user and rider information
+    $stmt = $conn->prepare("
+        SELECT 
+            wr.*,
+            u.name as customer_name,
+            u.phone_number as customer_phone,
+            u.address as customer_address,
+            rider.name as rider_name,
+            rider.phone_number as rider_phone
+        FROM water_refills wr
+        INNER JOIN users u ON wr.user_id = u.user_id
+        LEFT JOIN users rider ON wr.rider_id = rider.user_id
+        WHERE wr.order_number = :order_number AND wr.user_id = :user_id
+    ");
+    
+    $stmt->execute([
+        ':order_number' => $order_number,
+        ':user_id' => $_SESSION['id']
+    ]);
+    
+    $orderData = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$orderData) {
+        header("Location: my_orders.php");
+        exit;
+    }
+    
+    // Fetch order items using refill_id from the order data
+    $itemsStmt = $conn->prepare("
+        SELECT 
+            wri.*,
+            i.item_name,
+            i.description
+        FROM water_refill_items wri
+        INNER JOIN inventory i ON wri.product_id = i.item_id
+        WHERE wri.refill_id = :refill_id
+    ");
+    
+    $itemsStmt->execute([':refill_id' => $orderData['refill_id']]);
+    $orderItems = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+} catch (Exception $e) {
+    die("Error fetching order details: " . $e->getMessage());
+}
+
+// ============================================================================
+// PAGE INFORMATION
+// ============================================================================
+$pageTitle = "Order Details";
+$pageSubtitle = "Track your order in real-time";
+$currentPage = 'my_orders.php';
+
+// Extract order data
+$orderStatus = ucfirst(str_replace('_', ' ', $orderData['order_status']));
+$orderId = $orderData['order_number'];
+$customerName = $orderData['customer_name'];
+$customerPhone = $orderData['customer_phone'];
+$deliveryAddress = $orderData['customer_address'];
+$riderName = $orderData['rider_name'] ?? 'Not assigned yet';
+$riderPhone = $orderData['rider_phone'] ?? '—';
+$orderDateTime = date('F d, Y | h:i A', strtotime($orderData['created_at']));
+$deliveryDateTime = $orderData['delivery_datetime'] ? date('F d, Y | h:i A', strtotime($orderData['delivery_datetime'])) : 'Pending';
+$pickupDateTime = $orderData['pickup_datetime'] ? date('F d, Y | h:i A', strtotime($orderData['pickup_datetime'])) : 'Pending';
+
+// Calculate totals
+$subtotal = 0;
+foreach ($orderItems as $item) {
+    $subtotal += $item['subtotal'];
+}
+
+// Verify with stored total_amount
+$totalCost = $orderData['total_amount'];
+$deliveryFee = 40.00; // You may want to make this dynamic
+$taxRate = 0.08;
+$taxAmount = ($subtotal * $taxRate);
+
+// Function to format currency
+function formatCurrency($amount) {
+    return '₱' . number_format($amount, 2);
+}
+
+// Status styling
+$statusColors = [
+    'Pending' => 'text-yellow-600 bg-yellow-50',
+    'Assigned' => 'text-blue-600 bg-blue-50',
+    'Confirmed' => 'text-blue-600 bg-blue-50',
+    'On delivery' => 'text-purple-600 bg-purple-50',
+    'Delivered' => 'text-green-600 bg-green-50',
+    'Cancelled' => 'text-red-600 bg-red-50'
+];
+
+$statusColor = $statusColors[$orderStatus] ?? 'text-gray-600 bg-gray-50';
+
+// Check if order can be cancelled
+$canCancel = in_array(strtolower($orderData['order_status']), ['pending', 'assigned']);
+
+// Customer location (extract from address or use default)
+$customerLat = 13.9587;
+$customerLng = 121.1444;
 
 ?>
 <!DOCTYPE html>
@@ -139,261 +298,471 @@ if (isset($_GET['action']) && $_GET['action'] === 'rider_location' && $rider_use
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         body {
             font-family: 'Poppins', sans-serif;
             padding-left: 5rem;
-            transition: .5s;
-        }
-
-        /* Make the map always stay UNDER the sidebar */
-        #rider-map,
-        #rider-map * {
-            z-index: 0 !important;
-        }
-
-        .group {
-            z-index: 9999 !important;
-            /* Sidebar stays on top */
-
-
-        }
-
-        .content-area {
-            min-height: 100vh;
+            transition: padding-left 0.5s;
+            margin: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            padding-right: 0;
         }
 
         #rider-map {
             width: 100%;
-            height: 300px;
+            height: 400px;
             border-radius: 0.75rem;
-            overflow: hidden;
+            z-index: 1 !important;
         }
 
+        .group {
+            z-index: 9999 !important;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
     </style>
 </head>
 
 <body class="bg-gray-100">
 
-    <!-- SIDEBAR -->
-    <script>
-        const currentPage = '<?= $currentPage ?>';
-
-        function createNavItem(href, icon, label, fileName) {
-            const isActive = currentPage === fileName;
-            const base = "flex items-center px-4 py-3 rounded-lg font-medium transition-all duration-200 ";
-            const active = "bg-white/20 text-white";
-            const inactive = "text-white hover:bg-white/20";
-            return `
-            <li>
-                <a href="${href}" class="${base} ${isActive ? active : inactive}">
-                    <i class="${icon} text-lg"></i>
-                    <div class="overflow-hidden ml-3">
-                        <span class="block whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">${label}</span>
-                    </div>
-                </a>
-            </li>`;
-        }
-
-        const sidebarHTML = `
-<aside class="group bg-gradient-to-br from-blue-400 to-blue-600 absolute left-0 top-0 h-full w-20 hover:w-64 transition-all duration-500 text-white flex flex-col z-50">
-    <div class="px-7 py-7 border-b border-blue-400 flex items-center gap-2">
-        <i class="fas fa-tint text-3xl"></i>
-        <span class="text-2xl font-semibold opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">RCH Water</span>
-    </div>
-    <nav class="mt-6 flex-1">
-        <ul class="space-y-1 px-4">
-            ${createNavItem("../Customer/order_water_refill.php", "fas fa-tint", "Order Water Refill", "order_water_refill.php")}
-            ${createNavItem("../Customer/browse_products.php", "fas fa-shopping-basket", "Browse Products", "browse_products.php")}
-            ${createNavItem("../Customer/my_orders.php", "fas fa-box", "My Orders", "my_orders.php")}
-        </ul>
-    </nav>
-    <div class="border-t border-blue-400 p-4">
-        <a href="#" class="flex items-center gap-3 hover:bg-white/20 px-4 py-3 rounded-lg">
-            <i class="fas fa-sign-out-alt text-lg"></i>
-            <span class="opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">Logout</span>
-        </a>
-    </div>
-</aside>`;
-
-        document.addEventListener("DOMContentLoaded", () => {
-            document.body.insertAdjacentHTML("afterbegin", sidebarHTML);
-        });
-    </script>
+    <script src="includes/sidebar.js"></script>
 
     <!-- MAIN CONTENT -->
-    <div class="content-area">
-        <main class="bg-white rounded-xl shadow-lg h-[calc(100vh-2rem)] overflow-y-auto">
+    <div class="flex h-screen">
+        <div class="flex-1">
+            <main class="bg-white h-full overflow-hidden">
+                <div class="main-header bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                    <?php
+                    $pageTitle = "Order Details";
+                    $pageSubtitle = "Track your order in real-time";
+                    include 'includes/header.php';
+                    ?>
+                </div>
 
-            <div class="bg-white border-b p-4 shadow-sm">
-                <h1 class="text-3xl font-semibold text-blue-500"><?= $pageTitle ?></h1>
-                <p class="text-sm text-gray-700"><?= $pageSubtitle ?></p>
+                <div class="p-8 h-[calc(100vh-80px)] overflow-y-auto">
+                    <div class="max-w-full mx-auto">
+            
+            <!-- Header -->
+            <div class="bg-white rounded-xl shadow-sm border p-6 mb-6">
+                <div class="flex items-center gap-3 mb-2">
+                    <button onclick="window.location.href='my_orders.php'" class="text-blue-600 hover:text-blue-700 transition-colors">
+                        <i class="bi bi-arrow-left-circle-fill text-3xl"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Order #<?= htmlspecialchars($orderId) ?></h1>
+                        <p class="text-sm text-gray-500"><?= htmlspecialchars($orderDateTime) ?></p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="status-badge <?= $statusColor ?>">
+                        <i class="fas fa-circle text-xs mr-2"></i><?= htmlspecialchars($orderStatus) ?>
+                    </span>
+                </div>
             </div>
 
-            <div class="p-8">
-                <div class="bg-white w-full mx-auto rounded-2xl shadow-sm border p-8">
-
-                    <div class="flex items-center gap-3 mb-6">
-                        <button onclick="window.history.back()" class="flex items-center text-blue-600 hover:text-blue-700 text-2xl">
-                            <i class="bi bi-arrow-left-circle-fill"></i>
-                        </button>
-                        <h1 class="text-2xl text-gray-700 font-semibold">Order Details</h1>
-                    </div>
-
-                    <div class="border rounded-xl p-5 mb-6">
-                        <div class="flex items-center gap-2 text-blue-600 font-semibold mb-3">
-                            <i class="fas fa-location-arrow"></i> Real-Time Rider Location
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left Column -->
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <!-- Real-Time Tracking - Always Show Container -->
+                    <div class="bg-white rounded-xl shadow-sm border p-6">
+                        <div class="flex items-center gap-2 text-blue-600 font-semibold mb-4">
+                            <i class="fas fa-location-arrow"></i>
+                            <span>Delivery Tracking</span>
                         </div>
-
-                        <div id="rider-map" class="bg-gray-50 flex items-center justify-center text-gray-600 mb-4">
-                            <!-- Leaflet map renders here -->
-                        </div>
-
-                        <div class="border rounded-xl p-4 bg-gray-50">
-                            <div class="font-semibold text-gray-700 mb-1">Rider Information</div>
-                            <div class="flex justify-between items-center text-sm">
-                                <span id="rider-name">Rider</span>
-                                <span><i class="fa fa-phone mr-1"></i><span id="rider-phone">—</span></span>
+                        
+                        <?php if ($orderStatus === 'On delivery' && $orderData['rider_id']): ?>
+                            <div id="rider-map" class="mb-4"></div>
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs text-gray-500 mb-1">Rider</p>
+                                        <p class="font-semibold text-gray-800"><?= htmlspecialchars($riderName) ?></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-gray-500 mb-1">Contact</p>
+                                        <p class="font-semibold text-gray-800">
+                                            <i class="fas fa-phone text-blue-600 mr-1"></i><?= htmlspecialchars($riderPhone) ?>
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="border rounded-xl p-5 mb-6">
-                        <div class="flex items-center gap-2 text-blue-600 font-medium mb-2">
-                            <i class="fas fa-map-marker-alt text-lg"></i> Delivery Information
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <div class="font-semibold">
-                                <?= htmlspecialchars($customerName) ?><br>
-                                <span class="font-normal"><?= htmlspecialchars($customerPhone) ?></span>
+                        <?php else: ?>
+                            <div class="bg-gray-50 rounded-lg p-8 text-center">
+                                <div class="text-gray-400 mb-3">
+                                    <i class="fas fa-map-marked-alt text-5xl"></i>
+                                </div>
+                                <p class="text-gray-600 font-medium">Real-time tracking not available</p>
+                                <p class="text-gray-500 text-sm mt-1">
+                                    <?php if (!$orderData['rider_id']): ?>
+                                        Waiting for rider assignment
+                                    <?php else: ?>
+                                        Tracking will be available when order is out for delivery
+                                    <?php endif; ?>
+                                </p>
                             </div>
-                            <div class="text-right max-w-xs"><?= htmlspecialchars($deliveryAddress) ?></div>
-                        </div>
+                        <?php endif; ?>
                     </div>
 
-                    <div class="border rounded-xl p-5 mb-6">
-                        <p class="<?= $statusColor ?> text-sm font-semibold"><?= $orderStatus ?></p>
-
-                        <table class="w-full text-sm mt-3">
-                            <thead>
-                                <tr class="text-gray-600">
-                                    <th class="text-left pb-2">Product</th>
-                                    <th class="text-center pb-2">Qty</th>
-                                    <th class="text-right pb-2">Unit</th>
-                                    <th class="text-right pb-2">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody class="border-t">
-                                <?php foreach ($orderItems as $i => $item): ?>
-                                    <tr class="<?= $i < count($orderItems) - 1 ? 'border-b' : '' ?>">
-                                        <td class="py-3"><?= htmlspecialchars($item['name']) ?></td>
-                                        <td class="text-center font-semibold"><?= intval($item['qty']) ?></td>
-                                        <td class="text-right"><?= formatCurrency($item['unitPrice']) ?></td>
-                                        <td class="text-right"><?= formatCurrency($item['totalPrice']) ?></td>
+                    <!-- Order Items -->
+                    <div class="bg-white rounded-xl shadow-sm border p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-shopping-bag text-blue-600 mr-2"></i>Order Items
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="border-b-2 border-gray-200">
+                                    <tr class="text-gray-600">
+                                        <th class="text-left py-3 px-2">Product</th>
+                                        <th class="text-center py-3 px-2">Qty</th>
+                                        <th class="text-right py-3 px-2">Unit Price</th>
+                                        <th class="text-right py-3 px-2">Total</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-
-                        <div class="mt-4 text-sm space-y-2">
-                            <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span><?= formatCurrency($subtotal) ?></span></div>
-                            <div class="flex justify-between"><span class="text-gray-500">Tax (<?= $taxRate * 100 ?>%)</span><span><?= formatCurrency($taxAmount) ?></span></div>
-                            <div class="flex justify-between"><span class="text-gray-500">Delivery Fee</span><span><?= formatCurrency($deliveryFee) ?></span></div>
-                            <div class="flex justify-between pt-3 text-lg font-semibold">
-                                <span>Total Cost</span><span class="text-blue-600"><?= formatCurrency($totalCost) ?></span>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($orderItems as $item): ?>
+                                    <tr class="border-b border-gray-100">
+                                        <td class="py-4 px-2">
+                                            <div class="font-medium text-gray-800"><?= htmlspecialchars($item['item_name']) ?></div>
+                                            <?php if ($item['gallon_type']): ?>
+                                            <div class="text-xs text-gray-500 mt-1"><?= htmlspecialchars($item['gallon_type']) ?> - <?= htmlspecialchars($item['gallon_size']) ?></div>
+                                            <?php endif; ?>
+                                            <?php if ($item['gallon_owner']): ?>
+                                            <div class="text-xs text-blue-600 mt-1">
+                                                <i class="fas fa-user-circle mr-1"></i><?= htmlspecialchars($item['gallon_owner']) ?>
+                                            </div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-center font-semibold text-gray-700 px-2"><?= intval($item['quantity']) ?></td>
+                                        <td class="text-right text-gray-700 px-2"><?= formatCurrency($item['unit_price']) ?></td>
+                                        <td class="text-right font-semibold text-gray-800 px-2"><?= formatCurrency($item['subtotal']) ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Cost Breakdown -->
+                        <div class="mt-6 pt-4 border-t space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Subtotal</span>
+                                <span class="text-gray-800"><?= formatCurrency($subtotal) ?></span>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="border rounded-xl p-5">
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="font-semibold">Order ID</span>
-                            <span><?= htmlspecialchars($orderId) ?></span>
-                        </div>
-                        <div class="flex justify-between text-sm border-b pb-3 mb-3">
-                            <span class="font-normal">Paid by</span>
-                            <span><?= htmlspecialchars($paymentMethod) ?></span>
-                        </div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-gray-500">Order Date</span>
-                            <span><?= htmlspecialchars($orderDateTime) ?></span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Ship Date</span>
-                            <span><?= htmlspecialchars($shipDateTime) ?></span>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Tax (<?= $taxRate * 100 ?>%)</span>
+                                <span class="text-gray-800"><?= formatCurrency($taxAmount) ?></span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Delivery Fee</span>
+                                <span class="text-gray-800"><?= formatCurrency($deliveryFee) ?></span>
+                            </div>
+                            <div class="flex justify-between pt-3 border-t-2 text-lg font-bold">
+                                <span class="text-gray-800">Total</span>
+                                <span class="text-blue-600"><?= formatCurrency($totalCost) ?></span>
+                            </div>
                         </div>
                     </div>
 
                 </div>
+
+                <!-- Right Column -->
+                <div class="space-y-6">
+                    
+                    <!-- Delivery Information -->
+                    <div class="bg-white rounded-xl shadow-sm border p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-map-marker-alt text-blue-600 mr-2"></i>Delivery To
+                        </h2>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">Name</p>
+                                <p class="font-semibold text-gray-800"><?= htmlspecialchars($customerName) ?></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">Phone</p>
+                                <p class="text-gray-700"><?= htmlspecialchars($customerPhone) ?></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">Address</p>
+                                <p class="text-gray-700"><?= htmlspecialchars($deliveryAddress) ?></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Information -->
+                    <div class="bg-white rounded-xl shadow-sm border p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>Order Info
+                        </h2>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Order Date</span>
+                                <span class="text-gray-800 font-medium"><?= htmlspecialchars($orderDateTime) ?></span>
+                            </div>
+                            <?php if ($pickupDateTime !== 'Pending'): ?>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Pickup Date</span>
+                                <span class="text-gray-800 font-medium"><?= htmlspecialchars($pickupDateTime) ?></span>
+                            </div>
+                            <?php endif; ?>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Delivery Date</span>
+                                <span class="text-gray-800 font-medium"><?= htmlspecialchars($deliveryDateTime) ?></span>
+                            </div>
+                            <div class="pt-3 border-t">
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-600">Payment Method</span>
+                                </div>
+                                <span class="inline-block bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                    Cash on Delivery
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php if ($orderData['rider_id']): ?>
+                    <!-- Rider Information -->
+                    <div class="bg-white rounded-xl shadow-sm border p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-motorcycle text-blue-600 mr-2"></i>Rider
+                        </h2>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">Name</p>
+                                <p class="font-semibold text-gray-800"><?= htmlspecialchars($riderName) ?></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 mb-1">Phone</p>
+                                <p class="text-gray-700"><?= htmlspecialchars($riderPhone) ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if ($orderData['delay_reason']): ?>
+                    <!-- Delay Notice -->
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-yellow-800 mb-1">Delay Notice</p>
+                                <p class="text-sm text-yellow-700"><?= htmlspecialchars($orderData['delay_reason']) ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                </div>
+
             </div>
-        </main>
+
+            <!-- Cancel Order Button (Bottom Right) -->
+            <?php if ($canCancel): ?>
+            <div class="mt-6 flex justify-end">
+                <button id="cancelOrderBtn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2 shadow-sm">
+                    <i class="fas fa-times-circle"></i>
+                    <span>Cancel Order</span>
+                </button>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+            </main>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-    const refillId = <?= $refill_id ? intval($refill_id) : 'null' ?>;
-    const customerLat = <?= json_encode($customerLat) ?>;
-    const customerLng = <?= json_encode($customerLng) ?>;
+        const refillId = <?= json_encode($refill_id) ?>;
+        const customerLat = <?= json_encode($customerLat) ?>;
+        const customerLng = <?= json_encode($customerLng) ?>;
+        const hasRider = <?= json_encode($orderData['rider_id'] !== null) ?>;
+        const orderStatus = <?= json_encode($orderStatus) ?>;
 
-    let map, riderMarker, customerMarker;
+        let map, riderMarker, customerMarker, routeLine;
 
-    function initMap() {
-        map = L.map('rider-map').setView([customerLat, customerLng], 14);
+        function initMap() {
+            const mapElement = document.getElementById('rider-map');
+            if (!mapElement) return;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+            map = L.map('rider-map').setView([customerLat, customerLng], 14);
 
-        // CUSTOMER MARKER
-        customerMarker = L.marker([customerLat, customerLng], {
-            title: 'Delivery Destination'
-        }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
 
-        customerMarker.bindPopup(
-            `<b>Delivery Address</b><br><?= addslashes($deliveryAddress) ?>`
-        );
+            // Customer marker (destination)
+            const customerIcon = L.divIcon({
+                html: '<i class="fas fa-home text-2xl text-red-600"></i>',
+                className: 'custom-marker',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
 
-        // RIDER MARKER
-        riderMarker = L.marker([customerLat, customerLng], {
-            title: 'Rider (live)'
-        }).addTo(map);
+            customerMarker = L.marker([customerLat, customerLng], {
+                icon: customerIcon,
+                title: 'Delivery Destination'
+            }).addTo(map);
 
-        riderMarker.bindPopup(`<b>Rider</b><br>Fetching location...`);
+            customerMarker.bindPopup(`
+                <div class="p-2">
+                    <b class="text-blue-600">Delivery Destination</b><br>
+                    <span class="text-sm"><?= addslashes($deliveryAddress) ?></span>
+                </div>
+            `);
 
-        fetchRiderLocation();
-        setInterval(fetchRiderLocation, 5000);
-    }
+            // Rider marker
+            const riderIcon = L.divIcon({
+                html: '<i class="fas fa-motorcycle text-2xl text-blue-600"></i>',
+                className: 'custom-marker',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
 
-    async function fetchRiderLocation() {
+            riderMarker = L.marker([customerLat, customerLng], {
+                icon: riderIcon,
+                title: 'Rider Location'
+            }).addTo(map);
 
-        if (!refillId) return;
+            riderMarker.bindPopup(`
+                <div class="p-2">
+                    <b class="text-blue-600">Rider Location</b><br>
+                    <span class="text-sm">Fetching location...</span>
+                </div>
+            `);
 
-        try {
-            const resp = await fetch(
-                `order_details.php?refill_id=${refillId}&action=rider_location`,
-                { cache: "no-store" }
-            );
-
-            const data = await resp.json();
-
-            if (data.latitude && data.longitude) {
-                const lat = parseFloat(data.latitude);
-                const lng = parseFloat(data.longitude);
-
-                riderMarker.setLatLng([lat, lng]);
+            // Fetch rider location if order is on delivery
+            if (orderStatus === 'On delivery' && hasRider) {
+                fetchRiderLocation();
+                setInterval(fetchRiderLocation, 5000); // Update every 5 seconds
             }
-        } catch (err) {
-            console.error("Rider location fetch error:", err);
         }
-    }
 
-    document.addEventListener('DOMContentLoaded', initMap);
-</script>
+        async function fetchRiderLocation() {
+            if (!refillId || !hasRider) return;
+
+            try {
+                const resp = await fetch(
+                    `order_details.php?refill_id=${refillId}&action=rider_location`,
+                    { cache: "no-store" }
+                );
+
+                const data = await resp.json();
+
+                if (data.latitude && data.longitude) {
+                    const lat = parseFloat(data.latitude);
+                    const lng = parseFloat(data.longitude);
+
+                    // Update rider marker position
+                    riderMarker.setLatLng([lat, lng]);
+                    riderMarker.getPopup().setContent(`
+                        <div class="p-2">
+                            <b class="text-blue-600">Rider Location</b><br>
+                            <span class="text-xs text-gray-600">Last updated: ${new Date(data.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                    `);
+
+                    // Draw route line
+                    if (routeLine) {
+                        map.removeLayer(routeLine);
+                    }
+                    
+                    routeLine = L.polyline([
+                        [lat, lng],
+                        [customerLat, customerLng]
+                    ], {
+                        color: '#3B82F6',
+                        weight: 3,
+                        opacity: 0.7,
+                        dashArray: '10, 10'
+                    }).addTo(map);
+
+                    // Fit bounds to show both markers
+                    const bounds = L.latLngBounds([
+                        [lat, lng],
+                        [customerLat, customerLng]
+                    ]);
+                    map.fitBounds(bounds, { padding: [50, 50] });
+                }
+            } catch (err) {
+                console.error("Rider location fetch error:", err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initMap);
+    </script>
+
+    <script>
+        // Cancel Order Functionality
+        const cancelOrderBtn = document.getElementById('cancelOrderBtn');
+        if (cancelOrderBtn) {
+            cancelOrderBtn.addEventListener('click', async function() {
+                const result = await Swal.fire({
+                    title: 'Cancel Order?',
+                    text: 'Are you sure you want to cancel this order?',
+                    icon: 'warning',
+                    input: 'textarea',
+                    inputLabel: 'Reason for cancellation (optional)',
+                    inputPlaceholder: 'Please tell us why you want to cancel...',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Yes, cancel order',
+                    cancelButtonText: 'No, keep order',
+                    showLoaderOnConfirm: true,
+                    preConfirm: async (reason) => {
+                        try {
+                            const formData = new FormData();
+                            formData.append('action', 'cancel_order');
+                            formData.append('order_number', orderNumber);
+                            formData.append('cancel_reason', reason || '');
+
+                            const response = await fetch('order_details.php', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const data = await response.json();
+
+                            if (!data.success) {
+                                throw new Error(data.message || 'Failed to cancel order');
+                            }
+
+                            return data;
+                        } catch (error) {
+                            Swal.showValidationMessage(`Error: ${error.message}`);
+                        }
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                });
+
+                if (result.isConfirmed) {
+                    await Swal.fire({
+                        title: 'Order Cancelled!',
+                        text: 'Your order has been cancelled successfully.',
+                        icon: 'success',
+                        confirmButtonColor: '#2563eb',
+                        confirmButtonText: 'OK'
+                    });
+                    
+                    // Redirect to my orders page
+                    window.location.href = 'my_orders.php';
+                }
+            });
+        }
+    </script>
 
 </body>
-
 </html>

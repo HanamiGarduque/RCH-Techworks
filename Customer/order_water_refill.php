@@ -20,6 +20,9 @@ $user_id = $_SESSION['id'] ?? null;
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -231,9 +234,26 @@ $user_id = $_SESSION['id'] ?? null;
                                     <button id="cancelAddressBtn" class="bg-white border px-4 py-2 rounded hover:bg-blue-600 hover:text-white">Cancel</button>
                                 </div>
                             </div>
-                            <div id="mapContainer" class="flex-1 border rounded-lg bg-blue-100" style="height: 300px;">
-                                <!-- The map will be rendered here -->
+                            <!-- Small map container -->
+                            <div id="mapContainer" class="flex-1 border rounded-lg bg-blue-100 cursor-pointer" style="height: 300px;">
+                                <!-- The small map preview -->
                             </div>
+
+                            <!-- Full map modal -->
+                            <div id="mapModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                                <div class="bg-white w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col">
+                                    <div class="flex justify-between items-center p-4 border-b">
+                                        <h3 class="text-xl font-bold">Update Location</h3>
+                                        <button onclick="closeMapModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                                    </div>
+                                    <div id="fullMap" class="flex-1 rounded-b-xl"></div>
+                                    <div class="flex gap-3 p-4">
+                                        <button onclick="closeMapModal()" class="flex-1 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Cancel</button>
+                                        <button onclick="saveFullMapLocation()" class="flex-1 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Location</button>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
@@ -1465,6 +1485,87 @@ $user_id = $_SESSION['id'] ?? null;
         // Start at step 1
         goToStep(1);
     </script>
+    <script>
+        let map, marker;
+        let fullMap, fullMarker;
+        let currentLat, currentLng;
+
+        // Open modal when small map is clicked
+        document.getElementById("mapContainer").addEventListener("click", openMapModal);
+
+        // Fetch user location for initializing both maps
+        fetch("get_user_location.php")
+            .then(res => res.json())
+            .then(data => {
+                currentLat = data.latitude;
+                currentLng = data.longitude;
+
+                // Initialize small map (preview)
+                map = L.map("mapContainer", {
+                    zoomControl: false,
+                    dragging: false
+                }).setView([currentLat, currentLng], 15);
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    attribution: "Map data © OpenStreetMap contributors"
+                }).addTo(map);
+                marker = L.marker([currentLat, currentLng]).addTo(map);
+            });
+
+        // Functions to open/close modal
+        function openMapModal() {
+            document.getElementById("mapModal").classList.remove("hidden");
+
+            // Initialize full map if not already
+            if (!fullMap) {
+                fullMap = L.map("fullMap").setView([currentLat, currentLng], 17);
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    attribution: "Map data © OpenStreetMap contributors"
+                }).addTo(fullMap);
+                fullMarker = L.marker([currentLat, currentLng], {
+                    draggable: true
+                }).addTo(fullMap);
+            } else {
+                fullMap.setView([currentLat, currentLng], 17);
+                fullMarker.setLatLng([currentLat, currentLng]);
+            }
+        }
+
+        function closeMapModal() {
+            document.getElementById("mapModal").classList.add("hidden");
+        }
+
+        // Save updated location from full map
+        function saveFullMapLocation() {
+            const latLng = fullMarker.getLatLng();
+            currentLat = latLng.lat;
+            currentLng = latLng.lng;
+
+            // Update small map marker
+            marker.setLatLng([currentLat, currentLng]);
+            map.setView([currentLat, currentLng], 15);
+
+            // Save to database
+            fetch("update_user_location.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        latitude: currentLat,
+                        longitude: currentLng
+                    })
+                })
+                .then(res => res.json())
+                .then(data => console.log("Location saved:", data));
+
+            closeMapModal();
+        }
+    </script>
+
+
+
+
+
 </body>
 
 </html>

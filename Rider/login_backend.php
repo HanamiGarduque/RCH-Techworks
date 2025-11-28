@@ -19,9 +19,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $rider = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($rider && hash('sha256', $password) === $rider['password_hash']) {
-        $_SESSION['rider_id'] = $rider['user_id'];
-        $_SESSION['rider_name'] = $rider['name'];
+        $_SESSION['id'] = $rider['user_id'];
+        $_SESSION['name'] = $rider['name'];
         echo json_encode(['success' => true]);
+
+        
     } else {
         echo json_encode(['success' => false, 'message' => 'Invalid username or password']);
     }

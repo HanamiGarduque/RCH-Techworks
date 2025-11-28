@@ -21,20 +21,20 @@ redirectIfRoleMismatch('admin'); // only admins can access
         overflow-x: hidden;
     }
 
-    /* Use scrollbar-gutter to reserve space without forcing scrollbar */
-    html {
-        scrollbar-gutter: stable;
-    }
+   body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
+    overflow: hidden !important;
+    padding-right: 0 !important;
+}
 
-    /* Override SweetAlert2's body modifications */
-    body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
-        overflow: hidden !important;
-        padding-right: 0 !important;
-    }
+/* Prevent height changes */
+body.swal2-height-auto {
+    height: auto !important;
+}
 
-    body.swal2-height-auto {
-        height: 100% !important;
-    }
+/* Use scrollbar-gutter to reserve space without showing scrollbar */
+body {
+    scrollbar-gutter: stable;
+}
 
     .receipt-card:hover {
         transform: translateY(-2px);

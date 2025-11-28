@@ -4,14 +4,23 @@ require_once '../Database/db_connection.php';
 date_default_timezone_set('Asia/Manila');
 
 header('Content-Type: application/json');
+
+// Add error logging
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Don't display errors in JSON response
+ini_set('log_errors', 1);
+
 $db = new Database();
 $conn = $db->getConnect();
+
 // Get the logged-in rider ID from session
-// $rider_id = $_SESSION['rider_id'] ?? null;
-$rider_id = 7;
+$rider_id = $_SESSION['id'] ?? null;
+
+// Debug: Log the rider_id
+error_log("Rider ID from session: " . ($rider_id ?? 'NULL'));
 
 if (!$rider_id) {
-    echo json_encode(['error' => 'Rider not logged in']);
+    echo json_encode(['error' => 'Rider not logged in', 'session' => $_SESSION]);
     exit;
 }
 
@@ -51,10 +60,11 @@ try {
             u.user_id,
             u.name,
             u.address,
-            u.latitude,
-            u.longitude
+            COALESCE(m.latitude, '') as latitude,
+            COALESCE(m.longitude, '') as longitude
         FROM water_refills w
         JOIN users u ON w.user_id = u.user_id
+        LEFT JOIN map_location m ON u.user_id = m.user_id
         WHERE w.rider_id = :rider_id 
         AND w.order_status IN ('pickup_in_progress', 'picked_up', 'on_delivery')
         ORDER BY w.pickup_datetime ASC, w.delivery_datetime ASC
@@ -91,9 +101,12 @@ try {
             w.order_status,
             u.user_id,
             u.name,
-            u.address
+            u.address,
+            COALESCE(m.latitude, '') as latitude,
+            COALESCE(m.longitude, '') as longitude
         FROM water_refills w
         JOIN users u ON w.user_id = u.user_id
+        LEFT JOIN map_location m ON u.user_id = m.user_id
         WHERE w.rider_id = :rider_id 
         AND w.order_status = 'assigned'
         AND w.pickup_datetime IS NOT NULL
@@ -120,13 +133,14 @@ try {
             'user' => [
                 'user_id' => $row['user_id'],
                 'name' => $row['name'],
-                'address' => $row['address']
+                'address' => $row['address'],
+                'latitude' => $row['latitude'],
+                'longitude' => $row['longitude']
             ]
         ];
     }
 
     // Fetch PENDING DELIVERY deliveries (status: 'picked_up')
-    // These are water_refills that have been picked up and ready for delivery
     $deliveryQuery = "
         SELECT 
             w.refill_id,
@@ -136,9 +150,12 @@ try {
             w.order_status,
             u.user_id,
             u.name,
-            u.address
+            u.address,
+            COALESCE(m.latitude, '') as latitude,
+            COALESCE(m.longitude, '') as longitude
         FROM water_refills w
         JOIN users u ON w.user_id = u.user_id
+        LEFT JOIN map_location m ON u.user_id = m.user_id
         WHERE w.rider_id = :rider_id 
         AND w.order_status = 'picked_up'
         ORDER BY w.delivery_datetime ASC
@@ -164,7 +181,9 @@ try {
             'user' => [
                 'user_id' => $row['user_id'],
                 'name' => $row['name'],
-                'address' => $row['address']
+                'address' => $row['address'],
+                'latitude' => $row['latitude'],
+                'longitude' => $row['longitude']
             ]
         ];
     }
@@ -179,9 +198,12 @@ try {
             w.order_status,
             u.user_id,
             u.name,
-            u.address
+            u.address,
+            COALESCE(m.latitude, '') as latitude,
+            COALESCE(m.longitude, '') as longitude
         FROM water_refills w
         JOIN users u ON w.user_id = u.user_id
+        LEFT JOIN map_location m ON u.user_id = m.user_id
         WHERE w.rider_id = :rider_id 
         AND w.order_status IN ('pickup_delayed', 'delivery_delayed')
         ORDER BY w.delivery_datetime DESC
@@ -207,7 +229,9 @@ try {
             'user' => [
                 'user_id' => $row['user_id'],
                 'name' => $row['name'],
-                'address' => $row['address']
+                'address' => $row['address'],
+                'latitude' => $row['latitude'],
+                'longitude' => $row['longitude']
             ]
         ];
     }
@@ -222,9 +246,12 @@ try {
             w.order_status,
             u.user_id,
             u.name,
-            u.address
+            u.address,
+            COALESCE(m.latitude, '') as latitude,
+            COALESCE(m.longitude, '') as longitude
         FROM water_refills w
         JOIN users u ON w.user_id = u.user_id
+        LEFT JOIN map_location m ON u.user_id = m.user_id
         WHERE w.rider_id = :rider_id 
         AND w.order_status = 'delivered'
         ORDER BY w.delivery_datetime DESC
@@ -250,15 +277,22 @@ try {
             'user' => [
                 'user_id' => $row['user_id'],
                 'name' => $row['name'],
-                'address' => $row['address']
+                'address' => $row['address'],
+                'latitude' => $row['latitude'],
+                'longitude' => $row['longitude']
             ]
         ];
     }
 
+    // Log counts for debugging
+    error_log("Active orders: " . count($response['active']));
+    error_log("Pickup orders: " . (count($response['pending']['pickup']['morning']) + count($response['pending']['pickup']['afternoon'])));
+    
     echo json_encode($response);
     
 } catch (Exception $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+    error_log("Database error: " . $e->getMessage());
+    echo json_encode(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
 }
 
 $conn = null; // Close PDO connection

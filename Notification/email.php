@@ -5,9 +5,9 @@
 function sendEmail($toEmail, $toName, $subject, $htmlContent, $attachmentPath = null)
 {
 
-    $apiKey = "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";
+    // $apiKey = "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";
 
-    // $apiKey = "key"; 
+    $apiKey = "key"; 
 
     // Brevo endpoint
     $url = "https://api.brevo.com/v3/smtp/email";
@@ -483,7 +483,7 @@ function notifyAdminPendingDeadlines($pendingCount, $pendingSummary = null)
 
     return sendEmail($adminEmail, $adminName, "🚨 URGENT: {$pendingCount} Orders Near Deadline", $html);
 }
-// Admin: Order Cancelled 
+
 function notifyAdminOrderIssue($orderId, $customerName, $issue)
 {
     global $adminEmail, $adminName;
@@ -513,6 +513,43 @@ function notifyAdminOrderIssue($orderId, $customerName, $issue)
 
     return sendEmail($adminEmail, $adminName, "Issue Reported — Order #$orderId", $html);
 }
+
+function notifyAdminOrderCancelled($refillId, $orderNumber, $customerName, $cancelReason = "No reason provided")
+{
+    global $adminEmail, $adminName;
+
+    $html = "
+    <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #1F2937;'>
+        <h2 style='color: #DC2626;'>Order Cancelled by Customer</h2>
+
+        <p>A customer has cancelled their water refill order. Below are the details:</p>
+
+        <ul style='margin-left:20px;'>
+            <li><strong>Refill ID:</strong> #$refillId</li>
+            <li><strong>Order Number:</strong> $orderNumber</li>
+            <li><strong>Customer:</strong> $customerName</li>
+            <li><strong>Cancellation Reason:</strong> $cancelReason</li>
+        </ul>
+
+        <p style='text-align:center; margin: 25px 0;'>
+            <a href='http://localhost/Tin_RCH-Techworks/admin/orders.php?filter=cancelled'
+               style='background-color: #DC2626; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 8px; display:inline-block; font-weight: bold;'>
+               Review Cancelled Order
+            </a>
+        </p>
+
+        <p>Please review the details and take the necessary action if needed.</p>
+    </div>
+    ";
+
+    return sendEmail(
+        $adminEmail,
+        $adminName,
+        "Order Cancelled — #$orderNumber",
+        $html
+    );
+}
+
 
 // =====================================
 //  RIDER NOTIFICATIONS

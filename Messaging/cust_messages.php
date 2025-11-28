@@ -1,14 +1,17 @@
 <?php
-// require_once '../check_session.php';
-require_once '../Database/db_connection.php';
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('customer');
+date_default_timezone_set('Asia/Manila');
 
-// if (!isAdmin()) {
-//     header("Location: " . dirname($_SERVER['PHP_SELF']) . "/index.php");
-//     exit();
-// }
+require_once '../Database/db_connection.php';
 
 $database = new Database();
 $db = $database->getConnect();
+
+// Get session values for JavaScript
+$user_id = $_SESSION['id'] ?? null;
+$user_role = $_SESSION['role'] ?? null;
+$user_name = $_SESSION['name'] ?? 'Customer';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,10 +22,8 @@ $db = $database->getConnect();
     <title>RCH Water - Customer Messages</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -33,15 +34,109 @@ $db = $database->getConnect();
         .chat-messages {
             scroll-behavior: smooth;
         }
+
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+            }
+
+            30% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .message-fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .contact-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            min-width: 18px;
+            height: 18px;
+            background: #ef4444;
+            border-radius: 9px;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            padding: 0 4px;
+        }
+
+        .image-preview-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .image-preview-container img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+        }
+
+        .image-preview-close {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
     </style>
 </head>
-
 
 <body class="bg-gray-50 overflow-hidden">
     <div class="flex h-screen">
         <!-- Sidebar -->
         <script src="../Customer/includes/sidebar.js"></script>
-
 
         <!-- Main Content -->
         <div class="flex-1 ml-20 group-hover:ml-64 transition-all duration-300 ease-in-out">
@@ -50,57 +145,86 @@ $db = $database->getConnect();
                 <!-- Header -->
                 <?php
                 $pageTitle = "Customer Messages";
-                $pageSubtitle = "Chat with admin and rider in real-time.";
+                $pageSubtitle = "Chat with the admin and rider in real-time.";
                 include '../Customer/includes/header.php';
                 ?>
+
                 <!-- Chat Container -->
                 <div class="flex-1 flex gap-4 p-4 overflow-hidden">
 
-                    <!-- Chat list panel on the left -->
+                    <!-- Chat list panel -->
                     <div class="w-80 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
 
                         <!-- Search Bar -->
                         <div class="p-4 border-b border-gray-100">
                             <div class="relative">
                                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                <input type="text" id="search-input" placeholder="Search chats..." class="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 text-sm">
+                                <input type="text" id="search-input" placeholder="Search chats..."
+                                    class="w-full pl-10 pr-4 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 text-sm transition">
                             </div>
                         </div>
 
                         <!-- Chat List -->
                         <div class="flex-1 overflow-y-auto" id="chat-list-container">
-                            <!-- Customer Chats Section -->
+                            <div class="flex items-center justify-center h-full">
+                                <div class="typing-indicator">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Chat main area on the right -->
+                    <!-- Chat main area -->
                     <div class="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <!-- Chat Header -->
                         <div class="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-between" id="chat-header">
-
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    <i class="fas fa-comments"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Select a contact</p>
+                                    <p class="text-xs text-gray-500">Choose someone to start chatting</p>
+                                </div>
+                            </div>
                         </div>
-
 
                         <!-- Chat Messages -->
                         <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 chat-messages" id="messages-container">
                             <div class="flex items-center justify-center h-full">
-                                <p class="text-gray-400 text-center">Select a contact to view messages</p>
+                                <div class="text-center">
+                                    <i class="fas fa-comments text-gray-300 text-6xl mb-4"></i>
+                                    <p class="text-gray-400 text-lg">Select a contact to view messages</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image Preview Area (hidden by default) -->
+                        <div id="image-preview-area" class="hidden p-4 border-t border-gray-100 bg-gray-50">
+                            <div class="image-preview-container">
+                                <img id="preview-image" src="" alt="Preview">
+                                <div class="image-preview-close" onclick="clearImagePreview()">
+                                    <i class="fas fa-times"></i>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Chat Input -->
-                        <div class="p-4 border-t border-gray-100 bg-white">
+                        <div class="p-4 border-t border-gray-100 bg-white" id="chat-input-area">
                             <div class="flex items-end gap-3">
-                                <button class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition text-gray-600">
-                                    <i class="fas fa-plus text-lg"></i>
+                                <button id="attach-btn" class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition text-gray-600 disabled:opacity-50" disabled>
+                                    <i class="fas fa-paperclip text-lg"></i>
                                 </button>
                                 <div class="flex-1 flex items-center gap-2 bg-gray-50 rounded-full px-4 py-2 border border-gray-200 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition">
-                                    <input type="text" placeholder="Type your message..." class="flex-1 bg-transparent text-sm outline-none text-gray-800 placeholder-gray-400">
+                                    <input type="text" id="message-input" placeholder="Select a contact to start messaging..."
+                                        class="flex-1 bg-transparent text-sm outline-none text-gray-800 placeholder-gray-400" disabled>
                                     <button class="flex-shrink-0 text-gray-400 hover:text-blue-600 transition">
                                         <i class="fas fa-face-smile text-lg"></i>
                                     </button>
                                 </div>
-                                <button class="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center rounded-full hover:shadow-lg transition text-white">
+                                <button id="send-btn" class="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center rounded-full hover:shadow-lg transition text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                                     <i class="fas fa-paper-plane text-lg"></i>
                                 </button>
                             </div>
@@ -110,182 +234,256 @@ $db = $database->getConnect();
             </div>
         </div>
 
-        <!-- Existing hidden input -->
+        <!-- Hidden file input -->
         <input type="file" id="image-input" accept="image/*" style="display: none;">
 
         <!-- Image Preview Modal -->
-        <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50">
-            <img id="modalImage" src="" class="max-w-[90%] max-h-[90%] rounded-lg shadow-lg" alt="Preview">
+        <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 cursor-pointer">
+            <div class="relative max-w-[90%] max-h-[90%]">
+                <img id="modalImage" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-lg" alt="Preview">
+                <button class="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center text-gray-800 hover:bg-gray-100 transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
-
 
     </div>
 
     <script>
-        const currentUserId = 4;
-        const currentUserType = 'customer';
+        // PHP session values passed to JavaScript
+        const currentUserId = <?php echo json_encode($user_id); ?>;
+        const currentUserType = <?php echo json_encode($user_role); ?>;
+        const currentUserName = <?php echo json_encode($user_name); ?>;
+
         let activeReceiverId = null;
         let activeReceiverName = '';
+        let activeReceiverInitials = '';
         let allContacts = [];
+        let isSearching = false;
+        let searchTimeout = null;
+        let contactsRefreshInterval = null;
+        let messagesRefreshInterval = null;
+        let selectedImageFile = null;
 
+        // Validate session
+        if (!currentUserId) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Session Error',
+                text: 'User session not found. Please log in again.',
+                confirmButtonColor: '#3b82f6'
+            }).then(() => {
+                window.location.href = '../login.php';
+            });
+        }
+
+        function formatMessageDate(timestamp) {
+            const date = new Date(timestamp.replace(" ", "T"));
+            return date.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        // Utility functions
         function formatMessageTime(timestamp) {
             if (!timestamp) return "";
-            const date = new Date(timestamp.replace(" ", "T"));
-            if (isNaN(date)) return ""; // fallback
-            return date.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            });
+            try {
+                const date = new Date(timestamp.replace(" ", "T"));
+                if (isNaN(date)) return "";
+                return date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            } catch (e) {
+                console.error('Error formatting time:', e);
+                return "";
+            }
         }
 
         function formatLastMessageTime(timestamp) {
             if (!timestamp) return "";
-            const date = new Date(timestamp.replace(" ", "T"));
-            if (isNaN(date)) return "—";
-            const now = new Date();
-            const diffMs = now - date;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
 
-            if (diffMins < 1) return 'just now';
-            if (diffMins < 60) return `${diffMins}m`;
-            if (diffHours < 24) return `${diffHours}h`;
-            if (diffDays < 7) return `${diffDays}d`;
-            return date.toLocaleDateString();
+            try {
+                const date = new Date(timestamp.replace(" ", "T").split(".")[0]);
+                if (isNaN(date.getTime())) return "—";
+
+                const now = new Date();
+                const diffMs = now - date;
+                const diffSecs = Math.floor(diffMs / 1000);
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+
+                if (diffSecs < 60) return 'just now';
+                if (diffMins < 60) return `${diffMins}m`;
+                if (diffHours < 24) return `${diffHours}h`;
+                if (diffDays < 7) return `${diffDays}d`;
+                if (diffDays < 365) {
+                    return date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                }
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                console.error("Error formatting time:", e, timestamp);
+                return "—";
+            }
         }
 
+        function showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: message,
+                confirmButtonColor: '#3b82f6',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+
+        function showSuccess(message) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: message,
+                confirmButtonColor: '#3b82f6',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
 
         function loadContacts(searchQuery = '') {
             const params = new URLSearchParams({
-                user_type: currentUserType,
                 search: searchQuery
             });
 
             fetch(`get_contacts.php?${params}`)
-                .then(res => res.json())
-                .then(data => {
-                    console.log("[] Contacts loaded:", data);
-                    allContacts = data;
-                    const container = document.getElementById('chat-list-container');
-                    container.innerHTML = '';
-
-                    // Organize contacts by type
-                    const customers = data.filter(c => c.type === 'customer');
-                    const riders = data.filter(c => c.type === 'rider');
-                    const admins = data.filter(c => c.type === 'admin');
-
-                    // Render customers section
-                    if (customers.length > 0) {
-                        container.innerHTML += `
-                            <div class="px-3 py-2">
-                                <p class="text-xs font-semibold text-gray-600 px-2 mb-2 uppercase tracking-wide">
-                                    <i class="fas fa-user-circle text-blue-500 mr-1"></i>
-                                    Customers
-                                </p>
-                        `;
-                        customers.forEach(customer => {
-                            const bgClass = customer.avatar_color || 'from-blue-400 to-blue-600';
-                            const isActive = activeReceiverId == customer.user_id;
-                            const unreadClass = customer.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
-                            const lastMsgClass = customer.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
-
-                            container.innerHTML += `
-                                <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${customer.user_id}" data-receiver-name="${customer.name}">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex items-start gap-2 flex-1">
-                                            <div class="w-10 h-10 bg-gradient-to-br ${bgClass} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-                                                ${customer.initials}
-                                            </div>
-                                            <div class="flex-1 min-w-0">
-                                                <p class="${unreadClass} text-sm truncate">${customer.name}</p>
-                                                <p class="text-xs truncate ${lastMsgClass}">${customer.last_message}</p>
-                                            </div>
-                                        </div>
-                                        <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${formatLastMessageTime(customer.last_message_time)}</span>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        container.innerHTML += `</div>`;
-                    }
-
-                    // Render riders section
-                    if (riders.length > 0) {
-                        container.innerHTML += `
-                            <div class="px-3 py-2 border-t border-gray-200">
-                                <p class="text-xs font-semibold text-gray-600 px-2 mb-2 uppercase tracking-wide">
-                                    <i class="fas fa-motorcycle text-orange-500 mr-1"></i>
-                                    Riders
-                                </p>
-                        `;
-                        riders.forEach(rider => {
-                            const bgClass = rider.avatar_color || 'from-orange-400 to-orange-600';
-                            const isActive = activeReceiverId == rider.user_id;
-                            const unreadClass = rider.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
-                            const lastMsgClass = rider.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
-
-                            container.innerHTML += `
-                                <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${rider.user_id}" data-receiver-name="${rider.name}">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex items-start gap-2 flex-1">
-                                            <div class="w-10 h-10 bg-gradient-to-br ${bgClass} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-                                                ${rider.initials}
-                                            </div>
-                                            <div class="flex-1 min-w-0">
-                                                <p class="${unreadClass} text-sm truncate">${rider.name}</p>
-                                                <p class="text-xs truncate ${lastMsgClass}">${rider.last_message}</p>
-                                            </div>
-                                        </div>
-                                        <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${formatLastMessageTime(rider.last_message_time)}</span>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        container.innerHTML += `</div>`;
-                    }
-
-                    // Render admins section (if visible)
-                    if (admins.length > 0) {
-                        container.innerHTML += `
-                            <div class="px-3 py-2 border-t border-gray-200">
-                                <p class="text-xs font-semibold text-gray-600 px-2 mb-2 uppercase tracking-wide">
-                                    <i class="fas fa-shield-alt text-purple-500 mr-1"></i>
-                                    Admins
-                                </p>
-                        `;
-                        admins.forEach(admin => {
-                            const bgClass = admin.avatar_color || 'from-purple-400 to-purple-600';
-                            const isActive = activeReceiverId == admin.user_id;
-                            const unreadClass = admin.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
-                            const lastMsgClass = admin.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
-
-                            container.innerHTML += `
-                                <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" data-receiver-id="${admin.user_id}" data-receiver-name="${admin.name}">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex items-start gap-2 flex-1">
-                                            <div class="w-10 h-10 bg-gradient-to-br ${bgClass} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-                                                ${admin.initials}
-                                            </div>
-                                            <div class="flex-1 min-w-0">
-                                                <p class="${unreadClass} text-sm truncate">${admin.name}</p>
-                                                <p class="text-xs truncate ${lastMsgClass}">${admin.last_message}</p>
-                                            </div>
-                                        </div>
-                                        <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${formatLastMessageTime(admin.last_message_time)}</span>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        container.innerHTML += `</div>`;
-                    }
-
-                    // Attach click handlers and keep active state
-                    attachContactListeners();
-                    restoreActiveContact();
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
                 })
-                .catch(err => console.log("[] Error loading contacts:", err));
+                .then(response => {
+                    console.log("Contacts response:", response);
+
+                    let data = Array.isArray(response) ? response : (response.data || []);
+
+                    if (response.success === false) {
+                        console.error("API Error:", response.message);
+                        showError(response.message || 'Failed to load contacts');
+                        return;
+                    }
+
+                    allContacts = data;
+                    renderContacts(data);
+                })
+                .catch(err => {
+                    console.error("Error loading contacts:", err);
+                    showError('Failed to load contacts. Please check console for details.');
+
+                    const container = document.getElementById('chat-list-container');
+                    container.innerHTML = `
+                        <div class="flex items-center justify-center h-full p-4">
+                            <div class="text-center">
+                                <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
+                                <p class="text-gray-600 font-medium">Failed to load contacts</p>
+                                <p class="text-gray-400 text-sm mt-1">Please refresh the page</p>
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderContacts(data) {
+            const container = document.getElementById('chat-list-container');
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="flex items-center justify-center h-full p-4">
+                        <p class="text-gray-400 text-center">No contacts found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            // Organize by type
+            const customers = data.filter(c => c.type === 'customer');
+            const riders = data.filter(c => c.type === 'rider');
+            const admins = data.filter(c => c.type === 'admin');
+
+            // Render customers
+            if (customers.length > 0) {
+                container.innerHTML += renderContactSection('Customers', customers, 'fa-user-circle', 'blue');
+            }
+
+            // Render riders
+            if (riders.length > 0) {
+                container.innerHTML += renderContactSection('Riders', riders, 'fa-motorcycle', 'orange');
+            }
+
+            // Render admins
+            if (admins.length > 0) {
+                container.innerHTML += renderContactSection('Admins', admins, 'fa-shield-alt', 'purple');
+            }
+
+            attachContactListeners();
+            restoreActiveContact();
+        }
+
+        function renderContactSection(title, contacts, icon, color) {
+            let html = `
+        <div class="px-3 py-2 ${title !== 'Customers' ? 'border-t border-gray-200' : ''}">
+            <p class="text-xs font-semibold text-gray-600 px-2 mb-2 uppercase tracking-wide">
+                <i class="fas ${icon} text-${color}-500 mr-1"></i>
+                ${title}
+            </p>
+    `;
+
+            contacts.forEach(contact => {
+                const isActive = activeReceiverId == contact.user_id;
+                const unreadClass = contact.has_unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-800';
+                const lastMsgClass = contact.has_unread ? 'font-bold text-gray-900' : 'text-gray-600';
+
+                // Use JavaScript to format the time instead of PHP's time_ago
+                const timeDisplay = formatLastMessageTime(contact.last_message_time);
+
+                html += `
+            <div class="chat-item relative p-3 rounded-lg mb-2 cursor-pointer transition ${isActive ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50'}" 
+                 data-receiver-id="${contact.user_id}" 
+                 data-receiver-name="${contact.name}"
+                 data-receiver-initials="${contact.initials}">
+                ${contact.unread_count > 0 ? `<div class="contact-badge">${contact.unread_count}</div>` : ''}
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start gap-2 flex-1">
+                        <div class="w-10 h-10 bg-gradient-to-br ${contact.avatar_color} rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
+                            ${contact.initials}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="${unreadClass} text-sm truncate">${contact.name}</p>
+                            <p class="text-xs truncate ${lastMsgClass}">${contact.last_message || 'No messages yet'}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-500 ml-2 flex-shrink-0">${timeDisplay}</span>
+                </div>
+            </div>
+        `;
+            });
+
+            html += `</div>`;
+            return html;
         }
 
         function restoreActiveContact() {
@@ -303,6 +501,7 @@ $db = $database->getConnect();
                 item.addEventListener('click', function() {
                     const receiverId = this.getAttribute('data-receiver-id');
                     const receiverName = this.getAttribute('data-receiver-name');
+                    const receiverInitials = this.getAttribute('data-receiver-initials');
 
                     // Update active state
                     document.querySelectorAll('.chat-item').forEach(el => {
@@ -315,212 +514,329 @@ $db = $database->getConnect();
                     // Update active receiver
                     activeReceiverId = receiverId;
                     activeReceiverName = receiverName;
+                    activeReceiverInitials = receiverInitials;
+
+                    // Enable input
+                    document.getElementById('message-input').disabled = false;
+                    document.getElementById('message-input').placeholder = 'Type your message...';
+                    document.getElementById('send-btn').disabled = false;
+                    document.getElementById('attach-btn').disabled = false;
 
                     // Update chat header
-                    updateChatHeader(receiverName, this.querySelector('.w-10').textContent);
+                    updateChatHeader(receiverName, receiverInitials);
 
-                    // Mark messages as read immediately
-                    fetch('mark_read.php', {
-                            method: 'POST',
-                            body: new URLSearchParams({
-                                contact_id: activeReceiverId
-                            })
-                        })
-                        .then(res => res.json())
-                        .then(() => loadContacts()) // refresh contact list to remove bold/unread styling
-                        .catch(console.error);
+                    // Mark as read
+                    markAsRead(receiverId);
 
-                    // Load messages for this contact
-                    loadMessages();
+                    // Load messages and force scroll to bottom for new contact
+                    loadMessages(true);
                 });
-
             });
         }
 
         function updateChatHeader(name, initials) {
             const header = document.getElementById('chat-header');
-            if (header) {
-                header.innerHTML = `
-                    <div class="flex items-center gap-3 w-full">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                            ${initials}
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-800">${name}</p>
-                            <p class="text-xs text-green-600 flex items-center gap-1">
-                                <i class="fas fa-circle text-green-500" style="font-size: 0.4rem;"></i>
-                                Online now
-                            </p>
-                        </div>
+            header.innerHTML = `
+                <div class="flex items-center gap-3 w-full">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        ${initials}
                     </div>
-                `;
-            }
+                    <div>
+                        <p class="font-semibold text-gray-800">${name}</p>
+                        <p class="text-xs text-green-600 flex items-center gap-1">
+                            <i class="fas fa-circle text-green-500" style="font-size: 0.4rem;"></i>
+                            Online now
+                        </p>
+                    </div>
+                </div>
+            `;
         }
 
-        function loadMessages() {
+        function markAsRead(contactId) {
+            fetch('mark_read.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        contact_id: contactId
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        loadContacts();
+                    }
+                })
+                .catch(console.error);
+        }
+
+        function loadMessages(forceScrollToBottom = false) {
             if (!activeReceiverId) return;
 
             fetch(`get_messages.php?sender_id=${currentUserId}&receiver_id=${activeReceiverId}`)
-                .then(res => res.json())
-                .then(data => {
-                    console.log("[ Messages loaded:", data);
-                    const container = document.getElementById('messages-container');
-                    container.innerHTML = '';
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
+                })
+                .then(response => {
+                    console.log("Messages response:", response);
 
-                    const sortedData = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    let data = Array.isArray(response) ? response : (response.data || []);
 
-                    if (sortedData.length === 0) {
-                        container.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-gray-400">No messages yet. Start the conversation!</p></div>';
+                    if (response.success === false) {
+                        console.error("API Error:", response.message);
+                        showError(response.message || 'Failed to load messages');
                         return;
                     }
 
-                    sortedData.forEach(msg => {
-                        const isSelf = msg.sender_id == currentUserId;
-
-                        let bubbleContent = '';
-                        if (msg.image_path && msg.image_path.trim() !== '') {
-                            bubbleContent = `<img src="${msg.image_path}" alt="Sent image" class="w-40 rounded-lg cursor-pointer hover:opacity-90 transition">`;
-                        } else if (msg.message && msg.message.trim() !== '') {
-                            bubbleContent = `<p class="text-sm">${msg.message}</p>`;
-                        }
-
-                        const messageHTML = `
-                    <div class="flex ${isSelf ? 'justify-end' : 'justify-start'} mb-2">
-                        <div class="max-w-xs lg:max-w-md">
-                            <div class="flex items-end gap-2">
-                                ${!isSelf ? `<div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                    ${msg.sender_initials ? msg.sender_initials : '<i class="fas fa-user"></i>'}
-                                </div>` : ''}
-                                <div class="${isSelf 
-                                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl rounded-tr-sm px-4 py-2 shadow-sm'
-                                    : 'bg-white border border-gray-200 text-gray-800 rounded-3xl rounded-tl-sm px-4 py-2 shadow-sm'}">
-                                    ${bubbleContent}
-                                </div>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-1 ${isSelf ? 'text-right' : 'ml-10'}">
-                                ${formatMessageTime(msg.created_at)}
-                            </p>
-                        </div>
-                    </div>
-                `;
-
-                        container.insertAdjacentHTML('beforeend', messageHTML);
-
-                        const lastImg = container.querySelector('img:last-of-type');
-                        if (lastImg) {
-                            lastImg.addEventListener('click', () => {
-                                openImageModal(lastImg.src);
-                            });
-                        }
-                    });
-
-                    // Scroll to bottom
-                    container.scrollTop = container.scrollHeight;
-
-                    // Automatically mark all messages as read for this contact
-                    fetch('mark_read.php', {
-                            method: 'POST',
-                            body: new URLSearchParams({
-                                contact_id: activeReceiverId
-                            })
-                        })
-                        .then(res => res.json())
-                        .then(() => loadContacts()) // update bold/unread in chat list
-                        .catch(console.error);
+                    renderMessages(data, forceScrollToBottom);
                 })
-                .catch(err => console.log("[] Error loading messages:", err));
+                .catch(err => {
+                    console.error("Error loading messages:", err);
+                    showError('Failed to load messages. Please check console for details.');
+                });
         }
 
+        function renderMessages(data, forceScrollToBottom = false) {
+            const container = document.getElementById('messages-container');
+            const wasScrolledToBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
 
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <i class="fas fa-comment-slash text-gray-300 text-5xl mb-3"></i>
+                    <p class="text-gray-400">No messages yet. Start the conversation!</p>
+                </div>
+            </div>
+        `;
+                return;
+            }
+
+            const sortedData = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            let lastDate = null;
+
+            sortedData.forEach(msg => {
+                const msgDate = formatMessageDate(msg.created_at);
+                const isSelf = msg.sender_id == currentUserId;
+
+                // === Insert date divider if new day ===
+                if (msgDate !== lastDate) {
+                    container.insertAdjacentHTML('beforeend', `
+                <div class="flex justify-center my-4">
+                    <div class="text-gray-500 text-sm font-medium px-4 py-1 border border-gray-300 bg-white rounded-full shadow-sm">
+                        ${msgDate}
+                    </div>
+                </div>
+            `);
+                    lastDate = msgDate;
+                }
+
+                // === Bubble content ===
+                let bubbleContent = '';
+                if (msg.image_path && msg.image_path.trim() !== '') {
+                    let imagePath = msg.image_path;
+
+                    console.log('Loading image from:', imagePath);
+
+                    bubbleContent = `<img src="${imagePath}" 
+                alt="Sent image" 
+                class="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition shadow-sm"
+                onerror="console.error('Failed to load image:', this.src); this.style.display='none'; this.parentElement.innerHTML='<p class=\\'text-xs text-gray-500 italic\\'>Image not available</p>';">`;
+                } else if (msg.message && msg.message.trim() !== '') {
+                    const escapedMessage = msg.message
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;')
+                        .replace(/\n/g, '<br>');
+                    bubbleContent = `<p class="text-sm break-words">${escapedMessage}</p>`;
+                }
+
+                // === TIME ONLY ===
+                const timeOnly = new Date(msg.created_at.replace(" ", "T"))
+                    .toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit'
+                    });
+
+                // === Final message bubble ===
+                const messageHTML = `
+            <div class="flex ${isSelf ? 'justify-end' : 'justify-start'} mb-3">
+                <div class="max-w-xs lg:max-w-md">
+                    <div class="flex items-end gap-2">
+                        ${!isSelf ? `
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full 
+                            flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                ${activeReceiverInitials}
+                            </div>` 
+                        : ''}
+
+                        <div class="${isSelf
+                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl rounded-tr-sm px-4 py-2.5 shadow-sm'
+                            : 'bg-white border border-gray-200 text-gray-800 rounded-3xl rounded-tl-sm px-4 py-2.5 shadow-sm'}">
+                            ${bubbleContent}
+                        </div>
+                    </div>
+
+                    <p class="text-[11px] text-gray-400 mt-1 ${isSelf ? 'text-right' : 'ml-10'}">
+                        ${timeOnly}
+                    </p>
+                </div>
+            </div>
+        `;
+
+                container.insertAdjacentHTML('beforeend', messageHTML);
+            });
+
+            // Attach modal open for images
+            container.querySelectorAll('img').forEach(img => {
+                img.addEventListener('click', () => openImageModal(img.src));
+            });
+
+            // Auto-scroll
+            if (forceScrollToBottom || wasScrolledToBottom) {
+                setTimeout(() => {
+                    container.scrollTop = container.scrollHeight;
+                }, 100);
+            }
+        }
 
         function sendMessage(formData) {
             fetch('send_message.php', {
                     method: 'POST',
                     body: formData
                 })
-                .then(res => res.json())
-                .then(() => {
-                    document.querySelector('input[placeholder="Type your message..."]').value = '';
-                    document.querySelector('#image-input').value = '';
-                    loadMessages();
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.json();
                 })
-                .catch(err => console.log("[] Error sending message:", err));
+                .then(data => {
+                    console.log("Send message response:", data);
+
+                    if (data.success) {
+                        document.getElementById('message-input').value = '';
+                        document.getElementById('image-input').value = '';
+                        clearImagePreview();
+
+                        // Load messages with forced scroll after sending
+                        loadMessages(true);
+                        loadContacts();
+                    } else {
+                        showError(data.message || 'Failed to send message');
+                    }
+                })
+                .catch(err => {
+                    console.error("Error sending message:", err);
+                    showError('Failed to send message. Please try again.');
+                });
         }
 
-        // Send text when clicking send icon
-        document.querySelector('.fa-paper-plane').parentElement.addEventListener('click', () => {
+        function clearImagePreview() {
+            selectedImageFile = null;
+            document.getElementById('image-preview-area').classList.add('hidden');
+            document.getElementById('preview-image').src = '';
+            document.getElementById('image-input').value = '';
+        }
+
+        // Event Listeners
+        document.getElementById('send-btn').addEventListener('click', () => {
             if (!activeReceiverId) {
-                alert('Please select a contact first');
+                showError('Please select a contact first');
                 return;
             }
 
-            const input = document.querySelector('input[placeholder="Type your message..."]');
+            const input = document.getElementById('message-input');
             const message = input.value.trim();
 
-            if (message === '') return;
+            // Check if we have either a message or an image
+            if (message === '' && !selectedImageFile) {
+                showError('Please enter a message or select an image');
+                return;
+            }
 
             const formData = new FormData();
             formData.append('sender_id', currentUserId);
             formData.append('receiver_id', activeReceiverId);
             formData.append('message', message);
 
+            if (selectedImageFile) {
+                formData.append('image', selectedImageFile);
+            }
+
             sendMessage(formData);
         });
 
-        // Handle image upload button
-        document.querySelector('.fa-plus').parentElement.addEventListener('click', () => {
-            if (!activeReceiverId) {
-                alert('Please select a contact first');
-                return;
+        // Send on Enter key
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('send-btn').click();
             }
-            document.querySelector('#image-input').click();
         });
 
-        // When an image is selected, send it automatically
-        document.querySelector('#image-input').addEventListener('change', function() {
+        document.getElementById('attach-btn').addEventListener('click', () => {
+            if (!activeReceiverId) {
+                showError('Please select a contact first');
+                return;
+            }
+            document.getElementById('image-input').click();
+        });
+
+        document.getElementById('image-input').addEventListener('change', function() {
             if (!activeReceiverId) return;
 
             const file = this.files[0];
             if (!file) return;
 
-            const formData = new FormData();
-            formData.append('sender_id', currentUserId);
-            formData.append('receiver_id', activeReceiverId);
-            formData.append('image', file);
+            console.log('File selected:', file.name, file.type, file.size);
 
-            sendMessage(formData);
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                this.value = '';
+                return;
+            }
+
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showError('Image size must be less than 5MB');
+                this.value = '';
+                return;
+            }
+
+            // Store the selected file
+            selectedImageFile = file;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-image').src = e.target.result;
+                document.getElementById('image-preview-area').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
         });
 
-        let searchTimeout;
-        let isSearching = false;
-
-        // Search input handler
+        // Search handler
         document.getElementById('search-input').addEventListener('input', function() {
             clearTimeout(searchTimeout);
-
             const searchQuery = this.value.trim();
 
-            if (searchQuery.length > 0) {
-                isSearching = true; // pause auto reload
-            }
+            isSearching = searchQuery.length > 0;
 
             searchTimeout = setTimeout(() => {
                 loadContacts(searchQuery);
-                isSearching = false; // search finished, resume auto reload
-            }, 500); // wait 500ms after last keystroke
+                isSearching = false;
+            }, 500);
         });
 
-        // Auto-reload contacts every 5 seconds but skip while searching
-        setInterval(() => {
-            if (!isSearching) {
-                loadContacts();
-            }
-        }, 5000);
-
-
-        loadContacts();
-        setInterval(loadContacts, 5000); // Refresh contacts every 5 seconds
-        setInterval(loadMessages, 3000); // Refresh messages every 3 seconds
+        // Image modal
         function openImageModal(src) {
             const modal = document.getElementById('imageModal');
             const modalImage = document.getElementById('modalImage');
@@ -533,6 +849,28 @@ $db = $database->getConnect();
             const modal = document.getElementById('imageModal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
+        });
+
+        // Initialize
+        loadContacts();
+
+        // Auto-refresh intervals
+        contactsRefreshInterval = setInterval(() => {
+            if (!isSearching) {
+                loadContacts();
+            }
+        }, 5000);
+
+        messagesRefreshInterval = setInterval(() => {
+            if (activeReceiverId) {
+                loadMessages();
+            }
+        }, 3000);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            clearInterval(contactsRefreshInterval);
+            clearInterval(messagesRefreshInterval);
         });
     </script>
 

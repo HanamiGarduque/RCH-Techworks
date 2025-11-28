@@ -71,11 +71,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             overflow-x: hidden;
         }
 
-        html {
+        body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
+            overflow: hidden !important;
+            padding-right: 0 !important;
+        }
+
+        /* Prevent height changes */
+        body.swal2-height-auto {
+            height: auto !important;
+        }
+
+        /* Use scrollbar-gutter to reserve space without showing scrollbar */
+        body {
             scrollbar-gutter: stable;
         }
 
-        
 
         /* Ensure the page layout uses full viewport height */
         .page-container {

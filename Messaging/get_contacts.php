@@ -1,15 +1,15 @@
 <?php
-// Prevent any output before JSON
+// Prevent output before JSON
 ob_start();
 
-// Set headers first
+// JSON header
 header('Content-Type: application/json');
 
-// Disable error display, log instead
+// Disable error display (log only)
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-// Start session if not already started
+// Start session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -28,9 +28,11 @@ try {
 }
 
 try {
-    // Get current user ID from session
+    // -------------------------
+    // SESSION CHECK
+    // -------------------------
     $current_user_id = $_SESSION['id'] ?? null;
-    
+
     if (!$current_user_id) {
         ob_clean();
         echo json_encode([
@@ -41,155 +43,185 @@ try {
         exit;
     }
 
+    // -------------------------
+    // DB INIT FIRST (VERY IMPORTANT)
+    // -------------------------
     $database = new Database();
     $db = $database->getConnect();
 
-    // Get search query (if any)
-    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    // -------------------------
+    // FETCH USER ROLE
+    // -------------------------
+    $roleQuery = $db->prepare("SELECT role FROM users WHERE user_id = :uid LIMIT 1");
+    $roleQuery->bindValue(':uid', $current_user_id, PDO::PARAM_INT);
+    $roleQuery->execute();
+    $current_role = strtolower($roleQuery->fetchColumn());
 
-    // Modified query to get users with their last message info directly
+    // -------------------------
+    // DETERMINE ALLOWED CONTACT ROLES
+    // -------------------------
+    switch ($current_role) {
+        case 'admin':
+            $allowedRoles = ['customer', 'rider'];
+            break;
+        case 'customer':
+            $allowedRoles = ['admin', 'rider'];
+            break;
+        case 'rider':
+            $allowedRoles = ['admin', 'customer'];
+            break;
+        default:
+            // FAILSAFE
+            $allowedRoles = ['admin', 'customer', 'rider'];
+    }
+
+    // Prepare allowed roles safely for SQL
+    $allowedRolesSql = "'" . implode("','", array_map('addslashes', $allowedRoles)) . "'";
+
+    // -------------------------
+    // SEARCH FILTER
+    // -------------------------
+    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $searchSql = !empty($search) ? " AND u.name LIKE :search" : "";
+
+    // -------------------------
+    // MAIN QUERY
+    // -------------------------
     $sql = "
         SELECT 
             u.user_id,
             u.name,
             u.role,
-            (SELECT m.message 
-             FROM messages m 
-             WHERE (m.sender_id = u.user_id AND m.receiver_id = :current_user_id1)
-                OR (m.sender_id = :current_user_id2 AND m.receiver_id = u.user_id)
-             ORDER BY m.created_at DESC 
-             LIMIT 1) as last_message,
-            (SELECT m.image_path 
-             FROM messages m 
-             WHERE (m.sender_id = u.user_id AND m.receiver_id = :current_user_id3)
-                OR (m.sender_id = :current_user_id4 AND m.receiver_id = u.user_id)
-             ORDER BY m.created_at DESC 
-             LIMIT 1) as last_image_path,
-            (SELECT m.created_at 
-             FROM messages m 
-             WHERE (m.sender_id = u.user_id AND m.receiver_id = :current_user_id5)
-                OR (m.sender_id = :current_user_id6 AND m.receiver_id = u.user_id)
-             ORDER BY m.created_at DESC 
-             LIMIT 1) as last_message_time,
-            (SELECT COUNT(*) 
-             FROM messages m 
-             WHERE m.receiver_id = :current_user_id7 
-               AND m.sender_id = u.user_id 
-               AND m.is_read = 0) as unread_count
+
+            -- Last message
+            (
+                SELECT m.message 
+                FROM messages m
+                WHERE 
+                    (m.sender_id = u.user_id AND m.receiver_id = :uid1)
+                    OR 
+                    (m.sender_id = :uid2 AND m.receiver_id = u.user_id)
+                ORDER BY m.created_at DESC 
+                LIMIT 1
+            ) AS last_message,
+
+            -- Last image
+            (
+                SELECT m.image_path 
+                FROM messages m
+                WHERE 
+                    (m.sender_id = u.user_id AND m.receiver_id = :uid3)
+                    OR 
+                    (m.sender_id = :uid4 AND m.receiver_id = u.user_id)
+                ORDER BY m.created_at DESC 
+                LIMIT 1
+            ) AS last_image_path,
+
+            -- Last message time
+            (
+                SELECT m.created_at 
+                FROM messages m
+                WHERE 
+                    (m.sender_id = u.user_id AND m.receiver_id = :uid5)
+                    OR 
+                    (m.sender_id = :uid6 AND m.receiver_id = u.user_id)
+                ORDER BY m.created_at DESC 
+                LIMIT 1
+            ) AS last_message_time,
+
+            -- Unread message count
+            (
+                SELECT COUNT(*) 
+                FROM messages m
+                WHERE 
+                    m.receiver_id = :uid7 
+                    AND m.sender_id = u.user_id
+                    AND m.is_read = 0
+            ) AS unread_count
+
         FROM users u
-        WHERE u.user_id != :current_user_id8
+        WHERE 
+            u.user_id != :uid8
+            AND u.role IN ($allowedRolesSql)
+            $searchSql
+        ORDER BY last_message_time DESC, u.name ASC
     ";
 
-    // Add search condition if query is provided
-    if (!empty($search)) {
-        $sql .= " AND u.name LIKE :search";
+    $stmt = $db->prepare($sql);
+
+    // Bind repeated user_id values
+    for ($i = 1; $i <= 8; $i++) {
+        $stmt->bindValue(":uid$i", $current_user_id, PDO::PARAM_INT);
     }
 
-    // Order by last message time (most recent first), then by name
-    $sql .= " ORDER BY last_message_time DESC, u.name ASC";
-
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':current_user_id1', $current_user_id, PDO::PARAM_INT);
-    $stmt->bindValue(':current_user_id2', $current_user_id, PDO::PARAM_INT);
-    $stmt->bindValue(':current_user_id3', $current_user_id, PDO::PARAM_INT);
-    $stmt->bindValue(':current_user_id4', $current_user_id, PDO::PARAM_INT);
-    $stmt->bindValue(':current_user_id5', $current_user_id, PDO::PARAM_INT);
-    $stmt->bindValue(':current_user_id6', $current_user_id, PDO::PARAM_INT);
-    $stmt->bindValue(':current_user_id7', $current_user_id, PDO::PARAM_INT);
-    $stmt->bindValue(':current_user_id8', $current_user_id, PDO::PARAM_INT);
-
     if (!empty($search)) {
-        $stmt->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
+        $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
     }
 
     $stmt->execute();
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // -------------------------
+    // FORMAT CONTACT OUTPUT
+    // -------------------------
     $contacts = [];
 
     foreach ($users as $user) {
-        // Compute initials
-        $nameParts = explode(' ', trim($user['name']));
-        $initials = strtoupper(substr($nameParts[0], 0, 1));
-        if (isset($nameParts[1])) {
-            $initials .= strtoupper(substr($nameParts[1], 0, 1));
-        }
 
-        // Format time ago with better accuracy
+        // INITIALS
+        $parts = explode(' ', trim($user['name']));
+        $initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
+
+        // TIME AGO
         $timeAgo = '';
         if (!empty($user['last_message_time'])) {
-            $createdTime = strtotime($user['last_message_time']);
+            $t = strtotime($user['last_message_time']);
             $now = time();
-            $diff = $now - $createdTime;
+            $d = $now - $t;
 
-            $diffSecs = $diff;
-            $diffMins = floor($diff / 60);
-            $diffHours = floor($diff / 3600);
-            $diffDays = floor($diff / 86400);
-
-            if ($diffSecs < 60) {
-                $timeAgo = 'just now';
-            } elseif ($diffMins < 60) {
-                $timeAgo = $diffMins . 'm';
-            } elseif ($diffHours < 24) {
-                $timeAgo = $diffHours . 'h';
-            } elseif ($diffDays < 7) {
-                $timeAgo = $diffDays . 'd';
-            } elseif ($diffDays < 365) {
-                $timeAgo = date('M j', $createdTime);
-            } else {
-                $timeAgo = date('M j, Y', $createdTime);
-            }
+            if ($d < 60) $timeAgo = 'just now';
+            elseif ($d < 3600) $timeAgo = floor($d / 60) . 'm';
+            elseif ($d < 86400) $timeAgo = floor($d / 3600) . 'h';
+            elseif ($d < 604800) $timeAgo = floor($d / 86400) . 'd';
+            elseif ($d < 31536000) $timeAgo = date('M j', $t);
+            else $timeAgo = date('M j, Y', $t);
         }
 
-        // Determine last message text
-        $lastMsgText = '';
+        // LAST MESSAGE PREVIEW
         if (!empty($user['last_image_path'])) {
-            $lastMsgText = "📷 Photo";
+            $lastMsg = "📷 Photo";
         } elseif (!empty($user['last_message'])) {
-            $lastMsgText = htmlspecialchars($user['last_message'], ENT_QUOTES, 'UTF-8');
-            // Truncate long messages
-            if (strlen($lastMsgText) > 50) {
-                $lastMsgText = substr($lastMsgText, 0, 50) . '...';
+            $lastMsg = htmlspecialchars($user['last_message']);
+            if (strlen($lastMsg) > 50) {
+                $lastMsg = substr($lastMsg, 0, 50) . "...";
             }
         } else {
-            $lastMsgText = 'No messages yet';
+            $lastMsg = "No messages yet";
         }
 
-        // Check for unread messages
-        $hasUnread = ($user['unread_count'] > 0);
+        // AVATAR COLOR BY ROLE
+        $roleColorMap = [
+            'customer' => 'from-blue-400 to-blue-600',
+            'rider'    => 'from-orange-400 to-orange-600',
+            'admin'    => 'from-purple-400 to-purple-600'
+        ];
+        $avatarColor = $roleColorMap[strtolower($user['role'])] ?? 'from-gray-400 to-gray-600';
 
-        // Determine avatar color based on role
-        $avatarColor = 'from-gray-400 to-gray-600'; // default
-        switch (strtolower($user['role'])) {
-            case 'customer':
-                $avatarColor = 'from-blue-400 to-blue-600';
-                break;
-            case 'rider':
-                $avatarColor = 'from-orange-400 to-orange-600';
-                break;
-            case 'admin':
-                $avatarColor = 'from-purple-400 to-purple-600';
-                break;
-        }
-
+        // STORE CONTACT
         $contacts[] = [
             'user_id' => (int)$user['user_id'],
-            'name' => htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8'),
+            'name' => htmlspecialchars($user['name']),
             'type' => strtolower($user['role']),
-            'last_message' => $lastMsgText,
+            'last_message' => $lastMsg,
             'last_message_time' => $user['last_message_time'],
-            'has_unread' => $hasUnread,
+            'has_unread' => $user['unread_count'] > 0,
             'unread_count' => (int)$user['unread_count'],
             'initials' => $initials,
             'avatar_color' => $avatarColor
         ];
     }
 
-    // Clear any output buffer content
     ob_clean();
-    
-    // Return successful response
     echo json_encode([
         'success' => true,
         'data' => $contacts,
@@ -197,18 +229,14 @@ try {
     ], JSON_THROW_ON_ERROR);
 
 } catch (PDOException $e) {
-    // Database error
     ob_clean();
-    http_response_code(500);
     echo json_encode([
         'success' => false,
         'error' => 'Database error',
         'message' => $e->getMessage()
     ]);
 } catch (Exception $e) {
-    // General error
     ob_clean();
-    http_response_code(500);
     echo json_encode([
         'success' => false,
         'error' => 'Server error',
@@ -216,6 +244,4 @@ try {
     ]);
 }
 
-// End output buffering and send
 ob_end_flush();
-?>

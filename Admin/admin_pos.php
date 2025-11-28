@@ -23,18 +23,21 @@ redirectIfRoleMismatch('admin'); // only admins can access
             overflow-x: hidden;
         }
 
-        html {
-            scrollbar-gutter: stable;
-        }
-
         body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
             overflow: hidden !important;
             padding-right: 0 !important;
         }
 
+        /* Prevent height changes */
         body.swal2-height-auto {
-            height: 100% !important;
+            height: auto !important;
         }
+
+        /* Use scrollbar-gutter to reserve space without showing scrollbar */
+        body {
+            scrollbar-gutter: stable;
+        }
+
 
         .product-card {
             transition: all 0.2s ease;

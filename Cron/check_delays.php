@@ -120,7 +120,7 @@ foreach ($deliveryOrders as $order) {
     $update = $db->prepare("UPDATE water_refills SET order_status = 'delivery_delayed' WHERE refill_id = :id");
     $update->execute([':id' => $order['refill_id']]);
 
-    $link_customer = "Order/order_details.php?order_number={$order['order_number']}";
+    $link_customer = "Customer/order_details.php?order_number={$order['order_number']}";
     $link_rider = "Rider/order_details.php?order_number={$order['order_number']}";
 
     $customer = getUserDetails($db, $order['user_id']);
@@ -172,7 +172,7 @@ $stmtPickupRem->execute();
 $pickupReminders = $stmtPickupRem->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($pickupReminders as $order) {
-    $link_customer = "Order/order_details.php?order_number={$order['order_number']}";
+    $link_customer = "Customer/order_details.php?order_number={$order['order_number']}";
     $link_rider = "Rider/order_details.php?order_number={$order['order_number']}";
     
     $customer = getUserDetails($db, $order['user_id']);
@@ -231,7 +231,7 @@ $stmtDeliveryRem->execute();
 $deliveryReminders = $stmtDeliveryRem->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($deliveryReminders as $order) {
-    $link_customer = "Order/order_details.php?order_number={$order['order_number']}";
+    $link_customer = "Customer/order_details.php?order_number={$order['order_number']}";
     $link_rider = "Rider/order_details.php?order_number={$order['order_number']}";
 
     $customer = getUserDetails($db, $order['user_id']);

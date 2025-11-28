@@ -1,22 +1,158 @@
+<?php
+
+require_once __DIR__ . '/../session.php';
+redirectIfRoleMismatch('customer'); // only customers can access
+require_once '../Database/db_connection.php';
+
+$database = new Database();
+$db = $database->getConnect();
+
+
+$user_id = $_SESSION['id'];
+
+// Fetch user data
+$stmt = $db->prepare("
+    SELECT u.*, ml.latitude, ml.longitude 
+    FROM users u 
+    LEFT JOIN map_location ml ON u.user_id = ml.user_id 
+    WHERE u.user_id = ?
+");
+$stmt->execute([$user_id]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+
+    $action = $_POST['action'] ?? '';
+
+    try {
+        if ($action === 'update_profile') {
+            $name = trim($_POST['name']);
+            $email = trim($_POST['email']);
+            $phone = trim($_POST['phone']);
+            $house_no = trim($_POST['house_no']);
+            $street = trim($_POST['street']);
+            $barangay = trim($_POST['barangay']);
+            $city = trim($_POST['city']);
+            $province = trim($_POST['province']);
+            $postal_code = trim($_POST['postal_code']);
+
+            $address = "$house_no, $street, $barangay, $city, $province $postal_code";
+
+            // Check if email already exists for another user
+            $stmt = $db->prepare("SELECT user_id FROM users WHERE email = ? AND user_id != ?");
+            $stmt->execute([$email, $user_id]);
+            if ($stmt->fetch()) {
+                echo json_encode(['success' => false, 'message' => 'Email already exists']);
+                exit();
+            }
+
+            $stmt = $db->prepare("
+                UPDATE users 
+                SET name = ?, email = ?, phone_number = ?, address = ?, updated_at = NOW() 
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$name, $email, $phone, $address, $user_id]);
+
+            echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
+            exit();
+        } elseif ($action === 'change_password') {
+            $old_password = $_POST['old_password'];
+            $new_password = $_POST['new_password'];
+
+            // Verify old password
+            if (!password_verify($old_password, $user['password_hash'])) {
+                echo json_encode(['success' => false, 'message' => 'Incorrect old password']);
+                exit();
+            }
+
+            $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
+
+            $stmt = $db->prepare("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE user_id = ?");
+            $stmt->execute([$new_hash, $user_id]);
+
+            echo json_encode(['success' => true, 'message' => 'Password changed successfully']);
+            exit();
+        } elseif ($action === 'update_location') {
+            $latitude = floatval($_POST['latitude']);
+            $longitude = floatval($_POST['longitude']);
+
+            // Check if location exists
+            $stmt = $db->prepare("SELECT loc_id FROM map_location WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+            $location = $stmt->fetch();
+
+            if ($location) {
+                $stmt = $db->prepare("
+                    UPDATE map_location 
+                    SET latitude = ?, longitude = ?, updated_at = NOW() 
+                    WHERE user_id = ?
+                ");
+                $stmt->execute([$latitude, $longitude, $user_id]);
+            } else {
+                $stmt = $db->prepare("
+                    INSERT INTO map_location (user_id, latitude, longitude, created_at, updated_at) 
+                    VALUES (?, ?, ?, NOW(), NOW())
+                ");
+                $stmt->execute([$user_id, $latitude, $longitude]);
+            }
+
+            echo json_encode(['success' => true, 'message' => 'Location updated successfully']);
+            exit();
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+        exit();
+    }
+}
+
+// Parse address
+$address_parts = explode(', ', $user['address']);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RCH Water - Order Water Refill</title>
+    <title>RCH Water - My Profile</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         body {
             font-family: 'Poppins', sans-serif;
+            overflow: hidden;
         }
 
-        /* Password requirement indicator */
+        .custom-scroll::-webkit-scrollbar {
+            width: 3px;
+            /* scrollbar thickness */
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            /* Tailwind slate-300 */
+            border-radius: 10px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+            /* slate-400 */
+        }
+
         .requirement {
             display: flex;
             align-items: center;
@@ -72,153 +208,233 @@
         .match-error {
             color: #ef4444;
         }
+
+        #map {
+            height: 400px;
+            border-radius: 12px;
+            z-index: 1;
+        }
+
+        .profile-gradient {
+            background: linear-gradient(135deg, #57a1f0ff 0%, #273094ff 100%);
+        }
+
+        .info-card {
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 
-<body class="bg-gray-100 overflow-hidden">
-    <div class="flex h-screen">
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
         <!-- Sidebar -->
         <script src="includes/sidebar.js"></script>
 
         <!-- Main Content -->
-        <main class="flex-1 ml-20 bg-gray-50 rounded-xl shadow overflow-y-auto">
-            <div class="main-header">
-                <?php //ibahin mo lang tong header na to sa bawat page para magiba title at subtitle
-                $pageTitle = "My Profile";
-                $pageSubtitle = "Manage your personal information, contact details, and preferences to keep your account up to date.";
-                include 'includes/header.php';
-                ?>
-            </div>
+        <main class="flex-1 ml-20 bg-gray-50">
+            <?php
+            $pageTitle = "Edit Profile";
+            $pageSubtitle = "Manage your personal information, contact details, and delivery location";
+            include 'includes/header.php';
+            ?>
 
             <!-- PROFILE PAGE CONTENT -->
-            <div class="p-6 w-full ">
+            <div class="overflow-y-auto p-8 max-w-7xl mx-auto h-[calc(100vh-120px)] custom-scroll">
 
                 <!-- PROFILE VIEW -->
-                <div id="profileView">
+                <div id="profileView overflow-y-auto">
 
                     <!-- Profile Header Card -->
-                    <div class="bg-white rounded-xl shadow-sm p-8 text-center mb-6">
-                        <!-- Profile Icon -->
-                        <div class="flex justify-center mb-4">
-                            <div class="w-32 h-32 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center shadow-lg">
-                                <i class="bi bi-person text-blue-600 text-7xl"></i>
+                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+                        <div class="profile-gradient p-8 text-center">
+                            <div class="flex justify-center mb-4">
+                                <div class="w-32 h-32 bg-white rounded-full flex items-center justify-center shadow-xl">
+                                    <i class="bi bi-person text-blue-600 text-7xl"></i>
+                                </div>
+                            </div>
+                            <h2 class="text-3xl font-bold text-white mb-1"><?= htmlspecialchars($user['name']) ?></h2>
+                            <p class="text-blue-100 text-sm mb-6"><?= htmlspecialchars($user['email']) ?></p>
+
+                            <div class="flex gap-3 justify-center flex-wrap">
+                                <button onclick="toggleEditProfile()"
+                                    class="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-50 transition flex items-center gap-2 shadow-md">
+                                    <i class="bi bi-pencil"></i> Edit Profile
+                                </button>
+
+                                <button onclick="openPasswordModal()"
+                                    class="px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-900 transition flex items-center gap-2 shadow-md">
+                                    <i class="bi bi-key"></i> Change Password
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Information Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <!-- Personal Information -->
+                        <div class="bg-white rounded-2xl shadow-sm p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <i class="bi bi-person-badge text-blue-600"></i>
+                                Personal Information
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="info-card bg-blue-50 rounded-lg p-4 border-l-4 border-blue-600">
+                                    <p class="text-gray-600 text-xs font-semibold uppercase mb-1">Full Name</p>
+                                    <p class="font-semibold text-gray-800 text-lg"><?= htmlspecialchars($user['name']) ?></p>
+                                </div>
+
+                                <div class="info-card bg-green-50 rounded-lg p-4 border-l-4 border-green-600">
+                                    <p class="text-gray-600 text-xs font-semibold uppercase mb-1">Phone Number</p>
+                                    <p class="font-semibold text-gray-800 text-lg"><?= htmlspecialchars($user['phone_number']) ?></p>
+                                </div>
+
+                                <div class="info-card bg-purple-50 rounded-lg p-4 border-l-4 border-purple-600">
+                                    <p class="text-gray-600 text-xs font-semibold uppercase mb-1">Email</p>
+                                    <p class="font-semibold text-gray-800 text-lg"><?= htmlspecialchars($user['email']) ?></p>
+                                </div>
                             </div>
                         </div>
 
-                        <h2 class="text-3xl font-bold text-gray-800 mb-1">Jane Doe</h2>
-                        <p class="text-gray-500 text-sm mb-6">jane.doe@email.com</p>
-
-                        <!-- Action Buttons -->
-                        <div class="flex gap-3 justify-center flex-wrap">
-                            <button onclick="toggleEditProfile()"
-                                class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2">
-                                <i class="bi bi-pencil"></i> Edit Profile
-                            </button>
-
-                            <button onclick="openPasswordModal()"
-                                class="px-6 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition flex items-center gap-2">
-                                <i class="bi bi-key"></i> Change Password
-                            </button>
+                        <!-- Address Information -->
+                        <div class="bg-white rounded-2xl shadow-sm p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <i class="bi bi-geo-alt text-red-600"></i>
+                                Address Information
+                            </h3>
+                            <div class="info-card bg-orange-50 rounded-lg p-4 border-l-4 border-orange-600">
+                                <p class="text-gray-600 text-xs font-semibold uppercase mb-2">Complete Address</p>
+                                <p class="font-semibold text-gray-800 text-base leading-relaxed">
+                                    <?= htmlspecialchars($user['address']) ?>
+                                </p>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Profile Information Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Full Name Card -->
-                        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-600">
-                            <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Full Name</p>
-                            <p class="font-semibold text-gray-800 text-lg">Jane Doe</p>
+                    <!-- Map Location Section -->
+                    <div class="bg-white rounded-2xl shadow-sm p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="bi bi-map text-indigo-600"></i>
+                                Delivery Location
+                            </h3>
+                            <button onclick="openMapModal()"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+                                <i class="bi bi-pin-map"></i> Update Location
+                            </button>
                         </div>
 
-                        <!-- Phone Card -->
-                        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-600">
-                            <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Phone Number</p>
-                            <p class="font-semibold text-gray-800 text-lg">09123456789</p>
-                        </div>
+                        <div id="viewMap" class="rounded-xl overflow-hidden"></div>
 
-                        <!-- Email Card -->
-                        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-600">
-                            <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Email</p>
-                            <p class="font-semibold text-gray-800 text-lg">jane.doe@email.com</p>
-                        </div>
-
-                        <!-- Address Card -->
-                        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-600">
-                            <p class="text-gray-500 text-xs font-semibold uppercase mb-1">Address</p>
-                            <p class="font-semibold text-gray-800 text-sm leading-relaxed">
-                                123-A Sample House<br>
-                                Mabuhay Street, Brgy. Poblacion<br>
-                                Quezon City, Metro Manila, 1100
-                            </p>
-                        </div>
+                        <?php if ($user['latitude'] && $user['longitude']): ?>
+                            <div class="mt-4 bg-indigo-50 rounded-lg p-4">
+                                <p class="text-sm text-gray-700">
+                                    <span class="font-semibold">Coordinates:</span>
+                                    <?= htmlspecialchars($user['latitude']) ?>, <?= htmlspecialchars($user['longitude']) ?>
+                                </p>
+                            </div>
+                        <?php else: ?>
+                            <div class="mt-4 bg-yellow-50 rounded-lg p-4 border-l-4 border-yellow-500">
+                                <p class="text-sm text-yellow-800 flex items-center gap-2">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <span>No delivery location set. Please pin your location for accurate deliveries.</span>
+                                </p>
+                            </div>
+                        <?php endif; ?>
                     </div>
+
                 </div>
 
                 <!-- EDIT PROFILE VIEW -->
                 <div id="editProfileView" class="hidden">
-                    <div class="bg-white rounded-xl shadow-sm p-8">
-                        <div class="flex items-center gap-3 mb-6">
-                            <i class="bi bi-pencil-square text-blue-600 text-2xl"></i>
-                            <h2 class="text-2xl font-bold text-gray-800">Edit Profile</h2>
+                    <div class="bg-white rounded-2xl shadow-lg p-8">
+                        <div class="flex items-center gap-3 mb-6 pb-4 border-b">
+                            <i class="bi bi-pencil-square text-blue-600 text-3xl"></i>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800">Edit Profile</h2>
+                                <p class="text-gray-600 text-sm">Update your personal information</p>
+                            </div>
                         </div>
 
-                        <form id="editProfileForm" class="space-y-5">
+                        <form id="editProfileForm" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Full Name -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        Full Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="name" required
+                                        value="<?= htmlspecialchars($user['name']) ?>"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                </div>
 
-                            <!-- Full Name -->
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name <span class="text-red-500">*</span></label>
-                                <input type="text" required placeholder="Enter your full name"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                            </div>
-
-                            <!-- Phone -->
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number <span class="text-red-500">*</span></label>
-                                <input type="text" required placeholder="09123456789"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                <!-- Phone -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        Phone Number <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="phone" required
+                                        value="<?= htmlspecialchars($user['phone_number']) ?>"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                </div>
                             </div>
 
                             <!-- Email -->
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Email <span class="text-red-500">*</span></label>
-                                <input type="email" required placeholder="jane.doe@email.com"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Email <span class="text-red-500">*</span>
+                                </label>
+                                <input type="email" name="email" required
+                                    value="<?= htmlspecialchars($user['email']) ?>"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
                             </div>
 
                             <!-- Address Section -->
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-3">Address <span class="text-red-500">*</span></label>
-                                <div class="space-y-3">
-                                    <input type="text" placeholder="House No." required
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                    <i class="bi bi-house-door"></i> Complete Address <span class="text-red-500">*</span>
+                                </label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <input type="text" name="house_no" placeholder="House No." required
+                                        value="<?= htmlspecialchars($address_parts[0] ?? '') ?>"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
 
-                                    <input type="text" placeholder="Street Name" required
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <input type="text" name="street" placeholder="Street Name" required
+                                        value="<?= htmlspecialchars($address_parts[1] ?? '') ?>"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
 
-                                    <input type="text" placeholder="Barangay" required
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <input type="text" name="barangay" placeholder="Barangay" required
+                                        value="<?= htmlspecialchars($address_parts[2] ?? '') ?>"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
 
-                                    <input type="text" placeholder="City / Municipality" required
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <input type="text" name="city" placeholder="City / Municipality" required
+                                        value="<?= htmlspecialchars($address_parts[3] ?? '') ?>"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
 
-                                    <input type="text" placeholder="Province" required
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <input type="text" name="province" placeholder="Province" required
+                                        value="<?= htmlspecialchars($address_parts[4] ?? '') ?>"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
 
-                                    <input type="text" placeholder="Postal Code" required
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <input type="text" name="postal_code" placeholder="Postal Code" required
+                                        value="<?= htmlspecialchars($address_parts[5] ?? '') ?>"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
                                 </div>
                             </div>
 
                             <!-- Buttons -->
-                            <div class="flex gap-3 pt-6">
+                            <div class="flex gap-4 pt-6">
                                 <button type="button" onclick="toggleEditProfile()"
-                                    class="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition">
-                                    Cancel
+                                    class="flex-1 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition">
+                                    <i class="bi bi-x-circle"></i> Cancel
                                 </button>
 
                                 <button type="submit"
-                                    class="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
-                                    Save Changes
+                                    class="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                                    <i class="bi bi-check-circle"></i> Save Changes
                                 </button>
                             </div>
                         </form>
@@ -239,9 +455,7 @@
                         </button>
                     </div>
 
-                    <!-- Password Form -->
                     <form id="passwordForm" class="space-y-5">
-
                         <!-- Old Password -->
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Old Password <span class="text-red-500">*</span></label>
@@ -268,27 +482,28 @@
                         </div>
 
                         <!-- Password Requirements -->
-                        <div class="requirement unmet" id="req-length">
-                            <div class="requirement-icon"><i class="bi bi-check"></i></div>
-                            <span class="requirement-text">Min. 8 characters (8+)</span>
+                        <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                            <div class="requirement unmet" id="req-length">
+                                <div class="requirement-icon"><i class="bi bi-check"></i></div>
+                                <span class="requirement-text">Min. 8 characters</span>
+                            </div>
+                            <div class="requirement unmet" id="req-uppercase">
+                                <div class="requirement-icon"><i class="bi bi-check"></i></div>
+                                <span class="requirement-text">Uppercase letter (A-Z)</span>
+                            </div>
+                            <div class="requirement unmet" id="req-lowercase">
+                                <div class="requirement-icon"><i class="bi bi-check"></i></div>
+                                <span class="requirement-text">Lowercase letter (a-z)</span>
+                            </div>
+                            <div class="requirement unmet" id="req-number">
+                                <div class="requirement-icon"><i class="bi bi-check"></i></div>
+                                <span class="requirement-text">Number (0-9)</span>
+                            </div>
+                            <div class="requirement unmet" id="req-special">
+                                <div class="requirement-icon"><i class="bi bi-check"></i></div>
+                                <span class="requirement-text">Special character (!@#$)</span>
+                            </div>
                         </div>
-                        <div class="requirement unmet" id="req-uppercase">
-                            <div class="requirement-icon"><i class="bi bi-check"></i></div>
-                            <span class="requirement-text">Uppercase letter (A-Z)</span>
-                        </div>
-                        <div class="requirement unmet" id="req-lowercase">
-                            <div class="requirement-icon"><i class="bi bi-check"></i></div>
-                            <span class="requirement-text">Lowercase letter (a-z)</span>
-                        </div>
-                        <div class="requirement unmet" id="req-number">
-                            <div class="requirement-icon"><i class="bi bi-check"></i></div>
-                            <span class="requirement-text">Number (0-9)</span>
-                        </div>
-                        <div class="requirement unmet" id="req-special">
-                            <div class="requirement-icon"><i class="bi bi-check"></i></div>
-                            <span class="requirement-text">Special character (!@#$)</span>
-                        </div>
-
 
                         <!-- Confirm Password -->
                         <div>
@@ -309,29 +524,99 @@
                         <!-- Buttons -->
                         <div class="flex gap-3 pt-4">
                             <button type="button" onclick="closePasswordModal()"
-                                class="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition flex items-center justify-center gap-2">
+                                class="flex-1 py-2.5 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition flex items-center justify-center gap-2">
                                 <i class="bi bi-x"></i> Cancel
                             </button>
 
-                            <button type="button" onclick="handleDoneClick()"
-                                class="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
-                                id="doneBtn">
-                                <i class="bi bi-check"></i> Done
+                            <button type="submit"
+                                class="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                <i class="bi bi-check"></i> Change Password
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
 
+            <!-- MAP LOCATION MODAL -->
+            <div id="mapModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white w-full max-w-3xl rounded-2xl p-8 shadow-2xl">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <i class="bi bi-pin-map text-indigo-600"></i> Pin Your Location
+                        </h3>
+                        <button onclick="closeMapModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <p class="text-gray-600 mb-4">Click on the map to pin your exact delivery location</p>
+
+                    <div id="map"></div>
+
+                    <div class="mt-4 bg-blue-50 rounded-lg p-4">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-semibold">Selected Location:</span>
+                            <span id="selectedCoords">Click on the map to select</span>
+                        </p>
+                    </div>
+
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="closeMapModal()"
+                            class="flex-1 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+
+                        <button onclick="saveLocation()"
+                            class="flex-1 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">
+                            <i class="bi bi-check-circle"></i> Save Location
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
-    <!-- JS FUNCTIONS -->
     <script>
-        // Toggle Edit Profile View
+        let map, marker;
+        let selectedLat = <?= $user['latitude'] ?? 'null' ?>;
+        let selectedLng = <?= $user['longitude'] ?? 'null' ?>;
+        let viewMap;
+
+        // Initialize view map
+        function initViewMap() {
+            if (viewMap) {
+                viewMap.remove();
+            }
+
+            const defaultLat = selectedLat || 13.7565;
+            const defaultLng = selectedLng || 121.0583;
+
+            viewMap = L.map('viewMap').setView([defaultLat, defaultLng], 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(viewMap);
+
+            if (selectedLat && selectedLng) {
+                L.marker([selectedLat, selectedLng]).addTo(viewMap)
+                    .bindPopup('Your Delivery Location').openPopup();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initViewMap();
+        });
+
         function toggleEditProfile() {
             document.getElementById("profileView").classList.toggle("hidden");
             document.getElementById("editProfileView").classList.toggle("hidden");
+
+            if (!document.getElementById("profileView").classList.contains("hidden")) {
+                setTimeout(() => {
+                    initViewMap();
+                }, 100);
+            }
         }
 
         // Password Modal Functions
@@ -353,10 +638,118 @@
             document.getElementById("matchMessage").textContent = "";
         }
 
+        // Map Modal Functions
+        function openMapModal() {
+            document.getElementById("mapModal").classList.remove("hidden");
+            setTimeout(() => {
+                initMap();
+            }, 100);
+        }
+
+        function closeMapModal() {
+            document.getElementById("mapModal").classList.add("hidden");
+        }
+
+        function initMap() {
+            if (map) {
+                map.remove();
+            }
+
+            const defaultLat = selectedLat || 13.7565;
+            const defaultLng = selectedLng || 121.0583;
+
+            map = L.map('map').setView([defaultLat, defaultLng], 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            if (selectedLat && selectedLng) {
+                marker = L.marker([selectedLat, selectedLng]).addTo(map);
+                document.getElementById('selectedCoords').textContent =
+                    `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
+            }
+
+            map.on('click', function(e) {
+                selectedLat = e.latlng.lat;
+                selectedLng = e.latlng.lng;
+
+                if (marker) {
+                    marker.setLatLng([selectedLat, selectedLng]);
+                } else {
+                    marker = L.marker([selectedLat, selectedLng]).addTo(map);
+                }
+
+                document.getElementById('selectedCoords').textContent =
+                    `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
+            });
+        }
+
+        function saveLocation() {
+            if (!selectedLat || !selectedLng) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Location Selected',
+                    text: 'Please click on the map to select your location',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('action', 'update_location');
+            formData.append('latitude', selectedLat);
+            formData.append('longitude', selectedLng);
+
+            fetch('profile.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Location Saved!',
+                            text: data.message,
+                            confirmButtonColor: '#6366f1'
+                        }).then(() => {
+                            closeMapModal();
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message,
+                            confirmButtonColor: '#6366f1'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred. Please try again.',
+                        confirmButtonColor: '#6366f1'
+                    });
+                });
+        }
+
         // Toggle password visibility
         function togglePasswordVisibility(fieldId) {
             const field = document.getElementById(fieldId);
-            field.type = field.type === 'password' ? 'text' : 'password';
+            const icon = field.nextElementSibling.querySelector('i');
+
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
         }
 
         function validatePasswordRequirements() {
@@ -384,8 +777,6 @@
             validatePasswordMatch();
         }
 
-
-        // Validate if passwords match
         function validatePasswordMatch() {
             const newPassword = document.getElementById("newPassword").value;
             const confirmPassword = document.getElementById("confirmPassword").value;
@@ -405,89 +796,139 @@
             }
         }
 
-        // Validate all requirements before proceeding
         function allRequirementsMet() {
             const requirements = document.querySelectorAll(".requirement");
             return Array.from(requirements).every(req => req.classList.contains("met"));
-        }
-
-        // Handle Done button click
-        function handleDoneClick() {
-            const oldPassword = document.getElementById("oldPassword").value;
-            const newPassword = document.getElementById("newPassword").value;
-            const confirmPassword = document.getElementById("confirmPassword").value;
-
-            // Validation
-            if (!oldPassword) {
-                Swal.fire("Error", "Please enter your old password.", "error");
-                return;
-            }
-
-            if (!newPassword || !confirmPassword) {
-                Swal.fire("Error", "Please enter both new password and confirm password.", "error");
-                return;
-            }
-
-            if (!allRequirementsMet()) {
-                Swal.fire("Error", "Password does not meet all requirements.", "error");
-                return;
-            }
-
-            if (newPassword !== confirmPassword) {
-                Swal.fire("Error", "Passwords do not match.", "error");
-                return;
-            }
-
-            // Show confirmation alert
-            Swal.fire({
-                icon: "warning",
-                title: "Are you sure?",
-                text: "Are you sure you want to change your password?",
-                showCancelButton: true,
-                confirmButtonColor: "#2563eb",
-                cancelButtonColor: "#dc2626",
-                confirmButtonText: "Yes",
-                cancelButtonText: "No"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Hash password and save
-                    sha256(newPassword).then(hash => {
-                        console.log("Password Hash:", hash);
-
-                        // Success alert
-                        Swal.fire({
-                            icon: "success",
-                            title: "Success!",
-                            text: "Your password has been changed successfully.",
-                            confirmButtonColor: "#2563eb"
-                        }).then(() => {
-                            closePasswordModal();
-                        });
-                    });
-                }
-            });
-        }
-
-        // SHA-256 Hashing
-        async function sha256(message) {
-            const msgBuffer = new TextEncoder().encode(message);
-            const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
         }
 
         // Edit Profile Form Submit
         document.getElementById("editProfileForm").addEventListener("submit", function(e) {
             e.preventDefault();
 
-            // Show success alert
+            const formData = new FormData(this);
+            formData.append('action', 'update_profile');
+
+            fetch('profile.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Profile Updated!',
+                            text: data.message,
+                            confirmButtonColor: '#3b82f6'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message,
+                            confirmButtonColor: '#3b82f6'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred. Please try again.',
+                        confirmButtonColor: '#3b82f6'
+                    });
+                });
+        });
+
+        // Password Form Submit
+        document.getElementById("passwordForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+
+            const oldPassword = document.getElementById("oldPassword").value;
+            const newPassword = document.getElementById("newPassword").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Missing Fields',
+                    text: 'Please fill in all password fields',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
+            if (!allRequirementsMet()) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Weak Password',
+                    text: 'Password does not meet all requirements',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Password Mismatch',
+                    text: 'New passwords do not match',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
             Swal.fire({
-                icon: "success",
-                title: "Profile Updated!",
-                text: "Your profile has been updated successfully.",
-                confirmButtonColor: "#2563eb"
-            }).then(() => {
-                toggleEditProfile();
+                icon: 'warning',
+                title: 'Confirm Password Change',
+                text: 'Are you sure you want to change your password?',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#dc2626',
+                confirmButtonText: 'Yes, change it',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('action', 'change_password');
+                    formData.append('old_password', oldPassword);
+                    formData.append('new_password', newPassword);
+
+                    fetch('profile.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Password Changed!',
+                                    text: data.message,
+                                    confirmButtonColor: '#3b82f6'
+                                }).then(() => {
+                                    closePasswordModal();
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: data.message,
+                                    confirmButtonColor: '#3b82f6'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'An error occurred. Please try again.',
+                                confirmButtonColor: '#3b82f6'
+                            });
+                        });
+                }
             });
         });
     </script>

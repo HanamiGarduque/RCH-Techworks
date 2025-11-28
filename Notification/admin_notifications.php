@@ -11,6 +11,7 @@ $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "
 $host = $_SERVER['HTTP_HOST']; // e.g., localhost
 $projectRoot = dirname(dirname($_SERVER['SCRIPT_NAME'])); // go up 2 levels from Notification
 $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

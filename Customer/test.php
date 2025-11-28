@@ -1,177 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RCH Water</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RCH Water - Order Water Refill</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
 
-  <!-- BOOTSTRAP ICONS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+        /* Step indicator styling */
+        .step-dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            gap: 10px;
+        }
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    html { scroll-behavior: smooth; }
-    /* navbar height set to 4rem (64px) */
-    :root{ --nav-h: 4rem; }
-    body { font-family: 'Poppins', sans-serif; padding-top: var(--nav-h); }
-    nav { height: var(--nav-h); }
-    /* ensure anchor targets are not hidden under fixed nav */
-    section { scroll-margin-top: calc(var(--nav-h) + 0.5rem); }
-  </style>
+        .step-dot {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            transition: all .3s;
+            font-weight: 600;
+        }
+
+        .step-line {
+            flex-grow: 1;
+            height: 6px;
+            background-color: #E5E7EB;
+            border-radius: 4px;
+            transition: background-color .3s;
+        }
+
+        .step-dot.completed,
+        .step-dot.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .step-dot.pending {
+            background-color: #E5E7EB;
+            color: #4B5563;
+        }
+
+        .step-line.completed {
+            background-color: #2563eb;
+        }
+
+        /* Card hover effects */
+        .gallon-card {
+            transition: all 0.3s ease;
+        }
+
+        .gallon-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3);
+        }
+
+        /* Disabled time slot styling */
+        button[disabled] {
+            cursor: not-allowed !important;
+            opacity: 0.5 !important;
+            background-color: #f3f4f6 !important;
+            color: #9ca3af !important;
+        }
+
+        /* Header gradient */
+        .header-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Animated water droplet */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
 </head>
 
-<body class="bg-white text-gray-700">
+<body class="overflow-hidden">
+    <div class="flex h-screen">
+        <!-- Enhanced Sidebar -->
+        <aside class="group bg-gradient-to-br from-blue-500 to-blue-700 shadow-2xl
+            flex-shrink-0 fixed top-0 left-0 h-full overflow-hidden flex flex-col text-white 
+            transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
 
-  <!-- NAVIGATION -->
-  <nav class="fixed top-0 left-0 right-0 z-50 border-b bg-white">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center">
-      <!-- left: logo -->
-      <div class="flex items-center gap-3">
-        <i class="bi bi-droplet-fill text-blue-600 text-2xl"></i>
-        <span class="font-semibold text-lg text-gray-800">RCH Water</span>
-      </div>
+            <!-- Logo Section -->
+            <div class="px-6 py-6 border-b border-blue-400/30 flex items-center gap-3">
+                <i class="fas fa-tint text-4xl float-animation"></i>
+                <div class="overflow-hidden">
+                    <span class="text-2xl font-bold block whitespace-nowrap transition-all duration-500 ease-in-out 
+                        opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">
+                        RCH Water
+                    </span>
+                    <span class="text-xs opacity-75 block whitespace-nowrap transition-all duration-500 ease-in-out 
+                        opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">
+                        Pure & Fresh
+                    </span>
+                </div>
+            </div>
 
-      <!-- center: nav links (centered, spacing from logo) -->
-      <div class="flex-1 flex justify-center">
-        <ul class="hidden md:flex gap-10 text-sm font-medium text-blue-600">
-          <li><a href="#home" class="hover:underline">Home</a></li>
-          <li><a href="#about" class="hover:underline">About</a></li>
-          <li><a href="#contact" class="hover:underline">Contact</a></li>
-          <li><a href="developers.html" class="hover:underline">Developer</a></li>
-        </ul>
-      </div>
+            <!-- Navigation -->
+            <nav class="mt-8 flex-1">
+                <ul class="space-y-2 px-3">
+                    <li>
+                        <a href="#" class="flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-200 bg-white/20 text-white">
+                            <i class="fas fa-tint text-lg"></i>
+                            <span class="ml-3 block whitespace-nowrap transition-all duration-500 ease-in-out 
+                                opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                Order Water Refill
+                            </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:bg-white/20">
+                            <i class="fas fa-box text-lg"></i>
+                            <span class="ml-3 block whitespace-nowrap transition-all duration-500 ease-in-out 
+                                opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                My Orders
+                            </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:bg-white/20">
+                            <i class="fas fa-user text-lg"></i>
+                            <span class="ml-3 block whitespace-nowrap transition-all duration-500 ease-in-out 
+                                opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                                Profile
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
 
-      <!-- right: actions -->
-      <div class="flex items-center gap-3">
-        <a href="login.html" class="inline-block px-4 py-1 rounded-full border border-blue-400 text-blue-600 hover:bg-blue-50 transition">Login</a>
-        <button class="px-4 py-1 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition">Sign Up</button>
-      </div>
+            <!-- Logout Section -->
+            <div class="border-t border-blue-400/30 px-3 py-5">
+                <a href="#" class="flex items-center px-4 py-3 text-white rounded-xl font-medium hover:bg-red-500/20 transition-all">
+                    <i class="fas fa-sign-out-alt text-lg"></i>
+                    <span class="ml-3 block whitespace-nowrap transition-all duration-500 ease-in-out 
+                        opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
+                        Logout
+                    </span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-20 overflow-y-auto">
+            <!-- Enhanced Header -->
+            <div class="header-gradient text-white p-8 shadow-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-4xl font-bold mb-2">Order Water Refill</h1>
+                        <p class="text-blue-100 text-lg">Hydrate made easy—order and we'll handle the rest! 💧</p>
+                    </div>
+                    <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center">
+                        <i class="fas fa-tint text-5xl mb-2"></i>
+                        <p class="text-sm font-semibold">24/7 Service</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-8">
+                <!-- Steps Card with Enhanced Design -->
+                <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
+                    <!-- Step Indicator -->
+                    <div class="step-dots mb-8">
+                        <div id="step1Dot" class="step-dot active">1</div>
+                        <div class="step-line"></div>
+                        <div id="step2Dot" class="step-dot pending">2</div>
+                        <div class="step-line"></div>
+                        <div id="step3Dot" class="step-dot pending">3</div>
+                        <div class="step-line"></div>
+                        <div id="step4Dot" class="step-dot pending">4</div>
+                        <div class="step-line"></div>
+                        <div id="step5Dot" class="step-dot pending">5</div>
+                        <div class="step-line"></div>
+                        <div id="step6Dot" class="step-dot pending">6</div>
+                    </div>
+
+                    <h2 id="stepTitle" class="text-2xl font-bold mb-6 text-gray-800 text-center">
+                        <i class="fas fa-shopping-cart text-blue-600 mr-2"></i>
+                        Step 1: Choose Gallon Type
+                    </h2>
+
+                    <!-- Step 1: Gallon Type Selection -->
+                    <div id="set1" class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                        <div id="slimCard" class="gallon-card border-3 border-gray-300 p-8 rounded-2xl cursor-pointer text-center bg-gradient-to-br from-blue-50 to-white hover:from-blue-100 hover:to-blue-50 transition-all">
+                            <div class="bg-white rounded-xl p-6 mb-4 shadow-lg">
+                                <img src="img/20L_box_type_gallon.jpg" class="mx-auto w-48 h-48 object-contain" />
+                            </div>
+                            <h3 class="font-bold text-xl text-gray-800 mb-2">Slim Gallon</h3>
+                            <p class="text-gray-600">Perfect for compact spaces</p>
+                        </div>
+
+                        <div id="roundCard" class="gallon-card border-3 border-gray-300 p-8 rounded-2xl cursor-pointer text-center bg-gradient-to-br from-green-50 to-white hover:from-green-100 hover:to-green-50 transition-all">
+                            <div class="bg-white rounded-xl p-6 mb-4 shadow-lg">
+                                <img src="img/18.9L_round_gallon.jpg" class="mx-auto w-48 h-48 object-contain" />
+                            </div>
+                            <h3 class="font-bold text-xl text-gray-800 mb-2">Round Gallon</h3>
+                            <p class="text-gray-600">Classic 18.9L capacity</p>
+                        </div>
+                    </div>
+
+                    <!-- Other steps remain hidden initially -->
+                    <div id="set2" class="hidden"><!-- Size selection content --></div>
+                    <div id="set3" class="hidden"><!-- Quantity selection content --></div>
+                    <div id="set4" class="hidden"><!-- Pickup selection content --></div>
+                    <div id="set5" class="hidden"><!-- Delivery selection content --></div>
+                    <div id="set6" class="hidden"><!-- Review content --></div>
+                </div>
+
+                <!-- Controls -->
+                <div id="controls" class="flex justify-between items-center max-w-4xl mx-auto"></div>
+            </div>
+        </main>
     </div>
-  </nav>
 
-  <!-- HERO SECTION -->
-  <section id="home" class="min-h-screen max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-12 px-6 py-20">
-    <div class="px-6 md:px-0">
-      <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold text-blue-500 leading-tight italic tracking-tight"> 
-        Fresh Water,
-        <br>
-        Delivered Daily
-      </h1>
-
-      <p class="mt-6 text-gray-600 text-base md:text-lg max-w-xl">
-        We make it easy to stay hydrated with pure water delivered whenever you need it.
-      </p>
-
-      <a href="login.html" class="inline-block mt-10 px-5 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition text-sm">ORDER NOW</a>
-    </div>
-
-    <div class="flex justify-center md:justify-end">
-      <img src="img/home.jpg" alt="Water Image" class="rounded-lg w-80 md:w-[420px] shadow-lg border border-white">
-    </div>
-  </section>
-
-  <!-- ABOUT SECTION -->
-  <section id="about" class="min-h-screen w-full bg-blue-500 text-white py-20">
-    <div class="max-w-4xl mx-auto text-center px-6">
-      <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold uppercase mb-8">ABOUT RCH</h2>
-
-      <p class="mx-auto leading-relaxed text-sm md:text-base">
-        Welcome to our Water Delivery System — a service designed to make clean, safe, and refreshing drinking water accessible to everyone, every day. We understand the importance of reliable hydration, which is why our system ensures that fresh water reaches your home, office, or business exactly when you need it.
-        <br><br>
-        Our delivery process is built on three core principles: quality, convenience, and consistency. Every drop of water we provide goes through a thorough purification process, ensuring it meets the highest standards for safety and taste.
-        <br><br>
-        Whether you're a household, a workplace, or a business with regular water needs, our Water Delivery System is here to support you with reliable service and clean drinking water you can trust.
-      </p>
-
-      <p class="mt-8 font-semibold">Pure water. Simple process. Everyday delivery.</p>
-    </div>
-  </section>
-
-  <!-- CONTACT SECTION -->
-  <section id="contact" class="min-h-screen max-w-6xl mx-auto px-6 py-20">
-    <h2 class="text-3xl md:text-4xl font-bold text-blue-500 text-center mb-12">CONTACT US</h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-      <!-- Contact Info Column -->
-      <div class="space-y-6">
-        <div class="flex items-start gap-4 bg-blue-500 text-white rounded-xl p-5 shadow">
-          <div class="flex-shrink-0 bg-blue-600 p-3 rounded-full">
-            <i class="bi bi-clock text-white text-lg"></i>
-          </div>
-          <div>
-            <h4 class="font-semibold">Working Hours</h4>
-            <p class="text-sm">8:00 AM - 6:00 PM<br>Monday - Sunday</p>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-4 bg-blue-500 text-white rounded-xl p-5 shadow">
-          <div class="flex-shrink-0 bg-blue-600 p-3 rounded-full">
-            <i class="bi bi-geo-alt-fill text-white text-lg"></i>
-          </div>
-          <div>
-            <p class="text-sm">123 Pag-asa Street, Barangay Uno, Lipa City, Batangas</p>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-4 bg-blue-500 text-white rounded-xl p-5 shadow">
-          <div class="flex-shrink-0 bg-blue-600 p-3 rounded-full">
-            <i class="bi bi-envelope-fill text-white text-lg"></i>
-          </div>
-          <div>
-            <p class="text-sm">rch@gmail.com</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Contact Form occupies 2 columns on wider screens -->
-      <div class="md:col-span-2">
-        <form class="p-6 md:p-8 border rounded-xl shadow bg-white">
-          <h3 class="text-xl font-semibold text-blue-500 mb-4">Send us your concern.</h3>
-
-          <label class="text-sm">Name: <span class="text-red-500">*</span></label>
-          <input class="w-full border border-gray-300 p-2 rounded mb-4" type="text" required>
-
-          <label class="text-sm">Address: <span class="text-red-500">*</span></label>
-          <input class="w-full border border-gray-300 p-2 rounded mb-4" type="text" required>
-
-          <label class="text-sm">Email: <span class="text-red-500">*</span></label>
-          <input class="w-full border border-gray-300 p-2 rounded mb-4" type="email" required>
-
-          <label class="text-sm">Message: <span class="text-red-500">*</span></label>
-          <textarea class="w-full border border-gray-300 p-2 rounded h-32 mb-4" required></textarea>
-
-          <button class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">Submit</button>
-        </form>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer id="developer" class="w-full bg-blue-500 text-white mt-12">
-    <div class="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-6">
-      <div class="flex items-center gap-3">
-        <i class="bi bi-droplet-fill text-white text-2xl"></i>
-        <div>
-          <div class="font-semibold">RCH Water</div>
-          <div class="text-xs opacity-80">© RCH 2025. All rights reserved.</div>
-        </div>
-      </div>
-
-      <div class="hidden md:flex gap-6 text-sm">
-        <a href="#home">Home</a>
-        <a href="#about">About</a>
-        <a href="#contact">Contact</a>
-        <a href="developers.html">Developer</a>
-      </div>
-
-      <div class="flex items-center gap-4">
-        <a class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center" href="#"><i class="bi bi-facebook"></i></a>
-        <a class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center" href="#"><i class="bi bi-instagram"></i></a>
-        <a class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center" href="#"><i class="bi bi-github"></i></a>
-      </div>
-    </div>
-  </footer>
-
+    <script>
+        // Your existing JavaScript code here
+        console.log('Customer order page loaded');
+    </script>
 </body>
 </html>
