@@ -491,9 +491,6 @@
                                             </div>
 
                                             <div class="flex justify-end gap-2 mt-4">
-                                                <button class="btn-primary text-white px-5 py-2.5 rounded-lg text-sm font-medium">
-                                                    <i class="fas fa-redo mr-2"></i>Reorder
-                                                </button>
                                                 <a href="../Customer/order_details.php?order_number=<?= urlencode($order['order_number']) ?>"
                                                     class="btn-primary text-white px-5 py-2.5 rounded-lg text-sm font-medium inline-flex items-center">
                                                     <i class="fas fa-info-circle mr-2"></i>View Details

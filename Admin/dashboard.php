@@ -7,6 +7,231 @@ include_once '../Cron/check_delays.php';
 
 $database = new Database();
 $db = $database->getConnect();
+
+// ---------- METRIC CARDS & DATA QUERIES ----------
+
+// Ensure PDO fetch mode default if not already set
+$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+// Orders this month
+$stmt = $db->prepare("
+    SELECT COUNT(*) AS total 
+    FROM water_refills 
+    WHERE MONTH(created_at) = MONTH(CURRENT_DATE())
+      AND YEAR(created_at) = YEAR(CURRENT_DATE())
+");
+$stmt->execute();
+$ordersMonth = (int)$stmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+// Total gallons handed out (sum of quantity across water_refill_items)
+$stmt = $db->prepare("SELECT IFNULL(SUM(quantity),0) AS total FROM water_refill_items");
+$stmt->execute();
+$gallonsHandout = (float)$stmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+// Active customers (distinct users who placed a refill OR POS orders in last year)
+$stmt = $db->prepare("
+    SELECT COUNT(DISTINCT user_id) AS total
+    FROM (
+        SELECT user_id FROM water_refills
+        UNION ALL
+        SELECT user_id FROM orders WHERE user_id IS NOT NULL
+    ) t
+");
+$stmt->execute();
+$activeCustomers = (int)$stmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+$stmt = $db->prepare("
+    SELECT 
+        COUNT(*) AS total_refills,
+        AVG(total_amount) AS avg_amount,
+        SUM(CASE WHEN order_status = 'pickup_delayed' OR order_status = 'delivery_delayed' THEN 1 ELSE 0 END) AS delayed_refills
+    FROM water_refills
+");
+$stmt->execute();
+$refillStats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Average delivery time (hours) across completed deliveries
+$stmt = $db->prepare("
+    SELECT AVG(TIMESTAMPDIFF(MINUTE, pickup_datetime, delivery_datetime))/60.0 AS avg_hrs
+    FROM water_refills
+    WHERE pickup_datetime IS NOT NULL
+      AND delivery_datetime IS NOT NULL
+");
+$stmt->execute();
+$avgDeliveryTime = $stmt->fetch(PDO::FETCH_ASSOC)['avg_hrs'];
+$avgDeliveryTime = $avgDeliveryTime !== null ? round((float)$avgDeliveryTime, 2) : 0;
+
+// ORDERS OVER TIME (last 30 days)
+$stmt = $db->prepare("
+    SELECT DATE(created_at) AS day, COUNT(*) AS total
+    FROM water_refills
+    WHERE created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 29 DAY)
+    GROUP BY DATE(created_at)
+    ORDER BY DATE(created_at)
+");
+$stmt->execute();
+$ordersDailyData = ['labels' => [], 'data' => []];
+while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $ordersDailyData['labels'][] = $r['day'];
+    $ordersDailyData['data'][] = (int)$r['total'];
+}
+if (empty($ordersDailyData['labels'])) {
+    // fallback to last 7 days if no data
+    for ($i = 6; $i >= 0; $i--) {
+        $d = date('Y-m-d', strtotime("-$i days"));
+        $ordersDailyData['labels'][] = $d;
+        $ordersDailyData['data'][] = 0;
+    }
+}
+
+// ORDER TYPE BREAKDOWN: delivery (water_refills) vs pos/walk-in (order_items)
+$stmt = $db->prepare("SELECT COUNT(*) FROM water_refills");
+$stmt->execute();
+$deliveryCount = (int)$stmt->fetchColumn();
+
+$stmt = $db->prepare("SELECT COUNT(*) FROM orders WHERE transaction_type IS NOT NULL");
+$stmt->execute();
+$posCount = (int)$stmt->fetchColumn();
+
+$orderTypeData = ['delivery' => $deliveryCount, 'pos' => $posCount];
+
+// DELIVERY COMPLETION RATE
+$stmt = $db->prepare("SELECT COUNT(*) FROM water_refills WHERE order_status = 'delivered'");
+$stmt->execute();
+$completed = (int)$stmt->fetchColumn();
+$stmt = $db->prepare("SELECT COUNT(*) FROM water_refills");
+$stmt->execute();
+$totalOrders = (int)$stmt->fetchColumn();
+$completionRate = $totalOrders > 0 ? round(($completed / $totalOrders) * 100, 2) : 0;
+
+// AVERAGE DELIVERY HOURS PER DAY (last 7 days)
+$stmt = $db->prepare("
+    SELECT DATE(delivery_datetime) AS day, AVG(TIMESTAMPDIFF(MINUTE, pickup_datetime, delivery_datetime))/60.0 AS avg_hours
+    FROM water_refills
+    WHERE pickup_datetime IS NOT NULL
+      AND delivery_datetime IS NOT NULL
+      AND delivery_datetime >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 DAY)
+    GROUP BY DATE(delivery_datetime)
+    ORDER BY DATE(delivery_datetime)
+");
+$stmt->execute();
+$deliveryHours = ['labels' => [], 'data' => []];
+while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $deliveryHours['labels'][] = $r['day'];
+    $deliveryHours['data'][] = round((float)$r['avg_hours'], 2);
+}
+if (empty($deliveryHours['labels'])) {
+    // fallback last 7 days
+    for ($i = 6; $i >= 0; $i--) {
+        $d = date('Y-m-d', strtotime("-$i days"));
+        $deliveryHours['labels'][] = $d;
+        $deliveryHours['data'][] = 0;
+    }
+}
+
+// FREQUENT CUSTOMERS (top 5 by number of refills)
+$stmt = $db->prepare("
+    SELECT u.name, COUNT(r.refill_id) AS total
+    FROM users u
+    JOIN water_refills r ON u.user_id = r.user_id
+    GROUP BY u.user_id
+    ORDER BY total DESC
+    LIMIT 5
+");
+$stmt->execute();
+$frequentCustomers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// GALLON STATUS (using gallon_ownership.status)
+$stmt = $db->prepare("
+    SELECT status, COUNT(*) AS c
+    FROM gallon_ownership
+    GROUP BY status
+");
+$stmt->execute();
+
+// Map PHP data to the exact labels you want
+$gallonStatus = ['Available' => 0, 'In-Use' => 0, 'Lost/Damaged' => 0];
+while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $s = $r['status']; // case-sensitive if stored consistently
+    if ($s === 'Available') $gallonStatus['Available'] = (int)$r['c'];
+    elseif ($s === 'In-Use') $gallonStatus['In-Use'] = (int)$r['c'];
+    else $gallonStatus['Lost/Damaged'] += (int)$r['c'];
+}
+
+// Pass PHP array to JS
+$gallonStatusJSON = json_encode($gallonStatus);
+$stmt = $db->prepare("
+    SELECT gallon_type, COUNT(*) AS count
+    FROM gallon_ownership
+    GROUP BY gallon_type
+");
+$stmt->execute();
+
+$gallonTypes = [];
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $gallonTypes[$row['gallon_type']] = (int)$row['count'];
+}
+
+$gallonTypesJSON = json_encode($gallonTypes);
+
+
+// STATION VS CUSTOMER (current_owner_id IS NULL => station)
+$stmt = $db->prepare("
+    SELECT 
+      SUM(CASE WHEN gallon_owner = 'station' THEN 1 ELSE 0 END) AS station_owned,
+      SUM(CASE WHEN gallon_owner = 'customer' THEN 1 ELSE 0 END) AS customer_owned
+    FROM water_refill_items
+");
+
+$stmt->execute();
+$sc = $stmt->fetch(PDO::FETCH_ASSOC);
+$stationCustomer = [
+    'station' => (int)$sc['station_owned'],
+    'customer' => (int)$sc['customer_owned']
+];
+
+$stmt->execute();
+$sc = $stmt->fetch(PDO::FETCH_ASSOC);
+$stationCustomer = [
+    'station' => (int)$sc['station_owned'],
+    'customer' => (int)$sc['customer_owned']
+];
+
+// RECENT ORDERS (limit 10) combined from water_refills (refill) and order_items (pos)
+$stmt = $db->prepare("
+    SELECT r.refill_id AS id, r.order_number, u.name AS customer, 'Refill' AS type, r.total_amount AS amount, r.order_status AS status, r.created_at AS time
+    FROM water_refills r
+    LEFT JOIN users u ON u.user_id = r.user_id
+    UNION ALL
+    SELECT o.order_id AS id, o.order_number, COALESCE(u.name, o.customer_name) AS customer, 'POS' AS type, o.total_amount AS amount, o.order_status AS status, o.created_at AS time
+    FROM orders o
+    LEFT JOIN users u ON u.user_id = o.user_id
+    ORDER BY time DESC
+    LIMIT 10
+");
+$stmt->execute();
+$recentOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Safety: ensure JSON numeric types where appropriate
+function json_num($v)
+{
+    return json_encode($v, JSON_NUMERIC_CHECK);
+}
+
+$stmt = $db->prepare("
+    SELECT order_status, COUNT(*) AS c
+    FROM water_refills
+    GROUP BY order_status
+");
+$stmt->execute();
+$orderStatusCounts = [];
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $orderStatusCounts[$row['order_status']] = (int)$row['c'];
+}
+$orderStatusJSON = json_encode($orderStatusCounts);
+
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -58,7 +283,7 @@ $db = $database->getConnect();
                             </div>
                             <div>
                                 <p class="text-gray-600 text-sm">Orders This Month</p>
-                                <p class="text-2xl font-bold text-gray-700">50</p>
+                                <p class="text-2xl font-bold text-gray-700"><?= $ordersMonth ?></p>
                             </div>
                         </div>
 
@@ -68,7 +293,8 @@ $db = $database->getConnect();
                             </div>
                             <div>
                                 <p class="text-white text-sm">Total Handouts-Gallons</p>
-                                <p class="text-2xl font-bold">50</p>
+                                <p class="text-2xl font-bold"><?= $gallonsHandout ?>
+                                </p>
                             </div>
                         </div>
 
@@ -78,7 +304,8 @@ $db = $database->getConnect();
                             </div>
                             <div>
                                 <p class="text-gray-600 text-sm">Active Customers</p>
-                                <p class="text-2xl font-bold text-gray-700">50</p>
+                                <p class="text-2xl font-bold text-gray-700"><?= $activeCustomers ?>
+                                </p>
                             </div>
                         </div>
 
@@ -88,7 +315,8 @@ $db = $database->getConnect();
                             </div>
                             <div>
                                 <p class="text-white     text-sm">Average Delivery Time</p>
-                                <p class="text-2xl font-bold">2.5 hrs</p>
+                                <p class="text-2xl font-bold"><?= $avgDeliveryTime ?> hrs
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -256,45 +484,30 @@ $db = $database->getConnect();
                                     <canvas id="stationCustomerChart"></canvas>
                                 </div>
                             </div>
+
+                            <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                    <i class="fas fa-code-compare text-purple-500"></i>
+                                    Refill Orders By Status
+                                </h3>
+                                <div class="h-64">
+                                    <canvas id="refillStatusChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                    <i class="fas fa-code-compare text-purple-500"></i>
+                                    Gallons By Type
+                                </h3>
+                                <div class="h-64">
+                                    <canvas id="gallonTypeChart"></canvas>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- QR Code Stats -->
-                        <!-- Added QR code statistics section -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-gray-600 text-sm flex items-center gap-2">
-                                            <i class="fas fa-qrcode text-blue-500"></i>
-                                            Total QR Codes
-                                        </p>
-                                        <p class="text-2xl font-bold text-gray-700">1,245</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-gray-600 text-sm flex items-center gap-2">
-                                            <i class="fas fa-check-circle text-green-500"></i>
-                                            Active QR Codes
-                                        </p>
-                                        <p class="text-2xl font-bold text-green-600">892</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-gray-600 text-sm flex items-center gap-2">
-                                            <i class="fas fa-times-circle text-red-500"></i>
-                                            Inactive QR Codes
-                                        </p>
-                                        <p class="text-2xl font-bold text-red-600">353</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
 
                     <!-- Recent Orders Section -->
@@ -317,30 +530,27 @@ $db = $database->getConnect();
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                        <td class="py-3 px-4"><span class="font-medium text-blue-600">#ORD-001</span></td>
-                                        <td class="py-3 px-4">Leon Dala Cruz</td>
-                                        <td class="py-3 px-4"><span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Refill</span></td>
-                                        <td class="py-3 px-4">₱500</td>
-                                        <td class="py-3 px-4"><span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center gap-1 w-fit"><i class="fas fa-check-circle text-xs"></i>Delivered</span></td>
-                                        <td class="py-3 px-4 text-gray-500">2 hrs ago</td>
-                                    </tr>
-                                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                        <td class="py-3 px-4"><span class="font-medium text-blue-600">#ORD-002</span></td>
-                                        <td class="py-3 px-4">Felicity M Varrua</td>
-                                        <td class="py-3 px-4"><span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">New Order</span></td>
-                                        <td class="py-3 px-4">₱800</td>
-                                        <td class="py-3 px-4"><span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium flex items-center gap-1 w-fit"><i class="fas fa-truck text-xs"></i>In Transit</span></td>
-                                        <td class="py-3 px-4 text-gray-500">30 mins ago</td>
-                                    </tr>
-                                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                                        <td class="py-3 px-4"><span class="font-medium text-blue-600">#ORD-003</span></td>
-                                        <td class="py-3 px-4">Jenalyn Gentilique</td>
-                                        <td class="py-3 px-4"><span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Refill</span></td>
-                                        <td class="py-3 px-4">₱450</td>
-                                        <td class="py-3 px-4"><span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium flex items-center gap-1 w-fit"><i class="fas fa-clock text-xs"></i>Pending</span></td>
-                                        <td class="py-3 px-4 text-gray-500">Just now</td>
-                                    </tr>
+                                <tbody>
+                                    <?php foreach ($recentOrders as $order):
+                                        // friendly status badge mapping
+                                        $status = strtolower($order['status']);
+                                        $badgeClass = 'bg-gray-100 text-gray-700';
+                                        if (strpos($status, 'deliv') !== false || strpos($status, 'delivered') !== false) $badgeClass = 'bg-green-100 text-green-700';
+                                        elseif (strpos($status, 'pending') !== false) $badgeClass = 'bg-yellow-100 text-yellow-700';
+                                        elseif (strpos($status, 'cancel') !== false) $badgeClass = 'bg-red-100 text-red-700';
+                                        elseif (strpos($status, 'assigned') !== false || strpos($status, 'on_delivery') !== false) $badgeClass = 'bg-blue-100 text-blue-700';
+                                    ?>
+                                        <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                            <td class="py-3 px-4"><span class="font-medium text-blue-600"><?= htmlspecialchars($order['order_number']) ?></span></td>
+                                            <td class="py-3 px-4"><?= htmlspecialchars($order['customer']) ?></td>
+                                            <td class="py-3 px-4"><span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium"><?= htmlspecialchars($order['type']) ?></span></td>
+                                            <td class="py-3 px-4">₱<?= number_format((float)$order['amount'], 2) ?></td>
+                                            <td class="py-3 px-4"><span class="px-3 py-1 <?= $badgeClass ?> rounded-full text-xs font-medium"><?= htmlspecialchars($order['status']) ?></span></td>
+                                            <td class="py-3 px-4 text-gray-500"><?= htmlspecialchars($order['time']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+
                                 </tbody>
                             </table>
                         </div>
@@ -351,31 +561,37 @@ $db = $database->getConnect();
         </div>
     </div>
     <script src="..Admin/includes/admin_toast.js"></script>
-        
+    <script>
+        /* Server-side data -> client */
+        const ordersDailyData = <?= json_encode($ordersDailyData, JSON_NUMERIC_CHECK) ?>;
+        const orderTypeData = <?= json_encode($orderTypeData, JSON_NUMERIC_CHECK) ?>;
+        const completionRate = <?= json_encode($completionRate, JSON_NUMERIC_CHECK) ?>;
+        const frequentCustomers = <?= json_encode($frequentCustomers, JSON_NUMERIC_CHECK) ?>;
+        const gallonStatus = <?= json_encode($gallonStatus, JSON_NUMERIC_CHECK) ?>;
+        const stationCustomer = <?= json_encode($stationCustomer, JSON_NUMERIC_CHECK) ?>;
+        const deliveryHours = <?= json_encode($deliveryHours, JSON_NUMERIC_CHECK) ?>;
+    </script>
+
     <script>
         function initializeCharts() {
-            // Ensure all canvas elements exist before creating charts
-            const requiredCharts = ['ordersChart', 'orderTypeChart', 'completionChart', 'deliveryHoursChart', 'frequentCustomersChart', 'gallonStatusChart', 'stationCustomerChart'];
+            // Helper: ensure element exists
+            const exists = id => document.getElementById(id) !== null;
 
-            const missingCharts = requiredCharts.filter(id => !document.getElementById(id));
-            if (missingCharts.length > 0) {
-                console.warn('[v0] Missing chart canvases:', missingCharts);
-                return;
-            }
-
-            // Orders Over Time Chart
-            const ordersCtx = document.getElementById('ordersChart');
-            if (ordersCtx) {
-                new Chart(ordersCtx, {
-                    type: 'bar',
+            // ORDERS OVER TIME (line)
+            if (exists('ordersChart')) {
+                new Chart(document.getElementById('ordersChart'), {
+                    type: 'line',
                     data: {
-                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        labels: ordersDailyData.labels,
                         datasets: [{
                             label: 'Orders',
-                            data: [12, 19, 8, 15, 22, 16, 9],
-                            backgroundColor: '#1E90FF',
-                            borderRadius: 6,
-                            borderSkipped: false
+                            data: ordersDailyData.data,
+                            borderColor: '#1E90FF',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            backgroundColor: 'rgba(30,144,255,0.08)',
+                            pointRadius: 3
                         }]
                     },
                     options: {
@@ -387,10 +603,93 @@ $db = $database->getConnect();
                             }
                         },
                         scales: {
+                            x: {
+                                ticks: {
+                                    autoSkip: true,
+                                    maxTicksLimit: 10
+                                }
+                            },
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    stepSize: 5
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            const gallonTypes = <?= $gallonTypesJSON ?>;
+            new Chart(document.getElementById('gallonTypeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(gallonTypes),
+                    datasets: [{
+                        data: Object.values(gallonTypes),
+                        backgroundColor: ['#1E90FF', '#046CD2', '#10B981', '#F59E0B'],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // ORDER TYPE (pie)
+            if (exists('orderTypeChart')) {
+                new Chart(document.getElementById('orderTypeChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Delivery', 'POS / Walk-in'],
+                        datasets: [{
+                            data: [orderTypeData.delivery || 0, orderTypeData.pos || 0],
+                            backgroundColor: ['#1E90FF', '#046CD2'],
+                            borderColor: '#ffffff',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // COMPLETION RATE (doughnut showing percent completed)
+            if (exists('completionChart')) {
+                new Chart(document.getElementById('completionChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Completed %', 'Remaining %'],
+                        datasets: [{
+                            data: [completionRate, Math.max(0, 100 - completionRate)],
+                            backgroundColor: ['#10B981', '#F59E0B'],
+                            borderColor: '#fff',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `${ctx.label}: ${ctx.parsed}%`
                                 }
                             }
                         }
@@ -398,77 +697,21 @@ $db = $database->getConnect();
                 });
             }
 
-            // Order Type Breakdown Chart
-            const orderTypeCtx = document.getElementById('orderTypeChart');
-            if (orderTypeCtx) {
-                new Chart(orderTypeCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Refill', 'New Order'],
-                        datasets: [{
-                            data: [60, 40],
-                            backgroundColor: ['#1E90FF', '#046CD2'],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Delivery Completion Rate Chart
-            const completionCtx = document.getElementById('completionChart');
-            if (completionCtx) {
-                new Chart(completionCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Completed', 'Pending', 'Cancelled'],
-                        datasets: [{
-                            data: [70, 20, 10],
-                            backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Average Delivery Hours Chart
-            const deliveryHoursCtx = document.getElementById('deliveryHoursChart');
-            if (deliveryHoursCtx) {
-                new Chart(deliveryHoursCtx, {
+            // AVERAGE DELIVERY HOURS (line)
+            if (exists('deliveryHoursChart')) {
+                new Chart(document.getElementById('deliveryHoursChart'), {
                     type: 'line',
                     data: {
-                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        labels: deliveryHours.labels,
                         datasets: [{
-                            label: 'Hours',
-                            data: [2, 3, 2.5, 4, 3.5, 2, 3],
-                            backgroundColor: 'rgba(30, 144, 255, 0.1)',
-                            borderColor: '#1E90FF',
-                            borderWidth: 3,
-                            tension: 0.4,
+                            label: 'Avg Hours',
+                            data: deliveryHours.data,
+                            borderColor: '#FF8C00',
+                            backgroundColor: 'rgba(255,140,0,0.08)',
+                            borderWidth: 2,
+                            tension: 0.3,
                             fill: true,
-                            pointBackgroundColor: '#1E90FF',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5
+                            pointRadius: 3
                         }]
                     },
                     options: {
@@ -488,19 +731,19 @@ $db = $database->getConnect();
                 });
             }
 
-            // Most Frequent Customers Chart
-            const frequentCustomersCtx = document.getElementById('frequentCustomersChart');
-            if (frequentCustomersCtx) {
-                new Chart(frequentCustomersCtx, {
+            // MOST FREQUENT CUSTOMERS (horizontal bar)
+            if (exists('frequentCustomersChart')) {
+                const labels = frequentCustomers.map(c => c.name);
+                const data = frequentCustomers.map(c => Number(c.total));
+                new Chart(document.getElementById('frequentCustomersChart'), {
                     type: 'bar',
                     data: {
-                        labels: ['Leon Dala Cruz', 'Felicity M Varrua', 'Jenalyn Gentilique', 'Bryson Forte', 'Christine May'],
+                        labels: labels,
                         datasets: [{
-                            label: 'Number of Orders',
-                            data: [45, 38, 32, 28, 25],
-                            backgroundColor: ['#1E90FF', '#046CD2', '#1873CC', '#1460B8', '#1050A4'],
-                            borderRadius: 6,
-                            borderSkipped: false
+                            label: 'Orders',
+                            data: data,
+                            backgroundColor: Array(labels.length).fill('#1E90FF'),
+                            borderRadius: 6
                         }]
                     },
                     options: {
@@ -521,19 +764,24 @@ $db = $database->getConnect();
                 });
             }
 
-            // Gallon Status Overview Chart
-            const gallonStatusCtx = document.getElementById('gallonStatusChart');
-            if (gallonStatusCtx) {
-                new Chart(gallonStatusCtx, {
+            // GALLON STATUS (bar)
+            const gallonStatus = <?= $gallonStatusJSON ?>;
+
+            const ctx = document.getElementById('gallonStatusChart');
+            if (ctx) {
+                new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: ['In Stock', 'In Transit', 'Damaged', 'Lost'],
+                        labels: ['Available', 'In-Use', 'Lost/Damaged'],
                         datasets: [{
-                            label: 'Gallons',
-                            data: [450, 320, 45, 15],
-                            backgroundColor: ['#10B981', '#3B82F6', '#EF4444', '#F59E0B'],
-                            borderRadius: 6,
-                            borderSkipped: false
+                            label: 'Gallon Count',
+                            data: [
+                                gallonStatus['Available'] || 0,
+                                gallonStatus['In-Use'] || 0,
+                                gallonStatus['Lost/Damaged'] || 0
+                            ],
+                            backgroundColor: ['#10B981', '#3B82F6', '#EF4444'],
+                            borderRadius: 6
                         }]
                     },
                     options: {
@@ -552,27 +800,57 @@ $db = $database->getConnect();
                     }
                 });
             }
+            const orderStatus = <?= $orderStatusJSON ?>;
 
-            // Station vs Customer Gallons Chart
-            const stationCustomerCtx = document.getElementById('stationCustomerChart');
-            if (stationCustomerCtx) {
-                new Chart(stationCustomerCtx, {
-                    type: 'bar',
+new Chart(document.getElementById('refillStatusChart'), {
+    type: 'bar', // change to bar for histogram
+    data: {
+        labels: Object.keys(orderStatus),
+        datasets: [{
+            label: 'Number of Orders',
+            data: Object.values(orderStatus),
+            backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#A78BFA', '#F87171'],
+            borderColor: '#fff',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Number of Orders'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Order Status'
+                }
+            }
+        }
+    }
+});
+
+
+            // STATION VS CUSTOMER (pie)
+            if (exists('stationCustomerChart')) {
+                new Chart(document.getElementById('stationCustomerChart'), {
+                    type: 'doughnut',
                     data: {
-                        labels: ['Station A', 'Station B', 'Station C', 'Station D'],
+                        labels: ['Station Owned', 'Customer Owned'],
                         datasets: [{
-                                label: 'Station Owned',
-                                data: [120, 150, 100, 130],
-                                backgroundColor: '#1E90FF',
-                                borderRadius: 6
-                            },
-                            {
-                                label: 'Customer Owned',
-                                data: [80, 95, 110, 75],
-                                backgroundColor: '#046CD2',
-                                borderRadius: 6
-                            }
-                        ]
+                            data: [stationCustomer.station || 0, stationCustomer.customer || 0],
+                            backgroundColor: ['#1E90FF', '#046CD2'],
+                            borderColor: '#fff',
+                            borderWidth: 1
+                        }]
                     },
                     options: {
                         responsive: true,
@@ -581,46 +859,21 @@ $db = $database->getConnect();
                             legend: {
                                 position: 'bottom'
                             }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
                         }
                     }
                 });
             }
-        }
 
-        // Initialize charts when DOM is fully loaded
+        } // end initializeCharts
+
+        // init on DOM ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeCharts);
         } else {
             initializeCharts();
         }
-
-        //for smooth page transition
-        document.querySelectorAll('.sidebar-link').forEach(link => {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                const target = e.currentTarget.getAttribute('href');
-                const content = document.getElementById('page-content');
-
-                // Fade out
-                content.classList.add('opacity-0', 'translate-x-2');
-
-                setTimeout(() => {
-                    window.location.href = target;
-                }, 300); // same as duration-300
-            });
-        });
-
-        const content = document.getElementById('page-content');
-        if (content) {
-            content.classList.add('opacity-0');
-            setTimeout(() => content.classList.remove('opacity-0', 'translate-x-2'), 50);
-        }
     </script>
+
 </body>
 
 </html>

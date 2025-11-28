@@ -461,10 +461,12 @@ $totalGallons =
         function completeProcessing() {
             document.getElementById('completion-message').classList.remove('hidden');
             stopQRScanner();
+
             setTimeout(() => {
-                window.location.href = 'customer_orders.php';
+                window.location.href = "order_details.php?order_number=<?= urlencode($orderNumber) ?>";
             }, 2500);
         }
+
 
         function updateStatus(message, type = 'info') {
             const el = document.getElementById('scan-status');

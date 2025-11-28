@@ -189,6 +189,7 @@ try {
     }
 
     // Fetch DELAYED deliveries (status: 'pickup_delayed' or 'delivery_delayed')
+
     $delayedQuery = "
         SELECT 
             w.refill_id,

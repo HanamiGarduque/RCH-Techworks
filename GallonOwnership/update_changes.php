@@ -23,7 +23,7 @@ if (!$status) {
 }
 
 // Validate status value
-$allowedStatuses = ['Active', 'Lost/Damaged'];
+$allowedStatuses = ['Available', 'Lost/Damaged'];
 if (!in_array($status, $allowedStatuses)) {
     echo json_encode(['success' => false, 'message' => 'Invalid status value.']);
     exit;

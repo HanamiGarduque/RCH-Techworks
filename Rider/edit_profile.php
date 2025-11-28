@@ -70,6 +70,21 @@ $rider_name = $_SESSION['name'] ?? 'Rider';
         .progress-ring-circle {
             transition: stroke-dashoffset 0.5s ease;
         }
+
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
     </style>
 </head>
 
@@ -121,7 +136,7 @@ $rider_name = $_SESSION['name'] ?? 'Rider';
                     <p class="text-sm text-blue-600 font-medium mb-1" id="profile-email">rider@example.com</p>
                     <span class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold flex items-center gap-1">
                         <i class="bi bi-circle-fill text-green-500" style="font-size: 0.4rem;"></i>
-                        Active Rider
+                        <span id="profile-status">Active Rider</span>
                     </span>
                 </div>
             </div>
@@ -168,14 +183,14 @@ $rider_name = $_SESSION['name'] ?? 'Rider';
                         <i class="bi bi-card-text text-orange-500 mt-1"></i>
                         <div class="flex-1">
                             <p class="text-xs text-gray-500">License Plate</p>
-                            <p class="text-sm font-semibold text-gray-800" id="vehicle-plate">ABC-1234</p>
+                            <p class="text-sm font-semibold text-gray-800" id="vehicle-plate">Loading...</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-3">
                         <i class="bi bi-tools text-orange-500 mt-1"></i>
                         <div class="flex-1">
                             <p class="text-xs text-gray-500">Vehicle Type</p>
-                            <p class="text-sm font-semibold text-gray-800" id="vehicle-type">Motorcycle</p>
+                            <p class="text-sm font-semibold text-gray-800" id="vehicle-type">Loading...</p>
                         </div>
                     </div>
                 </div>
@@ -263,43 +278,43 @@ $rider_name = $_SESSION['name'] ?? 'Rider';
                 <div class="flex items-end justify-between gap-2 h-32">
                     <div class="flex-1 flex flex-col items-center">
                         <div class="w-full bg-gray-200 rounded-t-lg overflow-hidden flex flex-col-reverse" style="height: 100%;">
-                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" id="bar-mon" style="height: 40%;"></div>
+                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500" id="bar-mon" style="height: 0%;"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 font-medium">Mon</p>
                     </div>
                     <div class="flex-1 flex flex-col items-center">
                         <div class="w-full bg-gray-200 rounded-t-lg overflow-hidden flex flex-col-reverse" style="height: 100%;">
-                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" id="bar-tue" style="height: 60%;"></div>
+                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500" id="bar-tue" style="height: 0%;"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 font-medium">Tue</p>
                     </div>
                     <div class="flex-1 flex flex-col items-center">
                         <div class="w-full bg-gray-200 rounded-t-lg overflow-hidden flex flex-col-reverse" style="height: 100%;">
-                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" id="bar-wed" style="height: 80%;"></div>
+                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500" id="bar-wed" style="height: 0%;"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 font-medium">Wed</p>
                     </div>
                     <div class="flex-1 flex flex-col items-center">
                         <div class="w-full bg-gray-200 rounded-t-lg overflow-hidden flex flex-col-reverse" style="height: 100%;">
-                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" id="bar-thu" style="height: 50%;"></div>
+                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500" id="bar-thu" style="height: 0%;"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 font-medium">Thu</p>
                     </div>
                     <div class="flex-1 flex flex-col items-center">
                         <div class="w-full bg-gray-200 rounded-t-lg overflow-hidden flex flex-col-reverse" style="height: 100%;">
-                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" id="bar-fri" style="height: 90%;"></div>
+                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500" id="bar-fri" style="height: 0%;"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 font-medium">Fri</p>
                     </div>
                     <div class="flex-1 flex flex-col items-center">
                         <div class="w-full bg-gray-200 rounded-t-lg overflow-hidden flex flex-col-reverse" style="height: 100%;">
-                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" id="bar-sat" style="height: 70%;"></div>
+                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500" id="bar-sat" style="height: 0%;"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 font-medium">Sat</p>
                     </div>
                     <div class="flex-1 flex flex-col items-center">
                         <div class="w-full bg-gray-200 rounded-t-lg overflow-hidden flex flex-col-reverse" style="height: 100%;">
-                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg" id="bar-sun" style="height: 30%;"></div>
+                            <div class="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500" id="bar-sun" style="height: 0%;"></div>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 font-medium">Sun</p>
                     </div>
@@ -317,52 +332,17 @@ $rider_name = $_SESSION['name'] ?? 'Rider';
                         <svg class="w-32 h-32 progress-ring">
                             <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="8" fill="none" />
                             <circle id="progress-circle" cx="64" cy="64" r="56" stroke="#10b981" stroke-width="8" fill="none"
-                                stroke-dasharray="351.858" stroke-dashoffset="0" class="progress-ring-circle" />
+                                stroke-dasharray="351.858" stroke-dashoffset="351.858" class="progress-ring-circle" />
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <p class="text-3xl font-bold text-gray-800" id="completion-rate">95%</p>
+                            <p class="text-3xl font-bold text-gray-800" id="completion-rate">0%</p>
                             <p class="text-xs text-gray-500">Success</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Achievements -->
-            <div class="stat-card bg-white rounded-2xl p-4 border border-gray-200 shadow-sm" style="animation-delay: 0.7s">
-                <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <i class="bi bi-trophy text-yellow-500"></i>
-                    Recent Achievements
-                </h4>
-                <div class="space-y-2">
-                    <div class="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                            <i class="bi bi-star-fill text-yellow-500"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-semibold text-gray-800">100 Deliveries</p>
-                            <p class="text-xs text-gray-500">Completed milestone</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="bi bi-lightning-fill text-blue-500"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-semibold text-gray-800">Speed Demon</p>
-                            <p class="text-xs text-gray-500">Fast delivery streak</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                            <i class="bi bi-hand-thumbs-up-fill text-green-500"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-semibold text-gray-800">Customer Favorite</p>
-                            <p class="text-xs text-gray-500">5-star rating streak</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
         </div>
 
     </div>
@@ -407,59 +387,117 @@ $rider_name = $_SESSION['name'] ?? 'Rider';
         }
 
         function loadProfileData() {
-            // Simulated data - replace with actual API call
-            const profileData = {
-                name: '<?php echo $rider_name; ?>',
-                email: 'rider@rchwater.com',
-                phone: '+63 912 345 6789',
-                address: 'Lipa City, Batangas',
-                joined: 'January 15, 2024',
-                initials: '<?php echo strtoupper(substr($rider_name, 0, 1)); ?>'
-            };
+            fetch('get_rider_profile.php')
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to load profile');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const profile = data.profile;
+                        const vehicle = data.vehicle;
 
-            document.getElementById('profile-name').textContent = profileData.name;
-            document.getElementById('profile-email').textContent = profileData.email;
-            document.getElementById('profile-phone').textContent = profileData.phone;
-            document.getElementById('profile-address').textContent = profileData.address;
-            document.getElementById('profile-joined').textContent = profileData.joined;
-            document.getElementById('profile-initials').textContent = profileData.initials;
+                        document.getElementById('profile-name').textContent = profile.name;
+                        document.getElementById('profile-email').textContent = profile.email;
+                        document.getElementById('profile-phone').textContent = profile.phone;
+                        document.getElementById('profile-address').textContent = profile.address;
+                        document.getElementById('profile-joined').textContent = profile.joined;
+                        document.getElementById('profile-initials').textContent = profile.initials;
+                        document.getElementById('profile-status').textContent = profile.status === 'active' ? 'Active Rider' : 'Inactive';
+
+                        document.getElementById('vehicle-plate').textContent = vehicle.license_plate;
+                        document.getElementById('vehicle-type').textContent = vehicle.vehicle_type;
+                    } else {
+                        throw new Error(data.error || 'Unknown error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading profile:', err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to load profile data',
+                        confirmButtonColor: '#3b82f6'
+                    });
+                });
         }
 
         function loadStatistics() {
-            // Simulated data - replace with actual API call
             fetch('get_rider_stats.php')
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to load statistics');
+                    return res.json();
+                })
                 .then(data => {
-                    document.getElementById('total-completed').textContent = data.completed || '156';
-                    document.getElementById('total-active').textContent = data.active || '3';
-                    document.getElementById('total-pending').textContent = data.pending || '8';
-                    document.getElementById('rating-score').textContent = data.rating || '4.9';
+                    if (data.success) {
+                        // Update stat cards
+                        document.getElementById('total-completed').textContent = data.completed;
+                        document.getElementById('total-active').textContent = data.active;
+                        document.getElementById('total-pending').textContent = data.pending;
+                        document.getElementById('rating-score').textContent = data.rating;
 
-                    // Update completion rate circle
-                    const completionRate = data.completion_rate || 95;
-                    document.getElementById('completion-rate').textContent = completionRate + '%';
+                        // Update completion rate
+                        const completionRate = data.completion_rate;
+                        document.getElementById('completion-rate').textContent = completionRate + '%';
 
-                    const circle = document.getElementById('progress-circle');
-                    const circumference = 2 * Math.PI * 56; // 2πr
-                    const offset = circumference - (completionRate / 100) * circumference;
-                    circle.style.strokeDashoffset = offset;
+                        const circle = document.getElementById('progress-circle');
+                        const circumference = 2 * Math.PI * 56;
+                        const offset = circumference - (completionRate / 100) * circumference;
+                        
+                        setTimeout(() => {
+                            circle.style.strokeDashoffset = offset;
+                        }, 100);
 
-                    // Update weekly chart (if data available)
-                    if (data.weekly) {
-                        const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-                        days.forEach((day, index) => {
-                            const percentage = data.weekly[index] || Math.random() * 100;
-                            document.getElementById(`bar-${day}`).style.height = percentage + '%';
-                        });
+                        // Update weekly chart
+                        if (data.weekly && data.weekly.length === 7) {
+                            const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+                            days.forEach((day, index) => {
+                                setTimeout(() => {
+                                    document.getElementById(`bar-${day}`).style.height = data.weekly[index] + '%';
+                                }, 100 + (index * 50));
+                            });
+                        }
+
+                        // Update achievements
+                        if (data.achievements && data.achievements.length > 0) {
+                            const container = document.getElementById('achievements-container');
+                            container.innerHTML = '';
+
+                            data.achievements.forEach(achievement => {
+                                const colorMap = {
+                                    'yellow': 'bg-yellow-50 text-yellow-500 bg-yellow-100',
+                                    'blue': 'bg-blue-50 text-blue-500 bg-blue-100',
+                                    'green': 'bg-green-50 text-green-500 bg-green-100',
+                                    'red': 'bg-red-50 text-red-500 bg-red-100'
+                                };
+                                const colors = colorMap[achievement.color] || 'bg-gray-50 text-gray-500 bg-gray-100';
+                                const [bgColor, iconColor, badgeColor] = colors.split(' ');
+
+                                const achievementHTML = `
+                                    <div class="flex items-center gap-3 p-3 ${bgColor} rounded-lg">
+                                        <div class="w-10 h-10 ${badgeColor} rounded-full flex items-center justify-center">
+                                            <i class="bi bi-${achievement.icon} ${iconColor}"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-semibold text-gray-800">${achievement.title}</p>
+                                            <p class="text-xs text-gray-500">${achievement.description}</p>
+                                        </div>
+                                    </div>
+                                `;
+                                container.innerHTML += achievementHTML;
+                            });
+                        }
+                    } else {
+                        throw new Error(data.error || 'Unknown error');
                     }
                 })
                 .catch(err => {
                     console.error('Error loading stats:', err);
-                    // Use fallback data
-                    document.getElementById('total-completed').textContent = '156';
-                    document.getElementById('total-active').textContent = '3';
-                    document.getElementById('total-pending').textContent = '8';
-                    document.getElementById('rating-score').textContent = '4.9';
+                    // Set default values on error
+                    document.getElementById('total-completed').textContent = '0';
+                    document.getElementById('total-active').textContent = '0';
+                    document.getElementById('total-pending').textContent = '0';
+                    document.getElementById('rating-score').textContent = '0.0';
                 });
         }
 

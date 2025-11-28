@@ -116,7 +116,7 @@
             const errorDiv = document.getElementById('errorMsg');
 
             form.addEventListener('submit', function(e) {
-                e.preventDefault(); // prevent page reload
+                e.preventDefault();
 
                 const formData = new FormData(form);
 
@@ -127,10 +127,9 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            window.location.href = 'dashboard.php'; // redirect on success
+                            window.location.href = data.redirect; // use backend redirect
                         } else {
-                            errorDiv.textContent = data.message; // show error
-                            // Hide error after 3 seconds
+                            errorDiv.textContent = data.message;
                             setTimeout(() => {
                                 errorDiv.textContent = '';
                             }, 3000);

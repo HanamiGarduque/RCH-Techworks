@@ -23,68 +23,68 @@ $db = $database->getConnect();
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-    body {
-        font-family: 'Poppins', sans-serif;
-        overflow-x: hidden;
-    }
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+        }
 
-     body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
-    overflow: hidden !important;
-    padding-right: 0 !important;
-}
+        body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
+            overflow: hidden !important;
+            padding-right: 0 !important;
+        }
 
-/* Prevent height changes */
-body.swal2-height-auto {
-    height: auto !important;
-}
+        /* Prevent height changes */
+        body.swal2-height-auto {
+            height: auto !important;
+        }
 
-/* Use scrollbar-gutter to reserve space without showing scrollbar */
-body {
-    scrollbar-gutter: stable;
-}
+        /* Use scrollbar-gutter to reserve space without showing scrollbar */
+        body {
+            scrollbar-gutter: stable;
+        }
 
-    /* Ensure the page layout uses full viewport height */
-    .page-container {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
+        /* Ensure the page layout uses full viewport height */
+        .page-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-    /* Main content area that will scroll */
-    .content-wrapper {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
+        /* Main content area that will scroll */
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-    /* Table container with scroll */
-    .table-scroll-container {
-        overflow-y: auto;
-        overflow-x: auto;
-        flex: 1;
-    }
+        /* Table container with scroll */
+        .table-scroll-container {
+            overflow-y: auto;
+            overflow-x: auto;
+            flex: 1;
+        }
 
-    /* Custom scrollbar styling */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
 
-    ::-webkit-scrollbar-track {
-        background: #f1f5f9;
-    }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
 
-    ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
-    }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
 
-    ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-    }
-</style>
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
 </head>
 
 <body class="bg-gray-50">
@@ -660,150 +660,141 @@ body {
                     fetch(`get_gallon_status.php?id=${id}`)
                         .then(res => res.json())
                         .then(gallonData => {
-                            const currentlyDamaged = gallonData.data.status === 'Lost/Damaged';
+                            const currentStatus = gallonData.data.status;
                             const hasCode = gallonData.data.code_value && gallonData.data.code_value.trim() !== "";
 
-                            // Create modal overlay
+                            // Modal container
                             const modal = document.createElement('div');
                             modal.className = "fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50";
                             modal.style.animation = "fadeIn 0.2s ease-out";
 
                             modal.innerHTML = `
-                <div class="bg-white rounded-xl shadow-2xl w-96 overflow-hidden" style="animation: slideIn 0.3s ease-out;">
-                    
-                    <!-- Header -->
-                    <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-                        <h2 class="text-xl font-semibold text-white text-center">
-                            <i class="fas fa-edit mr-2"></i>Update Gallon Status
-                        </h2>
+        <div class="bg-white rounded-xl shadow-2xl w-96 overflow-hidden" style="animation: slideIn 0.3s ease-out;">
+            
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white text-center">
+                    <i class="fas fa-edit mr-2"></i>Update Gallon Status
+                </h2>
+            </div>
+
+            <!-- Content -->
+            <form id="editGallonForm" class="p-6">
+
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                    Select Gallon Status
+                </label>
+
+                <!-- Available -->
+                <label class="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="gallonStatus" value="Available"
+                        ${currentStatus === "Available" ? "checked" : ""} class="mt-1">
+                    <div>
+                        <p class="font-medium text-gray-900">Available</p>
+                        <p class="text-xs text-gray-500">The gallon is unused and ready for deployment.</p>
                     </div>
+                </label>
 
-                    <!-- Content -->
-                    <form id="editGallonForm" class="p-6">
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-700 mb-3">
-                                Gallon Condition
-                            </label>
+                <!-- In-Use -->
+                <label class="flex items-start gap-3 p-3 mt-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="gallonStatus" value="In-Use"
+                        ${currentStatus === "In-Use" ? "checked" : ""} class="mt-1">
+                    <div>
+                        <p class="font-medium text-gray-900">In-Use</p>
+                        <p class="text-xs text-gray-500">The gallon is currently with a customer.</p>
+                    </div>
+                </label>
 
-                            <!-- Clickable box -->
-                            <div id="clickBox"
-                                class="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer">
+                <!-- Lost/Damaged -->
+                <label class="flex items-start gap-3 p-3 mt-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="gallonStatus" value="Lost/Damaged"
+                        ${currentStatus === "Lost/Damaged" ? "checked" : ""} class="mt-1">
+                    <div>
+                        <p class="font-medium text-gray-900">Lost/Damaged</p>
+                        <p class="text-xs text-gray-500">Mark only if the gallon is lost or unusable.</p>
+                    </div>
+                </label>
 
-                                <label class="flex items-center gap-3 cursor-pointer w-full">
-                                    
-                                    <input type="checkbox"
-                                           id="markDamaged"
-                                           ${currentlyDamaged ? 'checked' : ''}
-                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer" />
-                                    
-                                    <div class="flex-1">
-                                        <span class="text-sm font-medium text-gray-900">Mark as Lost/Damaged</span>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Check this if the gallon is lost or damaged
-                                        </p>
-                                    </div>
+                ${!hasCode ? `
+                <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-xs text-red-700">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        ⚠ This gallon does not have a code yet. Generate a code first.
+                    </p>
+                </div>` : ""}
 
-                                </label>
-                            </div>
+                <!-- Buttons -->
+                <div class="flex gap-3 mt-6">
+                    <button type="submit"
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg shadow-md font-medium text-sm transition-all">
+                        <i class="fas fa-check mr-2"></i>Update Status
+                    </button>
 
-                            ${currentlyDamaged ? `
-                            <div class="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                                <p class="text-xs text-orange-700">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    This gallon is currently marked as damaged. Uncheck to restore.
-                                </p>
-                            </div>` : ''}
-
-                            ${!hasCode ? `
-                            <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <p class="text-xs text-red-700">
-                                    <i class="fas fa-exclamation-circle mr-1"></i>
-                                    ⚠ This gallon does not have a code yet. Generate a code first to track its condition.
-                                </p>
-                            </div>` : ''}
-                        </div>
-
-                        <!-- Buttons -->
-                        <div class="flex gap-3">
-                            <button type="submit"
-                                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg shadow-md font-medium text-sm transition-all">
-                                <i class="fas fa-check mr-2"></i>Update Status
-                            </button>
-
-                            <button type="button" id="cancelEditBtn"
-                                    class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 rounded-lg shadow-md font-medium text-sm transition-all">
-                                <i class="fas fa-times mr-2"></i>Cancel
-                            </button>
-                        </div>
-                    </form>
+                    <button type="button" id="cancelEditBtn"
+                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 rounded-lg shadow-md font-medium text-sm transition-all">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </button>
                 </div>
 
-                <style>
-                    @keyframes fadeIn {
-                        from { opacity: 0; }
-                        to { opacity: 1; }
-                    }
-                    @keyframes slideIn {
-                        from { transform: scale(0.95) translateY(-20px); opacity: 0; }
-                        to { transform: scale(1) translateY(0); opacity: 1; }
-                    }
-                </style>
-            `;
+            </form>
+        </div>
+
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideIn {
+                from { transform: scale(0.95) translateY(-20px); opacity: 0; }
+                to { transform: scale(1) translateY(0); opacity: 1; }
+            }
+        </style>
+        `;
 
                             document.body.appendChild(modal);
 
-                            // Make whole box toggle checkbox
-                            modal.querySelector('#clickBox').addEventListener('click', () => {
-                                const checkbox = modal.querySelector('#markDamaged');
-                                checkbox.checked = !checkbox.checked;
-                            });
-
-                            // CANCEL handler
+                            // Cancel button
                             modal.querySelector('#cancelEditBtn').addEventListener('click', () => modal.remove());
 
-                            // FORM submission
+                            // Submit handler
                             modal.querySelector('#editGallonForm').addEventListener('submit', function(e) {
                                 e.preventDefault();
 
-                                const isDamaged = modal.querySelector('#markDamaged').checked;
-                                const newStatus = isDamaged ? 'Lost/Damaged' : 'Active';
+                                const newStatus = modal.querySelector('input[name="gallonStatus"]:checked').value;
 
-                                // Prevent marking without code
-                                if (isDamaged && !hasCode) {
+                                // Prevent marking Lost/Damaged without QR code
+                                if (newStatus === "Lost/Damaged" && !hasCode) {
                                     Swal.fire({
                                         icon: 'warning',
-                                        title: 'Code Required',
-                                        text: 'This gallon has no code. Generate a code first to track its condition.',
+                                        title: 'Code Needed',
+                                        text: 'Cannot mark as Lost/Damaged without a code.',
                                         confirmButtonColor: '#e63946'
                                     });
                                     return;
                                 }
 
-                                // No status change
-                                if ((currentlyDamaged && isDamaged) || (!currentlyDamaged && !isDamaged)) {
+                                // Nothing changed?
+                                if (newStatus === currentStatus) {
                                     Swal.fire({
                                         icon: 'info',
                                         title: 'No Changes',
-                                        text: 'The status was not modified.',
+                                        text: 'Status remains the same.',
                                         confirmButtonColor: '#2563eb'
                                     });
                                     modal.remove();
                                     return;
                                 }
 
-                                // Build payload
-                                const payload = {
-                                    id: id,
-                                    status: newStatus
-                                };
-
-                                // Send update
-                                fetch('update_changes.php', {
-                                        method: 'POST',
+                                // Send update request
+                                fetch("update_changes.php", {
+                                        method: "POST",
                                         headers: {
-                                            'Content-Type': 'application/json'
+                                            "Content-Type": "application/json"
                                         },
-                                        body: JSON.stringify(payload)
+                                        body: JSON.stringify({
+                                            id: id,
+                                            status: newStatus
+                                        })
                                     })
                                     .then(res => res.json())
                                     .then(data => {
@@ -811,41 +802,23 @@ body {
                                             Swal.fire({
                                                 icon: 'success',
                                                 title: 'Updated!',
-                                                text: isDamaged ?
-                                                    'Gallon marked as Lost/Damaged.' : 'Gallon restored to Active.',
+                                                text: `Gallon status updated to: ${newStatus}`,
                                                 confirmButtonColor: '#2563eb'
                                             }).then(() => location.reload());
                                         } else {
                                             Swal.fire({
                                                 icon: 'error',
-                                                title: 'Error',
-                                                text: data.message || 'Failed to update gallon status.',
+                                                title: 'Update Failed',
+                                                text: data.message || 'Please try again.',
                                                 confirmButtonColor: '#dc2626'
                                             });
                                         }
                                     })
-                                    .catch(err => {
-                                        console.error(err);
-                                        Swal.fire({
-                                            icon: 'error',
-                                            title: 'Error',
-                                            text: 'Network request failed.',
-                                            confirmButtonColor: '#dc2626'
-                                        });
-                                    })
                                     .finally(() => modal.remove());
-                            });
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Failed to load gallon details.',
-                                confirmButtonColor: '#dc2626'
                             });
                         });
                 }
+
 
                 // DELETE FUNCTION 
                 function deleteGallon(id) {
@@ -952,7 +925,6 @@ body {
                         return result;
                     };
                 })();
-            
             </script>
 
 </body>
