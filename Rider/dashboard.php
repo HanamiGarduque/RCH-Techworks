@@ -477,7 +477,7 @@
                     </div>
                 </div>
 
-                <button onclick="startDelivery(${order.refill_id})"
+                        <button onclick="window.location.href='order_details.php?order_number=${order.order_number}'"
                     class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
                     Start Delivery
                 </button>
@@ -635,8 +635,8 @@
                     <span class="font-medium">${new Date(order.delivery_datetime).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
             </div>
-
-            <button class="w-full py-2.5 text-sm font-semibold rounded-lg bg-green-50 text-green-700 cursor-default">
+                        <button onclick="window.location.href='order_details.php?order_number=${order.order_number}'"
+                    class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
                 <i class="bi bi-check-circle mr-1"></i> Delivery Completed
             </button>
         </div>
@@ -723,7 +723,7 @@
                             </div>
                         </div>
 
-                        <button onclick="window.location.href='order_details.php?refill_id=${order.refill_id}'"
+                        <button onclick="window.location.href='order_details.php?order_number=${order.order_number}'"
                             class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition">
                             View Details
                         </button>

@@ -537,8 +537,8 @@
              } else if (status === 'on_delivery') {
                  html = `
             <button onclick="goToQRScanner()" class="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition flex items-center justify-center gap-2 shadow-lg mb-2">
-    <i class="bi bi-check-lg"></i> Complete Delivery
-</button>
+        <i class="bi bi-check-lg"></i> Complete Delivery
+        </button>
 
             <button onclick="openDelayModal('delivery')" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition flex items-center justify-center gap-2 shadow-lg">
                 <i class="bi bi-exclamation-circle"></i> Delay
@@ -672,24 +672,33 @@
          }
 
          function updateOrderStatus(newStatus, delayNote = null) {
-             const submitBtn = document.querySelector('#action-buttons button[onclick*="startPickup"], #action-buttons button[onclick*="markPickedUp"], #action-buttons button[onclick*="startDelivery"], #action-buttons button[onclick*="completeDelivery"]');
+             console.log('Updating status to:', newStatus); // Debug log
+             console.log('Refill ID:', refillId); // Debug log
+
+             if (!refillId) {
+                 alert('Error: Refill ID not found');
+                 return;
+             }
+
+             const submitBtn = event?.target?.closest('button');
              if (submitBtn) {
                  submitBtn.disabled = true;
                  submitBtn.innerHTML = '<div class="loading-spinner"></div> Processing...';
              }
 
              const formData = new FormData();
-             const refillId = currentOrder.refill_id;
              formData.append('refill_id', refillId);
              formData.append('new_status', newStatus);
              if (delayNote) formData.append('delay_note', delayNote);
 
-             fetch('update_order_status.php', {
+             // FIXED: Correct filename
+             fetch('order_status_update.php', {
                      method: 'POST',
                      body: formData
                  })
                  .then(res => res.json())
                  .then(data => {
+                     console.log('Response:', data); // Debug log
                      if (data.success) {
                          currentOrder.order_status = newStatus;
                          populateHeader();
@@ -707,7 +716,6 @@
                      populateActionButtons();
                  });
          }
-
          // Action button handlers
          function startPickup() {
              if (confirm('Start pickup for this order?')) {
@@ -771,6 +779,7 @@
          });
      </script>
 
+     
  </body>
 
  </html>
