@@ -98,8 +98,12 @@
 
              <!-- Map Placeholder -->
              <!-- Map Integration -->
-             <div id="active-map" class="rounded-xl h-40 mb-4 border border-gray-300 overflow-hidden"></div>
+             <div id="active-map"
+                 onclick="window.location.href='full_map.php'"
+                 class="rounded-xl h-40 mb-4 border border-gray-300 overflow-hidden cursor-pointer">
+             </div>
 
+             
 
              <div id="active-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[330px] pb-5 pr-2"></div>
          </div>
