@@ -1494,7 +1494,7 @@ $user_id = $_SESSION['id'] ?? null;
         document.getElementById("mapContainer").addEventListener("click", openMapModal);
 
         // Fetch user location for initializing both maps
-        fetch("get_user_location.php")
+        fetch("../Location/get_user_location.php")
             .then(res => res.json())
             .then(data => {
                 currentLat = data.latitude;
@@ -1545,7 +1545,7 @@ $user_id = $_SESSION['id'] ?? null;
             map.setView([currentLat, currentLng], 15);
 
             // Save to database
-            fetch("update_user_location.php", {
+            fetch("../Location/update_user_location.php", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"

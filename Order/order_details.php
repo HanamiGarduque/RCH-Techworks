@@ -23,6 +23,7 @@ $orderQuery = "SELECT
     r.delivery_datetime,
     r.order_status,
     r.created_at,
+    r.user_id,
     r.delay_reason,
     u.name as customer_name,
     u.phone_number as customer_phone,
@@ -111,6 +112,10 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 
     <style>
         body {
@@ -130,6 +135,16 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
 
         body.swal2-height-auto {
             height: 100% !important;
+        }
+
+        .sidebar-class {
+            z-index: 1000;
+            /* Higher than the map's default z-index of 400 */
+        }
+
+        #delivery-map {
+            position: relative;
+            z-index: 1;
         }
 
         .page-container {
@@ -239,8 +254,7 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                                     <i class="fas fa-location-arrow"></i> Real-Time Rider Location
                                 </div>
 
-                                <div class="w-full h-[300px] bg-gray-50 rounded-xl flex items-center justify-center text-gray-600 mb-4 border border-gray-200">
-                                    <span>Map will be displayed here</span>
+                                <div id="delivery-map" class="w-full h-80 rounded-xl border border-gray-200"> <span>Map will be displayed here</span>
                                 </div>
 
                                 <div class="border rounded-xl p-4 bg-gray-50">
@@ -530,34 +544,34 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
         function cancelOrder() {
-    Swal.fire({
-        title: 'Cancel Order?',
-        html: `
+            Swal.fire({
+                title: 'Cancel Order?',
+                html: `
             <p style="margin-bottom: 15px;">Are you sure you want to cancel this order? This action cannot be undone.</p>
             <label style="font-weight: 500; margin-bottom: 8px; display: block; text-align: left;">Reason for Cancellation:</label>
             <textarea id="cancelReason" class="swal2-textarea" placeholder="Enter reason..." 
                 style="width: 87%; height: 100px; font-size: 1rem;"></textarea>
         `,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Cancel Order',
-        cancelButtonText: 'No, Keep Order',
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        preConfirm: () => {
-            const reason = document.getElementById('cancelReason').value.trim();
-            if (!reason) {
-                Swal.showValidationMessage('Please provide a reason for cancellation');
-                return false;
-            }
-            return reason;
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Cancel Order',
+                cancelButtonText: 'No, Keep Order',
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                preConfirm: () => {
+                    const reason = document.getElementById('cancelReason').value.trim();
+                    if (!reason) {
+                        Swal.showValidationMessage('Please provide a reason for cancellation');
+                        return false;
+                    }
+                    return reason;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performCancelOrder(result.value);
+                }
+            });
         }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            performCancelOrder(result.value);
-        }
-    });
-}
 
         function performCancelOrder(reason) {
             fetch('admin_cancel_order.php', {
@@ -622,7 +636,7 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
             <label for="rescheduleReason" style="font-weight: 500;">Reason for Rescheduling:</label>  
             <textarea id="rescheduleReason" class="swal2-textarea" placeholder="Enter reason for rescheduling..." style="width: 87%; padding: 6px; font-size: 0.875rem; height: 90px; resize: vertical;"></textarea>  
         </div>  
-    `,
+            `,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Reschedule',
@@ -736,6 +750,402 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                 cancelBtn.addEventListener('click', cancelOrder);
             }
         });
+    </script>
+
+    <script>
+        // Add this to your existing JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.group'); // or whatever class triggers the hover
+            const mapContainer = document.getElementById('delivery-map');
+
+            if (sidebar && mapContainer && typeof map !== 'undefined') {
+                // Listen for sidebar hover state changes
+                sidebar.addEventListener('mouseenter', function() {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 300); // Match your transition duration
+                });
+
+                sidebar.addEventListener('mouseleave', function() {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 300); // Match your transition duration
+                });
+            }
+        });
+        document.addEventListener("DOMContentLoaded", () => {
+            const userId = <?= htmlspecialchars($order['user_id']) ?>;
+            const orderNumber = "<?= htmlspecialchars($order['order_number']) ?>";
+            const hasRider = <?= $order['rider_name'] ? 'true' : 'false' ?>;
+
+            // Initialize map with better zoom (13 shows streets and highways clearly)
+            const map = L.map('delivery-map').setView([13.9411, 121.1628], 13);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                minZoom: 10,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 500);
+            // Station location (Update with your actual RCH Water Station coordinates)
+            const stationLat = 13.9411;
+            const stationLng = 121.1628;
+
+            // Custom icons
+            const stationIcon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448636.png',
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+                popupAnchor: [0, -40]
+            });
+
+            const customerIcon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/3177/3177440.png',
+                iconSize: [35, 35],
+                iconAnchor: [17, 35],
+                popupAnchor: [0, -35]
+            });
+
+            const riderIcon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                iconSize: [35, 35],
+                iconAnchor: [17, 35],
+                popupAnchor: [0, -35]
+            });
+
+            // Add station marker
+            const stationMarker = L.marker([stationLat, stationLng], {
+                    icon: stationIcon
+                })
+                .addTo(map)
+                .bindPopup(`
+            <div style="text-align: center; min-width: 150px;">
+                <strong style="color: #2563eb; font-size: 14px;">🏢 RCH Water Station</strong><br>
+                <small style="color: #6b7280;">Main Office & Warehouse</small>
+            </div>
+        `);
+
+            let allMarkers = [stationMarker];
+            let routePolylines = [];
+            let riderMarker = null;
+            let updateInterval = null;
+
+            // Fetch customer location
+            fetch(`../Location/get_user_location_by_id.php?user_id=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    console.log('Customer location:', data);
+
+                    let userLat = 13.9411,
+                        userLng = 121.1628;
+
+                    if (data.status === 'has_saved_location' || data.status === 'approx_location') {
+                        userLat = data.latitude;
+                        userLng = data.longitude;
+                    }
+
+                    // Add customer marker
+                    const customerMarker = L.marker([userLat, userLng], {
+                            icon: customerIcon
+                        })
+                        .addTo(map)
+                        .bindPopup(`
+                    <div style="text-align: center; min-width: 180px;">
+                        <strong style="color: #16a34a; font-size: 14px;">📍 Customer Location</strong><br>
+                        <div style="margin-top: 5px; padding: 5px; background: #f3f4f6; border-radius: 4px;">
+                            <small style="font-weight: 600;"><?= htmlspecialchars($order['customer_name']) ?></small><br>
+                            <small style="color: #6b7280;"><?= htmlspecialchars($order['customer_address']) ?></small>
+                        </div>
+                    </div>
+                `);
+
+                    allMarkers.push(customerMarker);
+
+                    if (hasRider) {
+                        // Fetch rider location
+                        fetchRiderLocation(orderNumber, stationLat, stationLng, userLat, userLng);
+
+                        // Update rider location every 10 seconds
+                        updateInterval = setInterval(() => {
+                            fetchRiderLocation(orderNumber, stationLat, stationLng, userLat, userLng, true);
+                        }, 10000);
+                    } else {
+                        // No rider - show planned route
+                        drawPlannedRoute(stationLat, stationLng, userLat, userLng);
+
+                        // Fit map to show all markers
+                        const group = new L.featureGroup(allMarkers);
+                        map.fitBounds(group.getBounds().pad(0.15));
+                    }
+
+                    // Add legend
+                    addMapLegend(map, hasRider);
+
+                    // Add scale control
+                    L.control.scale({
+                        imperial: false,
+                        metric: true
+                    }).addTo(map);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch customer location:", err);
+                    showMapError();
+                });
+
+            // Function to fetch and update rider location
+            function fetchRiderLocation(orderNum, stationLat, stationLng, customerLat, customerLng, isUpdate = false) {
+                fetch(`../Location/get_rider_location.php?order_number=${orderNum}`)
+                    .then(res => res.json())
+                    .then(riderData => {
+                        console.log('Rider location:', riderData);
+
+                        let riderLat, riderLng;
+                        let locationStatus = 'estimated';
+
+                        if (riderData.status === 'real_time' && riderData.is_recent) {
+                            riderLat = riderData.latitude;
+                            riderLng = riderData.longitude;
+                            locationStatus = 'real_time';
+                        } else if (riderData.status === 'outdated') {
+                            riderLat = riderData.latitude;
+                            riderLng = riderData.longitude;
+                            locationStatus = 'outdated';
+                        } else {
+                            // Fallback: place rider between station and customer
+                            riderLat = (stationLat + customerLat) / 2 + 0.01;
+                            riderLng = (stationLng + customerLng) / 2 + 0.01;
+                            locationStatus = 'estimated';
+                        }
+
+                        if (isUpdate && riderMarker) {
+                            // Update existing marker position smoothly
+                            riderMarker.setLatLng([riderLat, riderLng]);
+                            updateRoutes(stationLat, stationLng, riderLat, riderLng, customerLat, customerLng);
+                        } else {
+                            // Create new rider marker
+                            const statusColor = {
+                                'real_time': '#16a34a',
+                                'outdated': '#f59e0b',
+                                'estimated': '#9ca3af'
+                            } [locationStatus];
+
+                            const statusText = {
+                                'real_time': '● Live',
+                                'outdated': '● Last known',
+                                'estimated': '● Estimated'
+                            } [locationStatus];
+
+                            riderMarker = L.marker([riderLat, riderLng], {
+                                    icon: riderIcon
+                                })
+                                .addTo(map)
+                                .bindPopup(`
+                            <div style="text-align: center; min-width: 160px;">
+                                <strong style="color: #f59e0b; font-size: 14px;">🏍️ Rider</strong><br>
+                                <div style="margin-top: 5px; padding: 5px; background: #fef3c7; border-radius: 4px;">
+                                    <small style="font-weight: 600;"><?= htmlspecialchars($order['rider_name'] ?? 'Rider') ?></small><br>
+                                    <small style="color: #6b7280;"><?= htmlspecialchars($order['rider_phone'] ?? '') ?></small><br>
+                                    <small style="color: ${statusColor}; font-weight: 600;">${statusText}</small>
+                                </div>
+                            </div>
+                        `);
+
+                            allMarkers.push(riderMarker);
+
+                            // Draw routes
+                            drawActiveRoutes(stationLat, stationLng, riderLat, riderLng, customerLat, customerLng);
+
+                            // Fit map to show all markers
+                            const group = new L.featureGroup(allMarkers);
+                            map.fitBounds(group.getBounds().pad(0.15));
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Failed to fetch rider location:", err);
+                    });
+            }
+
+            // Function to draw active routes
+            function drawActiveRoutes(stationLat, stationLng, riderLat, riderLng, customerLat, customerLng) {
+                // Clear existing routes
+                routePolylines.forEach(route => map.removeControl(route));
+                routePolylines = [];
+
+                // Route: Station → Rider
+                const stationToRider = L.Routing.control({
+                    waypoints: [
+                        L.latLng(stationLat, stationLng),
+                        L.latLng(riderLat, riderLng)
+                    ],
+                    lineOptions: {
+                        styles: [{
+                            color: '#3b83f6ff',
+                            weight: 4,
+                            opacity: 1.0,
+                            dashArray: '10,10'
+                        }]
+                    },
+                    createMarker: function() {
+                        return null;
+                    },
+                    addWaypoints: false,
+                    routeWhileDragging: false,
+                    show: false
+                }).addTo(map);
+
+                // Route: Rider → Customer
+                const riderToCustomer = L.Routing.control({
+                    waypoints: [
+                        L.latLng(riderLat, riderLng),
+                        L.latLng(customerLat, customerLng)
+                    ],
+                    lineOptions: {
+                        styles: [{
+                            color: '#f59e0b',
+                            weight: 5,
+                            opacity: 0.8
+                        }]
+                    },
+                    createMarker: function() {
+                        return null;
+                    },
+                    addWaypoints: false,
+                    routeWhileDragging: false,
+                    show: false
+                }).addTo(map);
+
+                routePolylines.push(stationToRider, riderToCustomer);
+            }
+
+            // Function to update routes
+            function updateRoutes(stationLat, stationLng, riderLat, riderLng, customerLat, customerLng) {
+                routePolylines.forEach(polyline => map.removeLayer(polyline));
+                routePolylines = [];
+                drawActiveRoutes(stationLat, stationLng, riderLat, riderLng, customerLat, customerLng);
+            }
+
+            // Function to draw planned route
+            function drawPlannedRoute(stationLat, stationLng, customerLat, customerLng) {
+                // Clear existing routes
+                routePolylines.forEach(route => map.removeControl(route));
+                routePolylines = [];
+
+                const plannedRouteControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(stationLat, stationLng),
+                        L.latLng(customerLat, customerLng)
+                    ],
+                    lineOptions: {
+                        styles: [{
+                            color: '#0050daff',
+                            weight: 4,
+                            opacity: 0.5,
+                            dashArray: '15,15'
+                        }]
+                    },
+                    createMarker: function() {
+                        return null;
+                    }, // markers already added
+                    addWaypoints: false,
+                    routeWhileDragging: false,
+                    fitSelectedRoutes: false,
+                    show: false
+                }).addTo(map);
+
+                routePolylines.push(plannedRouteControl);
+            }
+
+            // Function to calculate and display distance
+            function addDistanceLabel(map, lat1, lng1, lat2, lng2, color) {
+                const distance = calculateDistance(lat1, lng1, lat2, lng2);
+                const midLat = (lat1 + lat2) / 2;
+                const midLng = (lng1 + lng2) / 2;
+
+                const distanceIcon = L.divIcon({
+                    className: 'distance-label',
+                    html: `<div style="background: white; padding: 3px 8px; border-radius: 12px; border: 2px solid ${color}; font-size: 11px; font-weight: 600; color: ${color}; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">${distance.toFixed(1)} km</div>`,
+                    iconSize: [60, 24]
+                });
+
+                L.marker([midLat, midLng], {
+                    icon: distanceIcon
+                }).addTo(map);
+            }
+
+            // Calculate distance between two points (Haversine formula)
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Earth's radius in km
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+            // Function to show map error
+            function showMapError() {
+                const mapContainer = document.getElementById('delivery-map');
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'absolute inset-0 flex items-center justify-center bg-red-50 bg-opacity-90 z-[1000]';
+                errorDiv.innerHTML = `
+            <div class="text-center p-4">
+                <i class="fas fa-exclamation-triangle text-red-600 text-3xl mb-2"></i>
+                <p class="text-red-600 font-semibold">Failed to load map</p>
+                <p class="text-sm text-gray-600">Please refresh the page</p>
+            </div>
+        `;
+                mapContainer.appendChild(errorDiv);
+            }
+
+            // Cleanup interval on page unload
+            window.addEventListener('beforeunload', () => {
+                if (updateInterval) clearInterval(updateInterval);
+            });
+        });
+
+        // Function to add map legend
+        function addMapLegend(map, hasRider) {
+            const legend = L.control({
+                position: 'bottomright'
+            });
+
+            legend.onAdd = function() {
+                const div = L.DomUtil.create('div', 'map-legend');
+                div.style.cssText = 'background: white; padding: 10px 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); font-size: 12px;';
+
+                let html = '<div style="font-weight: 600; margin-bottom: 8px; color: #374151; font-size: 13px;">📍 Route Info</div>';
+
+                if (hasRider) {
+                    html += `
+                <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                    <div style="width: 20px; height: 3px; background: #3b82f6; margin-right: 8px; opacity: 0.6; border: 1px dashed #3b82f6;"></div>
+                    <span style="color: #6b7280;">Completed</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 20px; height: 4px; background: #f59e0b; margin-right: 8px;"></div>
+                    <span style="color: #6b7280;">Active Route</span>
+                </div>
+            `;
+                } else {
+                    html += `
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 20px; height: 3px; background: #9ca3af; margin-right: 8px; opacity: 0.5; border: 1px dashed #9ca3af;"></div>
+                    <span style="color: #6b7280;">Planned</span>
+                </div>
+            `;
+                }
+
+                div.innerHTML = html;
+                return div;
+            };
+
+            legend.addTo(map);
+        }
     </script>
 </body>
 

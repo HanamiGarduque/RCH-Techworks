@@ -19,49 +19,15 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
 
     <nav class="mt-6 flex-1">
         <ul class="space-y-1 px-4">
-            ${createNavItem(
-              "../Admin/dashboard.php",
-              "fas fa-chart-line",
-              "Dashboard",
-              "dashboard.php"
-            )}
-            ${createNavItem(
-              "../Order/orders_list.php",
-              "fas fa-shopping-cart",
-              "Orders",
-              "orders_list.php"
-            )} 
-            ${createNavItem(
-              "../GallonOwnership/gallon_ownership.php",
-              "fas fa-tint",
-              "Gallon Ownership",
-              "gallon_ownership.php"
-            )}
-            ${createNavItem(
-              "../Inventory/inventory_list.php",
-              "fas fa-boxes",
-              "Inventory",
-              "inventory_list.php"
-            )}
-            ${createNavItem(
-              "../Admin/users_list.php",
-              "fas fa-users",
-              "Users",
-              "users_list.php"
-            )}
-            ${createNavItem(
-              "../Admin/admin_pos.php",
-              "fas fa-cash-register",
-              "Point of Sale",
-              "admin_pos.php"
-            )}
-            ${createNavItem(
-              "../Receipts/receipts_manager.php",
-              "fas fa-receipt",
-              "Receipts",
-              "receipts_manager.php"
-            )}
-
+            ${createNavItem("../Admin/dashboard.php", "fas fa-chart-line", "Dashboard", "dashboard.php")}
+            ${createNavItem("../Order/orders_list.php", "fas fa-shopping-cart", "Orders", "orders_list.php")} 
+            ${createNavItem("../GallonOwnership/gallon_ownership.php", "fas fa-tint", "Gallon Ownership", "gallon_ownership.php")}
+            ${createNavItem("../GallonOwnership/scan_gallon_return.php", "fas fa-barcode", "Scan Returned Gallons", "scan_gallon_return.php")}
+            ${createNavItem("../GallonOwnership/gallon_activity_logs.php", "fas fa-history", "Gallon Activity Logs", "gallon_activity_logs.php")}
+            ${createNavItem("../Inventory/inventory_list.php", "fas fa-boxes", "Inventory", "inventory_list.php")}
+            ${createNavItem("../Admin/users_list.php", "fas fa-users", "Users", "users_list.php")}
+            ${createNavItem("../Admin/admin_pos.php", "fas fa-cash-register", "Point of Sale", "admin_pos.php")}
+            ${createNavItem("../Receipts/receipts_manager.php", "fas fa-receipt", "Receipts", "receipts_manager.php")}
         </ul>
     </nav>
 
@@ -89,9 +55,7 @@ function createNavItem(href, iconClass, label, fileName) {
   const inactiveClass = "text-white hover:bg-white/20";
   return `
         <li>
-            <a href="${href}" class="${baseClass} ${
-    isActive ? activeClass : inactiveClass
-  }">
+            <a href="${href}" class="${baseClass} ${isActive ? activeClass : inactiveClass}">
                 <i class="${iconClass} text-lg"></i>
                 <div class="overflow-hidden ml-3">
                     <span class="block whitespace-nowrap transition-all duration-500 ease-in-out 

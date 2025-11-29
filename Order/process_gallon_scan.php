@@ -43,6 +43,10 @@ try {
     }
     
     $gallon = $gallonStmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Store previous values for activity log
+    $previousOwnerId = $gallon['current_owner_id'];
+    $previousStatus = $gallon['status'];
 
     // 2. Check if gallon is available
     if ($gallon['status'] !== 'Available' && $gallon['status'] !== 'available') {
@@ -128,6 +132,27 @@ try {
         $db->rollBack();
         echo json_encode(['success' => false, 'message' => 'Failed to update order item.']);
         exit;
+    }
+
+    // 7. CREATE ACTIVITY LOG ENTRY
+    $logNotes = "Gallon assigned to customer via order #{$orderNumber}. Processed {$newProcessed} of {$item['quantity']} gallons for {$item['item_name']}.";
+    
+    $logQuery = "INSERT INTO gallon_activity_logs 
+                (ownership_id, action_type, performed_by, previous_owner_id, new_owner_id, previous_status, new_status, notes) 
+                VALUES 
+                (:ownership_id, 'assigned', :performed_by, :previous_owner, :new_owner, :prev_status, 'In-Use', :notes)";
+    
+    $logStmt = $db->prepare($logQuery);
+    $logStmt->bindParam(':ownership_id', $gallon['ownership_id'], PDO::PARAM_INT);
+    $logStmt->bindParam(':performed_by', $_SESSION['user_id'], PDO::PARAM_INT);
+    $logStmt->bindParam(':previous_owner', $previousOwnerId, PDO::PARAM_INT);
+    $logStmt->bindParam(':new_owner', $userId, PDO::PARAM_INT);
+    $logStmt->bindParam(':prev_status', $previousStatus);
+    $logStmt->bindParam(':notes', $logNotes);
+    
+    if (!$logStmt->execute()) {
+        // Log error but don't fail the transaction
+        error_log('Warning: Failed to create activity log for gallon processing');
     }
 
     $db->commit();

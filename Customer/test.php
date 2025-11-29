@@ -1,241 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RCH Water - Order Water Refill</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+<!-- Real-Time Tracking - Always Show Container -->
 
-        /* Step indicator styling */
-        .step-dots {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 2rem;
-            gap: 10px;
-        }
-
-        .step-dot {
-            width: 2.5rem;
-            height: 2.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 9999px;
-            transition: all .3s;
-            font-weight: 600;
-        }
-
-        .step-line {
-            flex-grow: 1;
-            height: 6px;
-            background-color: #E5E7EB;
-            border-radius: 4px;
-            transition: background-color .3s;
-        }
-
-        .step-dot.completed,
-        .step-dot.active {
-            background-color: #2563eb;
-            color: white;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-        }
-
-        .step-dot.pending {
-            background-color: #E5E7EB;
-            color: #4B5563;
-        }
-
-        .step-line.completed {
-            background-color: #2563eb;
-        }
-
-        /* Card hover effects */
-        .gallon-card {
-            transition: all 0.3s ease;
-        }
-
-        .gallon-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3);
-        }
-
-        /* Disabled time slot styling */
-        button[disabled] {
-            cursor: not-allowed !important;
-            opacity: 0.5 !important;
-            background-color: #f3f4f6 !important;
-            color: #9ca3af !important;
-        }
-
-        /* Header gradient */
-        .header-gradient {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        /* Animated water droplet */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .float-animation {
-            animation: float 3s ease-in-out infinite;
-        }
-    </style>
-</head>
-
-<body class="overflow-hidden">
-    <div class="flex h-screen">
-        <!-- Enhanced Sidebar -->
-        <aside class="group bg-gradient-to-br from-blue-500 to-blue-700 shadow-2xl
-            flex-shrink-0 fixed top-0 left-0 h-full overflow-hidden flex flex-col text-white 
-            transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
-
-            <!-- Logo Section -->
-            <div class="px-6 py-6 border-b border-blue-400/30 flex items-center gap-3">
-                <i class="fas fa-tint text-4xl float-animation"></i>
-                <div class="overflow-hidden">
-                    <span class="text-2xl font-bold block whitespace-nowrap transition-all duration-500 ease-in-out 
-                        opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">
-                        RCH Water
-                    </span>
-                    <span class="text-xs opacity-75 block whitespace-nowrap transition-all duration-500 ease-in-out 
-                        opacity-0 group-hover:opacity-100 translate-x-[-20px] group-hover:translate-x-0">
-                        Pure & Fresh
-                    </span>
-                </div>
-            </div>
-
-            <!-- Navigation -->
-            <nav class="mt-8 flex-1">
-                <ul class="space-y-2 px-3">
-                    <li>
-                        <a href="#" class="flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-200 bg-white/20 text-white">
-                            <i class="fas fa-tint text-lg"></i>
-                            <span class="ml-3 block whitespace-nowrap transition-all duration-500 ease-in-out 
-                                opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                Order Water Refill
-                            </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:bg-white/20">
-                            <i class="fas fa-box text-lg"></i>
-                            <span class="ml-3 block whitespace-nowrap transition-all duration-500 ease-in-out 
-                                opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                My Orders
-                            </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="flex items-center px-4 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:bg-white/20">
-                            <i class="fas fa-user text-lg"></i>
-                            <span class="ml-3 block whitespace-nowrap transition-all duration-500 ease-in-out 
-                                opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                                Profile
-                            </span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-
-            <!-- Logout Section -->
-            <div class="border-t border-blue-400/30 px-3 py-5">
-                <a href="#" class="flex items-center px-4 py-3 text-white rounded-xl font-medium hover:bg-red-500/20 transition-all">
-                    <i class="fas fa-sign-out-alt text-lg"></i>
-                    <span class="ml-3 block whitespace-nowrap transition-all duration-500 ease-in-out 
-                        opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0">
-                        Logout
-                    </span>
-                </a>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="flex-1 ml-20 overflow-y-auto">
-            <!-- Enhanced Header -->
-            <div class="header-gradient text-white p-8 shadow-xl">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-4xl font-bold mb-2">Order Water Refill</h1>
-                        <p class="text-blue-100 text-lg">Hydrate made easy—order and we'll handle the rest! 💧</p>
-                    </div>
-                    <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center">
-                        <i class="fas fa-tint text-5xl mb-2"></i>
-                        <p class="text-sm font-semibold">24/7 Service</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Content Area -->
-            <div class="p-8">
-                <!-- Steps Card with Enhanced Design -->
-                <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
-                    <!-- Step Indicator -->
-                    <div class="step-dots mb-8">
-                        <div id="step1Dot" class="step-dot active">1</div>
-                        <div class="step-line"></div>
-                        <div id="step2Dot" class="step-dot pending">2</div>
-                        <div class="step-line"></div>
-                        <div id="step3Dot" class="step-dot pending">3</div>
-                        <div class="step-line"></div>
-                        <div id="step4Dot" class="step-dot pending">4</div>
-                        <div class="step-line"></div>
-                        <div id="step5Dot" class="step-dot pending">5</div>
-                        <div class="step-line"></div>
-                        <div id="step6Dot" class="step-dot pending">6</div>
-                    </div>
-
-                    <h2 id="stepTitle" class="text-2xl font-bold mb-6 text-gray-800 text-center">
-                        <i class="fas fa-shopping-cart text-blue-600 mr-2"></i>
-                        Step 1: Choose Gallon Type
-                    </h2>
-
-                    <!-- Step 1: Gallon Type Selection -->
-                    <div id="set1" class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        <div id="slimCard" class="gallon-card border-3 border-gray-300 p-8 rounded-2xl cursor-pointer text-center bg-gradient-to-br from-blue-50 to-white hover:from-blue-100 hover:to-blue-50 transition-all">
-                            <div class="bg-white rounded-xl p-6 mb-4 shadow-lg">
-                                <img src="img/20L_box_type_gallon.jpg" class="mx-auto w-48 h-48 object-contain" />
-                            </div>
-                            <h3 class="font-bold text-xl text-gray-800 mb-2">Slim Gallon</h3>
-                            <p class="text-gray-600">Perfect for compact spaces</p>
-                        </div>
-
-                        <div id="roundCard" class="gallon-card border-3 border-gray-300 p-8 rounded-2xl cursor-pointer text-center bg-gradient-to-br from-green-50 to-white hover:from-green-100 hover:to-green-50 transition-all">
-                            <div class="bg-white rounded-xl p-6 mb-4 shadow-lg">
-                                <img src="img/18.9L_round_gallon.jpg" class="mx-auto w-48 h-48 object-contain" />
-                            </div>
-                            <h3 class="font-bold text-xl text-gray-800 mb-2">Round Gallon</h3>
-                            <p class="text-gray-600">Classic 18.9L capacity</p>
-                        </div>
-                    </div>
-
-                    <!-- Other steps remain hidden initially -->
-                    <div id="set2" class="hidden"><!-- Size selection content --></div>
-                    <div id="set3" class="hidden"><!-- Quantity selection content --></div>
-                    <div id="set4" class="hidden"><!-- Pickup selection content --></div>
-                    <div id="set5" class="hidden"><!-- Delivery selection content --></div>
-                    <div id="set6" class="hidden"><!-- Review content --></div>
-                </div>
-
-                <!-- Controls -->
-                <div id="controls" class="flex justify-between items-center max-w-4xl mx-auto"></div>
-            </div>
-        </main>
+<div class="bg-white rounded-xl shadow-sm border p-6">
+    <div class="flex items-center gap-2 text-blue-600 font-semibold mb-4">
+        <i class="fas fa-location-arrow"></i>
+        <span>Delivery Tracking</span>
     </div>
 
-    <script>
-        // Your existing JavaScript code here
-        console.log('Customer order page loaded');
-    </script>
-</body>
-</html>
+```
+<!-- Map Container Always Exists -->
+<div id="rider-map" class="w-full h-80 rounded-lg mb-4 border border-gray-200 relative">
+    <?php if (!($orderStatus === 'On delivery' && $orderData['rider_id'])): ?>
+        <div class="absolute inset-0 bg-gray-50 flex flex-col items-center justify-center text-center p-6 z-10 rounded-lg">
+            <div class="text-gray-400 mb-3">
+                <i class="fas fa-map-marked-alt text-5xl"></i>
+            </div>
+            <p class="text-gray-600 font-medium">Real-time tracking not available</p>
+            <p class="text-gray-500 text-sm mt-1">
+                <?php if (!$orderData['rider_id']): ?>
+                    Waiting for rider assignment
+                <?php else: ?>
+                    Tracking will be available when order is out for delivery
+                <?php endif; ?>
+            </p>
+        </div>
+    <?php endif; ?>
+</div>
+
+<!-- Rider Info -->
+<?php if ($orderData['rider_id']): ?>
+    <div class="bg-blue-50 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 mb-1">Rider</p>
+                <p class="font-semibold text-gray-800"><?= htmlspecialchars($riderName) ?></p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-gray-500 mb-1">Contact</p>
+                <p class="font-semibold text-gray-800">
+                    <i class="fas fa-phone text-blue-600 mr-1"></i><?= htmlspecialchars($riderPhone) ?>
+                </p>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+```
+
+</div>
+
+<script>
+    const refillId = <?= json_encode($refill_id) ?>;
+    const customerLat = <?= json_encode($customerLat) ?>;
+    const customerLng = <?= json_encode($customerLng) ?>;
+    const hasRider = <?= json_encode($orderData['rider_id'] !== null) ?>;
+    const orderStatus = <?= json_encode($orderStatus) ?>;
+
+    let map, riderMarker, customerMarker, routeLine;
+
+    function initMap() {
+        const mapElement = document.getElementById('rider-map');
+        if (!mapElement) return;
+
+        map = L.map('rider-map', { zoomControl: true }).setView([customerLat, customerLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Customer marker
+        const customerIcon = L.divIcon({
+            html: '<i class="fas fa-home text-2xl text-red-600"></i>',
+            className: 'custom-marker',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30]
+        });
+        customerMarker = L.marker([customerLat, customerLng], { icon: customerIcon, title: 'Delivery Destination' }).addTo(map);
+
+        // Only add rider marker if rider is assigned
+        if (orderStatus === 'On delivery' && hasRider) {
+            const riderIcon = L.divIcon({
+                html: '<i class="fas fa-motorcycle text-2xl text-blue-600"></i>',
+                className: 'custom-marker',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
+
+            riderMarker = L.marker([customerLat, customerLng], { icon: riderIcon, title: 'Rider Location' }).addTo(map);
+            fetchRiderLocation();
+            setInterval(fetchRiderLocation, 5000);
+        }
+    }
+
+    async function fetchRiderLocation() {
+        if (!refillId || !hasRider) return;
+
+        try {
+            const resp = await fetch(`order_details.php?refill_id=${refillId}&action=rider_location`, { cache: "no-store" });
+            const data = await resp.json();
+
+            if (data.latitude && data.longitude) {
+                const lat = parseFloat(data.latitude);
+                const lng = parseFloat(data.longitude);
+
+                riderMarker.setLatLng([lat, lng]);
+                riderMarker.getPopup().setContent(`
+                    <div class="p-2">
+                        <b class="text-blue-600">Rider Location</b><br>
+                        <span class="text-xs text-gray-600">Last updated: ${new Date(data.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                `);
+
+                // Route line
+                if (routeLine) map.removeLayer(routeLine);
+                routeLine = L.polyline([[lat, lng], [customerLat, customerLng]], {
+                    color: '#3B82F6', weight: 3, opacity: 0.7, dashArray: '10,10'
+                }).addTo(map);
+
+                const bounds = L.latLngBounds([[lat, lng], [customerLat, customerLng]]);
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        } catch (err) {
+            console.error("Rider location fetch error:", err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initMap);
+</script>
