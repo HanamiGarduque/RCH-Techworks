@@ -1,6 +1,5 @@
 <?php
-// Make sure you already have the customer address from database
-// Example: $customer['address'] = "Purok 4 Mojon-Tampoy, San Jose, Batangas";
+
 
 // Address from DB
 $address = $customer['address'];
@@ -37,7 +36,7 @@ if (!empty($data)) {
     // OPTIONAL: Update users table with coordinates
    
     $stmt = $conn->prepare("
-        UPDATE users 
+        UPDATE map_location
         SET latitude = :lat, longitude = :lng 
         WHERE user_id = :id
     ");
