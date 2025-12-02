@@ -3,7 +3,6 @@ require_once __DIR__ . '/../session.php';
 redirectIfRoleMismatch('customer');
 require_once '../Database/db_connection.php';
 
-require_once 'functions/order_status_updater.php';
 
 
 $db = new Database();

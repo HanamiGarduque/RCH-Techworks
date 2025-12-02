@@ -26,7 +26,7 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
     </nav>
 
     <div class="border-t border-blue-400 px-4 py-5">
-        <a href="#"
+        <a href="../../logout.php"
            id="logoutBtn"
            class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
             <i class="fas fa-sign-out-alt text-lg"></i>

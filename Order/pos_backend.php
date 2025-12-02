@@ -92,7 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 UPDATE inventory 
                 SET total_quantity = total_quantity - :quantity
                 WHERE item_id = :item_id
-                AND item_name NOT IN ('18.9L Round Gallon', '20L Slim Gallon', '10L Slim Gallon')
+                AND item_name NOT IN ('18.9L Round Gallon', '20L Slim Gallon', '10L Slim Gallon', 'Refill (18.9L RG)', 'Refill (20L SG)', 'Refill (10L SG)')
+                
             ");
 
             $updateInventory->execute([

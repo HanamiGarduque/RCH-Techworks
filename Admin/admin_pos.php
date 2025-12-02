@@ -427,44 +427,59 @@ redirectIfRoleMismatch('admin'); // only admins can access
         }
 
         function updateQuantity(itemId, delta) {
-            const item = state.cart.find(i => i.id === itemId);
-            if (!item) return;
+    const item = state.cart.find(i => i.id === itemId);
+    if (!item) return;
 
-            const newQty = item.quantity + delta;
-            if (newQty < 1) return;
+    let newQty = item.quantity + delta;
+    if (newQty < 1) return;
 
-            const card = document.getElementById("card-" + itemId);
-            const category = card ? card.dataset.category : "";
-            const stock = card ? parseInt(card.dataset.stock) : 0;
+    const card = document.getElementById("card-" + itemId);
+    const category = card ? card.dataset.category : "";
+    const stock = card ? parseInt(card.dataset.stock) : 0;
 
-            if (category !== "services" && newQty > stock) {
-                Swal.fire('Stock Limit', 'Cannot exceed available stock', 'warning');
-                return;
-            }
+    // Check for stock limit
+    if (category !== "services" && newQty > stock) {
+        Swal.fire('Stock Limit', 'Cannot exceed available stock', 'warning');
+        return;
+    }
 
-            item.quantity = newQty;
-            renderCart();
-        }
+    // Check for maximum quantity per item
+    if (newQty > 100) {
+        Swal.fire('Quantity Limit', 'Cannot purchase more than 100 units per item', 'warning');
+        return;
+    }
 
-        function updateQuantityManual(itemId, value) {
-            const item = state.cart.find(i => i.id === itemId);
-            if (!item) return;
+    item.quantity = newQty;
+    renderCart();
+}
 
-            let qty = parseInt(value);
-            if (isNaN(qty) || qty < 1) qty = 1;
+function updateQuantityManual(itemId, value) {
+    const item = state.cart.find(i => i.id === itemId);
+    if (!item) return;
 
-            const card = document.getElementById("card-" + itemId);
-            const category = card ? card.dataset.category : "";
-            const stock = card ? parseInt(card.dataset.stock) : 0;
+    let qty = parseInt(value);
+    if (isNaN(qty) || qty < 1) qty = 1;
 
-            if (category !== "services" && qty > stock) {
-                qty = stock;
-                Swal.fire('Stock Limit', 'Cannot exceed available stock', 'warning');
-            }
+    const card = document.getElementById("card-" + itemId);
+    const category = card ? card.dataset.category : "";
+    const stock = card ? parseInt(card.dataset.stock) : 0;
 
-            item.quantity = qty;
-            renderCart();
-        }
+    // Apply stock limit
+    if (category !== "services" && qty > stock) {
+        qty = stock;
+        Swal.fire('Stock Limit', 'Cannot exceed available stock', 'warning');
+    }
+
+    // Apply max 100 units limit
+    if (qty > 100) {
+        qty = 100;
+        Swal.fire('Quantity Limit', 'Cannot purchase more than 100 units per item', 'warning');
+    }
+
+    item.quantity = qty;
+    renderCart();
+}
+
 
         function renderCart() {
             const cartContainer = document.getElementById('cartItems');

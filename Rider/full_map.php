@@ -399,10 +399,6 @@ body {
             <i class="bi bi-geo-alt-fill"></i>
             My Location
         </button>
-        <button class="btn btn-secondary" onclick="window.location.href='active_deliveries.php'">
-            <i class="bi bi-list-ul"></i>
-            List View
-        </button>
     </div>
 </div>
 

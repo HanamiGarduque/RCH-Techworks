@@ -103,7 +103,7 @@
                  class="rounded-xl h-40 mb-4 border border-gray-300 overflow-hidden cursor-pointer">
              </div>
 
-             
+
 
              <div id="active-list" class="bg-gray-100 p-2 rounded-md shadow-inner space-y-4 overflow-y-auto custom-scrollbar h-[330px] pb-5 pr-2"></div>
          </div>
@@ -539,10 +539,9 @@
                     </div>
                 </div>
 
-                <button onclick="startDelivery(${order.refill_id})"
+               <button onclick="window.location.href='order_details.php?order_number=${order.order_number}'"
                     class="w-full py-2.5 text-sm font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition">
-                    Start Delivery
-                </button>
+                    Start D
             </div>
         `;
              });

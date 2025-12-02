@@ -1381,7 +1381,7 @@ $user_id = $_SESSION['id'] ?? null;
                             didOpen: () => {
                                 // View Orders button
                                 const viewBtn = document.getElementById('viewOrdersBtn');
-                                if (viewBtn) viewBtn.onclick = () => window.location.href = "#";
+                                if (viewBtn) viewBtn.onclick = () => window.location.href = "my_orders.php";
 
                                 // Replace Place Order with Order Again
                                 const placeBtn = document.getElementById("placeOrderBtn");

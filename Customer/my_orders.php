@@ -336,9 +336,10 @@
                                             </div>
 
                                             <div class="flex justify-end gap-2 mt-4">
-                                                <button class="btn-danger text-white px-5 py-2.5 rounded-lg text-sm font-medium">
-                                                    <i class="fas fa-times mr-2"></i>Cancel
-                                                </button>
+                                                <button id="cancelOrderBtn" class="btn-danger text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+    <i class="fas fa-times mr-2"></i>Cancel
+</button>
+
                                                 <a href="../Customer/order_details.php?order_number=<?= urlencode($order['order_number']) ?>"
                                                     class="btn-primary text-white px-5 py-2.5 rounded-lg text-sm font-medium inline-flex items-center">
                                                     <i class="fas fa-info-circle mr-2"></i>View Details
@@ -602,6 +603,77 @@
                 // default open tab
                 document.querySelector('[data-tab="topay"]').click();
             });
+    
+document.getElementById('cancelOrderBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+
+    const orderNumber = this.dataset.orderNumber; // order number from data attribute
+
+    Swal.fire({
+        title: 'Cancel Order',
+        html: `
+            <p>Are you sure you want to cancel order #${orderNumber}?</p>
+            <input type="text" id="cancelReason" class="swal2-input" placeholder="Enter cancellation reason">
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, cancel it!',
+        cancelButtonText: 'No, keep it',
+        preConfirm: () => {
+            const reason = Swal.getPopup().querySelector('#cancelReason').value;
+            if (!reason || reason.trim() === '') {
+                Swal.showValidationMessage('Cancellation reason is required');
+                return false;
+            }
+            return reason;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const reason = result.value;
+
+            // Send AJAX request to PHP
+            fetch('Customer/cancel_order.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    order_number: orderNumber,
+                    reason: reason
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire(
+                        'Cancelled!',
+                        data.message,
+                        'success'
+                    ).then(() => {
+                        location.reload(); // reload to reflect changes
+                    });
+                } else {
+                    Swal.fire(
+                        'Error!',
+                        data.message,
+                        'error'
+                    );
+                }
+            })
+            .catch(error => {
+                Swal.fire(
+                    'Error!',
+                    'An unexpected error occurred.',
+                    'error'
+                );
+                console.error('Error:', error);
+            });
+        }
+    });
+});
+
         </script>
 
     </body>

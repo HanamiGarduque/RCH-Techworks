@@ -335,12 +335,12 @@ $db = $database->getConnect();
                 // Add Gallon button
                 // Add this BEFORE the button click handler
                 document.addEventListener("DOMContentLoaded", () => {
-                    console.log("[v0] Swal available:", typeof Swal !== 'undefined'); // Debug
+                    console.log("Swal available:", typeof Swal !== 'undefined'); // Debug
                     const addBtn = document.getElementById('addGallonBtn');
                     if (addBtn) {
                         addBtn.addEventListener('click', function(e) {
                             e.preventDefault();
-                            console.log("[v0] Add Gallon clicked"); // Debug
+                            console.log("[Add Gallon clicked"); // Debug
                             if (typeof Swal !== 'undefined') {
                                 addGallon();
                             } else {
@@ -349,7 +349,7 @@ $db = $database->getConnect();
                             }
                         });
                     } else {
-                        console.error("[v0] addGallonBtn not found");
+                        console.error("[ addGallonBtn not found");
                     }
                 });
 
@@ -453,35 +453,40 @@ $db = $database->getConnect();
                 }
             `;
                             document.head.appendChild(style);
-
                             const qtyInput = document.getElementById('qtyInput');
                             const plus = document.getElementById('qtyPlus');
                             const minus = document.getElementById('qtyMinus');
 
                             plus.addEventListener('click', () => {
-                                qtyInput.value = parseInt(qtyInput.value) + 1;
+                                let val = parseInt(qtyInput.value);
+                                if (val < 10) qtyInput.value = val + 1; // LIMIT TO 10
                             });
 
                             minus.addEventListener('click', () => {
-                                if (parseInt(qtyInput.value) > 1) {
-                                    qtyInput.value = parseInt(qtyInput.value) - 1;
-                                }
+                                let val = parseInt(qtyInput.value);
+                                if (val > 1) qtyInput.value = val - 1;
                             });
 
-                            // Prevent scrolling on number input
-                            qtyInput.addEventListener('wheel', (e) => {
-                                e.preventDefault();
+                            // Prevent typing more than 10
+                            qtyInput.addEventListener('input', () => {
+                                let val = parseInt(qtyInput.value);
+                                if (val > 10) qtyInput.value = 10; // FORCE MAX = 10
+                                if (val < 1 || isNaN(val)) qtyInput.value = 1;
                             });
+
+                            // Disable mouse scroll
+                            qtyInput.addEventListener('wheel', (e) => e.preventDefault());
+
                         },
 
                         preConfirm: () => {
                             const dropdown = document.getElementById('gallonTypeDropdown');
                             const item_id = dropdown.value;
                             const gallon_type = dropdown.options[dropdown.selectedIndex].dataset.type;
-                            const quantity = document.getElementById('qtyInput').value;
+                            const quantity = parseInt(document.getElementById('qtyInput').value);
 
-                            if (!item_id || quantity < 1) {
-                                Swal.showValidationMessage('Please fill in all fields correctly');
+                            if (!item_id || quantity < 1 || quantity > 10) {
+                                Swal.showValidationMessage('Quantity must be between 1 and 10');
                                 return false;
                             }
 

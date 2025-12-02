@@ -247,9 +247,8 @@ $address_parts = explode(', ', $user['address']);
             <div class="overflow-y-auto p-8 max-w-7xl mx-auto h-[calc(100vh-120px)] custom-scroll">
 
                 <!-- PROFILE VIEW -->
-                <div id="profileView overflow-y-auto">
 
-                    <!-- Profile Header Card -->
+                <div id="profileView" class="overflow-y-auto"> <!-- Profile Header Card -->
                     <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
                         <div class="profile-gradient p-8 text-center">
                             <div class="flex justify-center mb-4">
@@ -462,9 +461,7 @@ $address_parts = explode(', ', $user['address']);
                             <div class="relative">
                                 <input type="password" id="oldPassword" required placeholder="Enter your current password"
                                     class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                                <button type="button" onclick="togglePasswordVisibility('oldPassword')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
-                                    <i class="bi bi-eye"></i>
-                                </button>
+
                             </div>
                         </div>
 

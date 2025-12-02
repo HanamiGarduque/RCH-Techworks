@@ -320,19 +320,29 @@ $db = $database->getConnect();
         </div>
 
         <!-- Beautiful centered - + controls -->
-        <div class="flex justify-center mb-3">
-            <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-                <button type="button" onclick="changeQtyToAdd(${itemId}, -1)"
-                    class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">−</button>
+<div class="flex justify-center mb-3">
+    <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-lg shadow-sm border border-gray-200">
 
-                <input type="number" id="qtyToAdd${itemId}" value="0" min="0"
-                    class="w-20 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-medium"
-                    oninput="updateTotalQty(${itemId})" />
+        <button type="button" onclick="changeQtyToAdd(${itemId}, -1)"
+            class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">−</button>
 
-                <button type="button" onclick="changeQtyToAdd(${itemId}, 1)"
-                    class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">+</button>
-            </div>
-        </div>
+        <input 
+            type="number" 
+            id="qtyToAdd${itemId}" 
+            value="0" 
+            min="0" 
+            max="100"
+            class="w-20 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-medium"
+            oninput="limitManualQty(${itemId})"
+        />
+
+        <button type="button" onclick="changeQtyToAdd(${itemId}, 1)"
+            class="bg-gray-200 hover:bg-gray-300 text-lg w-8 h-8 rounded-full font-bold">+</button>
+
+    </div>
+</div>
+
+ 
 
         <!-- New Total Qty -->
         <p class="text-center text-sm text-gray-700 font-medium">
@@ -394,6 +404,21 @@ $db = $database->getConnect();
             document.body.appendChild(modal);
         }
 
+        function limitManualQty(id) {
+            const input = document.getElementById(`qtyToAdd${id}`);
+            let value = parseInt(input.value) || 0;
+
+            if (value < 0) value = 0;
+
+            if (value > 100) {
+                value = 100;
+                Swal.fire('Quantity Limit', 'Maximum allowed quantity is 100.', 'warning');
+            }
+
+            input.value = value;
+            updateTotalQty(id);
+        }
+
 
         // Change quantity buttons
         function changeQtyToAdd(id, amount) {
@@ -401,6 +426,13 @@ $db = $database->getConnect();
             let newValue = parseInt(addField.value || 0) + amount;
 
             if (newValue < 0) newValue = 0;
+
+            // MAX 100 LIMIT
+            if (newValue > 100) {
+                newValue = 100;
+                Swal.fire('Quantity Limit', 'Maximum allowed quantity is 100.', 'warning');
+            }
+
             addField.value = newValue;
 
             updateTotalQty(id);
@@ -648,10 +680,18 @@ $db = $database->getConnect();
         function adjustAddQuantity(delta) {
             const el = document.getElementById('addQuantity');
             let val = parseInt(el.value, 10) || 0;
+
             val += delta;
+
             if (val < 0) val = 0;
+            if (val > 100) {
+                val = 100;
+                Swal.fire('Quantity Limit', 'Maximum allowed quantity is 100.', 'warning');
+            }
+
             el.value = val;
         }
+
 
         // Cancel function
         function cancelAdd(button) {
@@ -663,6 +703,18 @@ $db = $database->getConnect();
         document.addEventListener('submit', function(e) {
             if (e.target && e.target.id === 'addItemForm') {
                 e.preventDefault();
+
+                // Enforce max 100 before submitting
+                const qtyInput = document.getElementById("addQuantity");
+                let qty = parseInt(qtyInput.value) || 0;
+
+                if (qty > 100) {
+                    qty = 100;
+                    qtyInput.value = 100;
+                    Swal.fire('Quantity Limit', 'Maximum allowed quantity is 100.', 'warning');
+                    return; // stop submit if invalid
+                }
+
                 const formData = new FormData(e.target);
 
                 fetch('add_item.php', {
@@ -672,7 +724,8 @@ $db = $database->getConnect();
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            Swal.fire('Success', 'Item added successfully!', 'success').then(() => location.reload());
+                            Swal.fire('Success', 'Item added successfully!', 'success')
+                                .then(() => location.reload());
                         } else {
                             Swal.fire('Error', data.message || 'Failed to add item.', 'error');
                         }
