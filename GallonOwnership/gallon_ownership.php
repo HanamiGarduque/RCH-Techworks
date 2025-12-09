@@ -176,7 +176,7 @@ $db = $database->getConnect();
                                                 <th class="px-6 py-4 font-semibold text-center min-w-[120px]" title="Code Value">Code Value</th>
                                                 <th class="px-6 py-4 font-semibold text-center min-w-[100px]" title="Status">Status</th>
                                                 <th class="px-6 py-4 font-semibold text-center min-w-[120px]" title="Actions">Actions</th>
-                                            </tr>
+                                            </tr>   
                                         </thead>
 
                                         <tbody>
