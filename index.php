@@ -7,6 +7,7 @@
     <title>Login - RCH Water Refilling System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-Ho1GHBBl0sZpOmgQ5Zq8JhLPWqG4k5wbXbw6PdxOTYH/jdTPO5qWix5Dp5S8aC0K0xD7aUSh2F4Q3/H5zW9m1A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -314,6 +315,37 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+
+            if (error) {
+                let config = {
+                    icon: 'error',
+                    confirmButtonColor: '#3b82f6',
+                    timer: 3500,
+                    timerProgressBar: true
+                };
+
+                if (error === 'invalid_password') {
+                    config.title = 'Incorrect Password';
+                    config.text = 'Please double-check your password and try again.';
+                } else if (error === 'email_not_found') {
+                    config.title = 'Account Not Found';
+                    config.text = 'This email address is not registered in our system.';
+                } else if (error === 'deactivated') {
+                    config.title = 'Account Deactivated';
+                    config.text = 'Your account is currently inactive. Please contact support.';
+                    config.icon = 'warning'; // Using warning icon for deactivation
+                }
+
+                Swal.fire(config).then(() => {
+                    // Clean the URL bar so the alert doesn't show again on refresh
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                });
+            }
+        });
+
         // Modal Functions
         function openForgotPasswordModal() {
             document.getElementById('forgotPasswordModal').classList.remove('hidden');

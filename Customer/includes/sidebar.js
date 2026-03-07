@@ -26,7 +26,7 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
     </nav>
 
     <div class="border-t border-blue-400 px-4 py-5">
-        <a href="../../logout.php"
+        <a href="../logout.php"
            id="logoutBtn"
            class="flex items-center px-4 py-3 text-white rounded-lg font-medium hover:bg-white/20">
             <i class="fas fa-sign-out-alt text-lg"></i>
@@ -43,12 +43,13 @@ transition-all duration-500 ease-in-out w-20 hover:w-64 z-50">
 
 // Generate each Nav Item
 function createNavItem(href, icon, label, fileName) {
-    const isActive = currentPage === fileName;
-    const base = "flex items-center px-4 py-3 rounded-lg font-medium transition-all duration-200 ";
-    const active = "bg-white/20 text-white";
-    const inactive = "text-white hover:bg-white/20";
+  const isActive = currentPage === fileName;
+  const base =
+    "flex items-center px-4 py-3 rounded-lg font-medium transition-all duration-200 ";
+  const active = "bg-white/20 text-white";
+  const inactive = "text-white hover:bg-white/20";
 
-    return `
+  return `
         <li>
             <a href="${href}" class="${base} ${isActive ? active : inactive}">
                 <i class="${icon} text-lg"></i>
@@ -64,5 +65,5 @@ function createNavItem(href, icon, label, fileName) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    document.body.insertAdjacentHTML("afterbegin", sidebarHTML);
+  document.body.insertAdjacentHTML("afterbegin", sidebarHTML);
 });

@@ -27,10 +27,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // Check if user is active
             if ($user['status'] !== 'active') {
-                echo "<script>alert('Your account is currently deactivated. Please contact support.'); window.history.back();</script>";
+                // REDIRECT WITH STATUS ERROR
+                header("Location: index.php?error=deactivated");
                 exit;
             }
-
 
             // START SESSION
             session_regenerate_id(true); 
@@ -38,12 +38,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
 
-
-            // Remember Me: set simple cookie for email (will expire in 1 day)
+            // Remember Me logic
             if ($remember) {
                 setcookie('remember_email', $email, time() + 86400, "/");
             } else {
-                // Remove cookie if unchecked
                 if (isset($_COOKIE['remember_email'])) {
                     setcookie('remember_email', '', time() - 3600, "/");
                 }
@@ -59,11 +57,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
             exit;
         } else {
-            echo "<script>alert('Incorrect password!'); window.history.back();</script>";
+            // REDIRECT WITH PASSWORD ERROR
+            header("Location: index.php?error=invalid_password");
             exit;
         }
     } else {
-        echo "<script>alert('Email not found!'); window.history.back();</script>";
+        // REDIRECT WITH EMAIL ERROR
+        header("Location: index.php?error=email_not_found");
         exit;
     }
 }

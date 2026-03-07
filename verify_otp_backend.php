@@ -81,7 +81,7 @@ if (isset($_POST['resend'])) {
     $reg['otp'] = rand(100000, 999999);
     $reg['otp_sent_at'] = time();
 
-    $api_token = "token_here";
+    $api_token = "ba9958e785ac42c22bda17b617158dac68c24165";
 
     $data = [
         'api_token'    => $api_token,
