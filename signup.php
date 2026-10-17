@@ -234,9 +234,6 @@
                                 class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
 
-                            <i class="fa-solid fa-eye absolute right-4 top-11 cursor-pointer text-gray-500"
-                                onclick="togglePassword('password', this)"></i>
-
                             <p id="passwordReq" class="text-sm text-red-500 mt-2">
                                 Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
                             </p>
@@ -251,9 +248,6 @@
                                 placeholder="Re-enter your password" maxlength="128"
                                 class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                                 required>
-
-                            <i class="fa-solid fa-eye absolute right-4 top-11 cursor-pointer text-gray-500"
-                                onclick="togglePassword('confirmPassword', this)"></i>
 
                             <p id="confirmPasswordReq" class="text-sm mt-2"></p>
                         </div>
@@ -478,18 +472,6 @@ function showTab(tabId) {
             updatePasswordReqText();
         });
 
-        function togglePassword(id, icon) {
-            const input = document.getElementById(id);
-            if (input.type === "password") {
-                input.type = "text";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
-            } else {
-                input.type = "password";
-                icon.classList.remove("fa-eye-slash");
-                icon.classList.add("fa-eye");
-            }
-        }
 
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');

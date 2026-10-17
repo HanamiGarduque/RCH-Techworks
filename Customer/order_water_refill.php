@@ -1343,84 +1343,62 @@ $user_id = $_SESSION['id'] ?? null;
 
             // Send order to backend
             fetch('../Order/water_refill_backend.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(orderData)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        // Clear orders after successful placement
-                        state.orders = [];
-                        state.chosenType = null;
-                        state.chosenSize = null;
-                        state.chosenPrice = 0;
-                        state.quantity = 1;
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(orderData)
+})
+.then(async response => {
+    const text = await response.text();
 
-                        Swal.fire({
-                            title: '<span style="color:#2563eb;font-weight:600;">Pending Payment</span>',
-                            html: `
-                                        <div class="text-base mb-4">
-                                            Thank you for your order! Please have your payment ready upon delivery.
-                                        </div>
-                                        <div class="text-center">
-                                            <button id='viewOrdersBtn' class='bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'>
-                                                View My Orders
-                                            </button>
-                                        </div>
-                            `,
-                            showConfirmButton: false,
-                            showCloseButton: true,
-                            allowOutsideClick: false,
-                            customClass: {
-                                popup: 'rounded-lg'
-                            },
+    console.log('Raw Backend Response:', text);
 
-                            didOpen: () => {
-                                // View Orders button
-                                const viewBtn = document.getElementById('viewOrdersBtn');
-                                if (viewBtn) viewBtn.onclick = () => window.location.href = "my_orders.php";
+    let data;
 
-                                // Replace Place Order with Order Again
-                                const placeBtn = document.getElementById("placeOrderBtn");
-                                if (placeBtn) {
-                                    // Remove old listeners
-                                    placeBtn.replaceWith(placeBtn.cloneNode(true));
-                                    const newPlaceBtn = document.getElementById("placeOrderBtn");
+    try {
+        data = JSON.parse(text);
+    } catch (error) {
+        throw new Error('The server returned an invalid response.');
+    }
 
-                                    newPlaceBtn.innerHTML = "Order Again";
-                                    newPlaceBtn.className = "w-40 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700";
-                                    newPlaceBtn.disabled = false;
-                                    newPlaceBtn.addEventListener("click", () => {
-                                        window.location.href = "order_water_refill.php";
-                                    });
-                                }
+    if (!response.ok) {
+        throw new Error(data.message || 'Failed to place order.');
+    }
 
-                                // Disable Back, Start Over, Add More
-                                ["backBtn6", "startOverBtn6", "addMoreOrdersBtn"].forEach(id => {
-                                    const btn = document.getElementById(id);
-                                    if (btn) {
-                                        btn.disabled = true;
-                                        btn.classList.add("opacity-60", "cursor-not-allowed", "pointer-events-none");
-                                    }
-                                });
-                            }
+    return data;
+})
+.then(data => {
+    if (data.success) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Order Placed Successfully!',
+            text: 'Your water refill order has been placed successfully.',
+            confirmButtonText: 'View My Order',
+            confirmButtonColor: '#2563eb'
+        }).then(() => {
+            // Change this URL if your actual order page has a different path.
+            window.location.href =
+                'order_details.php?order_id=' +
+                encodeURIComponent(data.order_id);
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Order Failed',
+            text: data.message || 'Unable to place your order.'
+        });
+    }
+})
+.catch(error => {
+    console.error('Fetch error:', error);
 
-
-                        });
-
-
-                    } else {
-                        console.error('Backend error:', data.message);
-                        Swal.fire('Error', data.message || 'Failed to place order. Please try again.', 'error');
-                    }
-                })
-                .catch(err => {
-                    console.error('Fetch error:', err);
-                    Swal.fire('Error', 'Something went wrong: ' + err.message, 'error');
-                });
+    Swal.fire({
+        icon: 'error',
+        title: 'Something Went Wrong',
+        text: error.message || 'Unable to process your order.'
+    });
+});
         }
 
         // Helper function to format datetime for MySQL

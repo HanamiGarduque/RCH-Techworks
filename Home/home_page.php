@@ -416,7 +416,7 @@
                     <i class=></i> Send Us Your Message/Feedback
                 </h3>
 
-                <form class="space-y-6">
+                <form id="feedbackForm" class="space-y-6">
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-semibold text-gray-900 mb-2">
@@ -465,7 +465,7 @@
 
                 <!-- Center: Navigation Links -->
                 <div class="flex flex-wrap gap-6 text-sm justify-center flex-1">
-                    <a href="home" class="hover:underline transition">Home</a>
+                    <a href="home_page.php" class="hover:underline transition">Home</a>
                     <a href="features" class="hover:underline transition">Features</a>
                     <a href="about" class="hover:underline transition">About</a>
                     <a href="contact" class="hover:underline transition">Contact</a>
@@ -540,7 +540,6 @@
         // Form submission
         document.querySelector('form').addEventListener('submit', e => {
             e.preventDefault();
-            alert('Thank you for your message! We will get back to you soon.');
             e.target.reset();
         });
     </script>
@@ -574,6 +573,24 @@
             });
         });
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        document.getElementById("feedbackForm").addEventListener("submit", function(e) {
+            e.preventDefault(); // prevent actual submit for demo
+
+            Swal.fire({
+                title: "Message Sent!",
+                text: "Thank you for your feedback. We appreciate your time!",
+                icon: "success",
+                confirmButtonColor: "#2563eb",
+                confirmButtonText: "OK"
+            });
+        });
+    </script>
+
+
 
 
 </body>
