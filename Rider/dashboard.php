@@ -1,4 +1,4 @@
- <?php
+<?php
 
 
     require_once __DIR__ . '/../session.php';
@@ -49,6 +49,62 @@
          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
              background: #94a3b8;
          }
+
+         /* ===== MAP MARKER STYLES ===== */
+         .rider-pulse {
+             position: relative;
+             width: 36px;
+             height: 36px;
+         }
+
+         .rider-pulse::before {
+             content: '';
+             position: absolute;
+             inset: 0;
+             border-radius: 50%;
+             background: rgba(16, 185, 129, 0.35);
+             animation: riderPulse 1.8s ease-out infinite;
+         }
+
+         .rider-pulse .dot {
+             position: absolute;
+             inset: 0;
+             border-radius: 50%;
+             background: #10b981;
+             border: 3px solid #fff;
+             box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             color: #fff;
+             font-size: 15px;
+         }
+
+         @keyframes riderPulse {
+             0% {
+                 transform: scale(1);
+                 opacity: .9;
+             }
+
+             100% {
+                 transform: scale(2.2);
+                 opacity: 0;
+             }
+         }
+
+         .customer-pin {
+             width: 30px;
+             height: 30px;
+             border-radius: 50%;
+             background: #2563eb;
+             border: 3px solid #fff;
+             box-shadow: 0 2px 8px rgba(0, 0, 0, .3);
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             color: #fff;
+             font-size: 13px;
+         }
      </style>
  </head>
 
@@ -96,11 +152,30 @@
          <div class="px-5 pb-5" id="active-deliveries">
              <h3 class="text-md font-semibold text-blue-600 mb-3">Active Deliveries</h3>
 
-             <!-- Map Placeholder -->
-             <!-- Map Integration -->
-             <div id="active-map"
-                 onclick="window.location.href='full_map.php'"
-                 class="rounded-xl h-40 mb-4 border border-gray-300 overflow-hidden cursor-pointer">
+             <!-- Map Integration (live rider GPS + customer destinations) -->
+             <div class="relative mb-4">
+                 <div id="active-map"
+                     class="rounded-xl h-40 border border-gray-300 overflow-hidden">
+                 </div>
+
+                 <!-- GPS status chip -->
+                 <div id="gps-status"
+                     class="absolute top-2 left-2 z-[1000] max-w-[210px] bg-white/95 text-gray-700 text-[10px] font-semibold px-2.5 py-1 rounded-full shadow flex items-center gap-1.5">
+                     <i class="bi bi-hourglass-split text-amber-500"></i>
+                     <span>Locating you...</span>
+                 </div>
+
+                 <!-- Map buttons -->
+                 <div class="absolute bottom-2 right-2 z-[1000] flex flex-col gap-2">
+                     <button onclick="recenterOnRider()" title="Go to my location"
+                         class="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-blue-600 hover:bg-blue-50">
+                         <i class="bi bi-crosshair"></i>
+                     </button>
+                     <button onclick="openFullMap()" title="Open full map"
+                         class="w-8 h-8 rounded-full bg-blue-600 shadow flex items-center justify-center text-white hover:bg-blue-700">
+                         <i class="bi bi-arrows-fullscreen"></i>
+                     </button>
+                 </div>
              </div>
 
 
@@ -135,11 +210,11 @@
 
              <!-- Floating Period Switcher for Pickup -->
              <div id="time-switcher-pickup"
-                 class="absolute bottom-7 left-1/2 -translate-x-1/2 
-                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                 class="absolute bottom-7 left-1/2 -translate-x-1/2
+                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1
                        flex items-center space-x-6 z-50 border">
                  <button id="prev-period-pickup"
-                     class="w-7 h-7 flex items-center justify-center 
+                     class="w-7 h-7 flex items-center justify-center
                            rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
                      ←
                  </button>
@@ -147,7 +222,7 @@
                      Morning
                  </span>
                  <button id="next-period-pickup"
-                     class="w-7 h-7 flex items-center justify-center 
+                     class="w-7 h-7 flex items-center justify-center
                            rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
                      →
                  </button>
@@ -155,11 +230,11 @@
 
              <!-- Floating Period Switcher for Delivery -->
              <div id="time-switcher-delivery"
-                 class="absolute bottom-7 left-1/2 -translate-x-1/2 
-                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                 class="absolute bottom-7 left-1/2 -translate-x-1/2
+                       bg-blue-600 text-white shadow-lg rounded-full px-2 py-1
                        flex items-center space-x-6 z-50 border hidden">
                  <button id="prev-period-delivery"
-                     class="w-7 h-7 flex items-center justify-center 
+                     class="w-7 h-7 flex items-center justify-center
                            rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
                      ←
                  </button>
@@ -167,7 +242,7 @@
                      Morning
                  </span>
                  <button id="next-period-delivery"
-                     class="w-7 h-7 flex items-center justify-center 
+                     class="w-7 h-7 flex items-center justify-center
                            rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
                      →
                  </button>
@@ -201,11 +276,11 @@
 
              <!-- Floating Period Switcher for Delayed -->
              <div id="time-switcher-delayed"
-                 class="absolute bottom-7 left-1/2 -translate-x-1/2 
-               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                 class="absolute bottom-7 left-1/2 -translate-x-1/2
+               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1
                flex items-center space-x-6 z-50 border">
                  <button id="prev-period-delayed"
-                     class="w-7 h-7 flex items-center justify-center 
+                     class="w-7 h-7 flex items-center justify-center
                    rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
                      ←
                  </button>
@@ -213,7 +288,7 @@
                      Morning
                  </span>
                  <button id="next-period-delayed"
-                     class="w-7 h-7 flex items-center justify-center 
+                     class="w-7 h-7 flex items-center justify-center
                    rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
                      →
                  </button>
@@ -221,11 +296,11 @@
 
              <!-- Floating Period Switcher for Completed -->
              <div id="time-switcher-completed"
-                 class="absolute bottom-7 left-1/2 -translate-x-1/2 
-               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1 
+                 class="absolute bottom-7 left-1/2 -translate-x-1/2
+               bg-blue-600 text-white shadow-lg rounded-full px-2 py-1
                flex items-center space-x-6 z-50 border hidden">
                  <button id="prev-period-completed"
-                     class="w-7 h-7 flex items-center justify-center 
+                     class="w-7 h-7 flex items-center justify-center
                    rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
                      ←
                  </button>
@@ -233,7 +308,7 @@
                      Morning
                  </span>
                  <button id="next-period-completed"
-                     class="w-7 h-7 flex items-center justify-center 
+                     class="w-7 h-7 flex items-center justify-center
                    rounded-full bg-white shadow text-blue-600 font-bold hover:bg-gray-100 transition">
                      →
                  </button>
@@ -646,16 +721,157 @@
     `;
              });
          }
-         // ===== MAP INTEGRATION (OpenStreetMap using Leaflet) =====
+
+         // =====================================================================
+         // MAP INTEGRATION (OpenStreetMap using Leaflet) + LIVE RIDER GPS
+         // =====================================================================
          let map = null;
          let markers = [];
+         let riderMarker = null;
+         let accuracyCircle = null;
+         let gpsWatchId = null;
+         let firstFix = true; // first GPS fix centers the map on the rider
+         let followRider = true; // map follows the rider until the map is dragged
+         let trackUserId = null; // customer user_id used by the "open full map" button
+
+         const riderIcon = L.divIcon({
+             html: '<div class="rider-pulse"><div class="dot"><i class="bi bi-truck"></i></div></div>',
+             className: '',
+             iconSize: [36, 36],
+             iconAnchor: [18, 18],
+             popupAnchor: [0, -18]
+         });
+
+         const customerIcon = L.divIcon({
+             html: '<div class="customer-pin"><i class="bi bi-house-fill"></i></div>',
+             className: '',
+             iconSize: [30, 30],
+             iconAnchor: [15, 15],
+             popupAnchor: [0, -15]
+         });
 
          function initMap() {
-             map = L.map('active-map').setView([13.7563, 121.0583], 12); // Default view (Batangas area)
+             // Temporary view (Lipa City) until the first GPS fix arrives
+             map = L.map('active-map').setView([13.9411, 121.1635], 13);
              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                  maxZoom: 19,
                  attribution: '&copy; OpenStreetMap contributors'
              }).addTo(map);
+
+             // Stop auto-following once the rider drags the map
+             map.on('dragstart', () => {
+                 followRider = false;
+             });
+
+             // Keep the map sized correctly when the Active tab is hidden/shown
+             if ('ResizeObserver' in window) {
+                 new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById('active-map'));
+             }
+         }
+
+         function setGpsStatus(text, type) {
+             const el = document.getElementById('gps-status');
+             const icons = {
+                 ok: '<i class="bi bi-broadcast text-green-500"></i>',
+                 wait: '<i class="bi bi-hourglass-split text-amber-500"></i>',
+                 warn: '<i class="bi bi-exclamation-triangle-fill text-amber-500"></i>',
+                 error: '<i class="bi bi-x-circle-fill text-red-500"></i>'
+             };
+             el.innerHTML = (icons[type] || icons.wait) + '<span>' + text + '</span>';
+         }
+
+         function handlePosition(pos) {
+             const lat = pos.coords.latitude;
+             const lng = pos.coords.longitude;
+             const acc = pos.coords.accuracy || 0;
+
+             if (!riderMarker) {
+                 riderMarker = L.marker([lat, lng], {
+                         icon: riderIcon,
+                         zIndexOffset: 1000
+                     })
+                     .addTo(map)
+                     .bindPopup('<b>You are here</b>');
+                 accuracyCircle = L.circle([lat, lng], {
+                     radius: acc,
+                     color: '#10b981',
+                     weight: 1,
+                     fillColor: '#10b981',
+                     fillOpacity: 0.12
+                 }).addTo(map);
+             } else {
+                 riderMarker.setLatLng([lat, lng]);
+                 accuracyCircle.setLatLng([lat, lng]);
+                 accuracyCircle.setRadius(acc);
+             }
+
+             riderMarker.setPopupContent('<b>You are here</b><br>Accuracy: ±' + Math.round(acc) + ' m');
+
+             if (firstFix) {
+                 map.setView([lat, lng], acc > 1000 ? 13 : 16);
+                 firstFix = false;
+             } else if (followRider) {
+                 map.panTo([lat, lng]);
+             }
+
+             if (acc > 500) {
+                 setGpsStatus('Weak GPS (±' + Math.round(acc) + ' m) - approximate only', 'warn');
+             } else {
+                 setGpsStatus('Live • ±' + Math.round(acc) + ' m', 'ok');
+             }
+         }
+
+         function handleGeoError(err) {
+             console.warn('Map geolocation error', err);
+             if (err.code === 1) {
+                 setGpsStatus('Location blocked - allow it in browser settings', 'error');
+             } else if (err.code === 2) {
+                 setGpsStatus('Position unavailable - check GPS / signal', 'warn');
+             } else {
+                 setGpsStatus('Waiting for GPS signal...', 'wait');
+             }
+         }
+
+         function startLiveTracking() {
+             if (!('geolocation' in navigator)) {
+                 setGpsStatus('GPS not supported on this device', 'error');
+                 return;
+             }
+
+             // Browsers only allow location on HTTPS or on "localhost"
+             if (!window.isSecureContext) {
+                 setGpsStatus('Location needs HTTPS (or localhost)', 'error');
+                 console.error('Geolocation blocked: not a secure context. Use HTTPS or http://localhost');
+                 return;
+             }
+
+             const options = {
+                 enableHighAccuracy: true, // use the real GPS chip when available
+                 maximumAge: 0, // never use a cached position
+                 timeout: 20000
+             };
+
+             // Quick first fix, then continuous live updates
+             navigator.geolocation.getCurrentPosition(handlePosition, handleGeoError, options);
+             gpsWatchId = navigator.geolocation.watchPosition(handlePosition, handleGeoError, options);
+         }
+
+         function recenterOnRider() {
+             followRider = true;
+             if (riderMarker) {
+                 map.setView(riderMarker.getLatLng(), 16);
+                 riderMarker.openPopup();
+             } else {
+                 setGpsStatus('Still locating you...', 'wait');
+             }
+         }
+
+         function openFullMap() {
+             if (trackUserId === null) {
+                 alert('No active delivery to track yet.');
+                 return;
+             }
+             window.location.href = 'full_map.php?user_id=' + encodeURIComponent(trackUserId);
          }
 
          function updateMapMarkers(orders) {
@@ -664,18 +880,29 @@
              // Clear old markers
              markers.forEach(marker => map.removeLayer(marker));
              markers = [];
+             trackUserId = null;
 
              orders.forEach(order => {
+                 // remember the first customer's id for the full map button
+                 if (trackUserId === null) {
+                     const u = order.user || {};
+                     const uid = u.user_id ?? u.id ?? order.user_id ?? order.customer_id ?? null;
+                     if (uid !== null) trackUserId = uid;
+                 }
+
                  if (order.user.latitude && order.user.longitude) {
                      const lat = parseFloat(order.user.latitude);
                      const lng = parseFloat(order.user.longitude);
-                     const marker = L.marker([lat, lng]).addTo(map)
+                     const marker = L.marker([lat, lng], {
+                             icon: customerIcon
+                         }).addTo(map)
                          .bindPopup(`<b>${order.user.name}</b><br>${order.user.address}`);
                      markers.push(marker);
                  }
              });
 
-             if (markers.length > 0) {
+             // Only fit to the customers while the rider has no GPS fix yet
+             if (markers.length > 0 && !riderMarker) {
                  const group = new L.featureGroup(markers);
                  map.fitBounds(group.getBounds().pad(0.2));
              }
@@ -754,6 +981,7 @@
              updateDelayedPeriodDisplay();
              updateCompletedPeriodDisplay();
              initMap();
+             startLiveTracking(); // rider's device GPS on the map
              fetchDeliveries();
              setInterval(fetchDeliveries, 30000);
 
