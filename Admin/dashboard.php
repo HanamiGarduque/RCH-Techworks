@@ -2,7 +2,10 @@
 require_once __DIR__ . '/../session.php';
 require_once '../Database/db_connection.php';
 redirectIfRoleMismatch('admin'); // only admins can access
+// FIX: check_delays sends delay emails. Buffer it so any stray output never prints at top of dashboard.
+ob_start();
 include_once '../Cron/check_delays.php';
+if (ob_get_level() > 0) { $cronOutput = ob_get_clean(); if (trim($cronOutput) !== '') error_log('check_delays output: ' . $cronOutput); }
 
 
 $database = new Database();

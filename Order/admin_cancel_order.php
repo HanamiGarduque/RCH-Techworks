@@ -1,4 +1,6 @@
 <?php
+// FIX: start output buffering FIRST - nothing (warnings, email echoes) may print before JSON
+ob_start();
 require_once __DIR__ . '/../session.php';
 redirectIfRoleMismatch('admin'); // only admins can access
 
@@ -16,15 +18,21 @@ $data = json_decode(file_get_contents("php://input"), true);
 $orderNumber = $data['order_number'] ?? null;
 $reason = $data['reason'] ?? null;
 
-// Validate inputs
-if (!$orderNumber) {
-    echo json_encode(['success' => false, 'message' => 'Order number is required.']);
+// Helper: discard ANY stray output (email echoes, warnings) and send clean JSON only
+function sendJson(array $payload) {
+    // Throw away everything buffered so far - e.g. "<b>Email send error...</b>"
+    if (ob_get_level() > 0) ob_clean();
+    echo json_encode($payload);
     exit;
 }
 
+// Validate inputs
+if (!$orderNumber) {
+    sendJson(['success' => false, 'message' => 'Order number is required.']);
+}
+
 if (!$reason || trim($reason) === '') {
-    echo json_encode(['success' => false, 'message' => 'Cancellation reason is required.']);
-    exit;
+    sendJson(['success' => false, 'message' => 'Cancellation reason is required.']);
 }
 
 try {
@@ -40,8 +48,7 @@ try {
     
     if ($checkOrder->rowCount() === 0) {
         $db->rollBack();
-        echo json_encode(['success' => false, 'message' => 'Order not found.']);
-        exit;
+        sendJson(['success' => false, 'message' => 'Order not found.']);
     }
 
     $order = $checkOrder->fetch(PDO::FETCH_ASSOC);
@@ -49,14 +56,12 @@ try {
     // Check if order is already cancelled or delivered
     if ($order['order_status'] === 'cancelled') {
         $db->rollBack();
-        echo json_encode(['success' => false, 'message' => 'Order is already cancelled.']);
-        exit;
+        sendJson(['success' => false, 'message' => 'Order is already cancelled.']);
     }
 
     if ($order['order_status'] === 'delivered') {
         $db->rollBack();
-        echo json_encode(['success' => false, 'message' => 'Cannot cancel a delivered order.']);
-        exit;
+        sendJson(['success' => false, 'message' => 'Cannot cancel a delivered order.']);
     }
 
     // Update the order status to cancelled and save the reason
@@ -75,22 +80,35 @@ try {
     createNotification($db, $order['user_id'], $notificationTitle, $notificationMessage, $notificationLink);
 
     // Send email to customer
-    notifyCustomerDeliveryCancelled($order['email'], $order['name'], $orderNumber, $reason);
+    // FIX: email must NEVER break JSON or roll back the cancel.
+    // Buffer + swallow its output, and catch its exception. If Brevo fails, order is still cancelled.
+    try {
+        ob_start();
+        notifyCustomerDeliveryCancelled($order['email'], $order['name'], $orderNumber, $reason);
+        $emailOutput = ob_get_clean();
+        if ($emailOutput) {
+            // Log it for you to see, don't show it to the browser
+            error_log('Cancel-order email output for ' . $orderNumber . ': ' . $emailOutput);
+        }
+    } catch (Throwable $emailErr) {
+        if (ob_get_level() > 0) ob_end_clean();
+        error_log('Cancel-order email failed for ' . $orderNumber . ': ' . $emailErr->getMessage());
+        // Do NOT roll back - cancellation already succeeded
+    }
 
     $db->commit();
 
-    echo json_encode([
+    sendJson([
         'success' => true,
         'message' => 'Order cancelled successfully.'
     ]);
 
 } catch (PDOException $e) {
-    $db->rollBack();
+    if ($db->inTransaction()) $db->rollBack();
     error_log('Database Error in cancel_order.php: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error occurred.']);
+    sendJson(['success' => false, 'message' => 'Database error occurred.']);
 } catch (Exception $e) {
-    $db->rollBack();
+    if ($db->inTransaction()) $db->rollBack();
     error_log('Error in cancel_order.php: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'An error occurred while cancelling order.']);
+    sendJson(['success' => false, 'message' => 'An error occurred while cancelling order.']);
 }
-?>
