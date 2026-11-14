@@ -8,6 +8,41 @@ $database = new Database();
 $db = $database->getConnect();
 
 // ============================================================
+// Helpers - SAME AS CUSTOMER / RIDER
+// Delivery address lives ON THE ORDER, not on the profile.
+// ============================================================
+function colExists($db, $table, $col) {
+    try {
+        $s = $db->prepare("SHOW COLUMNS FROM `$table` LIKE :c");
+        $s->execute([':c' => $col]);
+        return (bool)$s->fetch(PDO::FETCH_ASSOC);
+    } catch (Exception $e) { return false; }
+}
+function pickCol($db, $table, $candidates) {
+    foreach ($candidates as $c) { if (colExists($db, $table, $c)) return $c; }
+    return null;
+}
+$wrAddrCol = pickCol($db, 'water_refills', ['delivery_address', 'customer_address', 'address', 'delivery_addr']);
+$wrLatCol  = pickCol($db, 'water_refills', ['customer_lat', 'delivery_lat', 'latitude', 'lat']);
+$wrLngCol  = pickCol($db, 'water_refills', ['customer_lng', 'delivery_lng', 'longitude', 'lng']);
+$userLatCol = pickCol($db, 'users', ['latitude', 'lat', 'customer_lat']);
+$userLngCol = pickCol($db, 'users', ['longitude', 'lng', 'customer_lng']);
+
+function getOrderDeliveryAddress($db, $refillId, $userId, $wrAddrCol) {
+    if ($wrAddrCol) {
+        try {
+            $p = $db->prepare("SELECT `$wrAddrCol` FROM water_refills WHERE refill_id = :id LIMIT 1");
+            $p->execute([':id' => $refillId]);
+            $a = trim($p->fetchColumn() ?: '');
+            if ($a !== '') return $a;
+        } catch (Exception $e) {}
+    }
+    $p = $db->prepare("SELECT address FROM users WHERE user_id = :uid LIMIT 1");
+    $p->execute([':uid' => $userId]);
+    return trim($p->fetchColumn() ?: '');
+}
+
+// ============================================================
 // MAP ONLY: same-file location endpoints
 // ============================================================
 // POST: save_customer_pin - admin drags customer pin to correct house
@@ -18,10 +53,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_customer_pin') {
     $lng = floatval($_POST['longitude'] ?? 0);
     if (!$on || !$lat || !$lng) { echo json_encode(['success'=>false,'message'=>'Missing data']); exit; }
     try {
-        $u = $db->prepare("UPDATE water_refills SET customer_lat = :lat, customer_lng = :lng WHERE order_number = :on LIMIT 1");
-        $u->execute([':lat'=>$lat, ':lng'=>$lng, ':on'=>$on]);
-        $u2 = $db->prepare("UPDATE users u JOIN water_refills r ON r.user_id = u.user_id SET u.latitude = :lat, u.longitude = :lng WHERE r.order_number = :on LIMIT 1");
-        $u2->execute([':lat'=>$lat, ':lng'=>$lng, ':on'=>$on]);
+        // Save on THIS order - column may not exist on old DB, so try/catch
+        if ($wrLatCol && $wrLngCol) {
+            $u = $db->prepare("UPDATE water_refills SET `$wrLatCol` = :lat, `$wrLngCol` = :lng WHERE order_number = :on LIMIT 1");
+            $u->execute([':lat'=>$lat, ':lng'=>$lng, ':on'=>$on]);
+        }
+        if ($userLatCol && $userLngCol) {
+            $u2 = $db->prepare("UPDATE users u JOIN water_refills r ON r.user_id = u.user_id SET u.`$userLatCol` = :lat, u.`$userLngCol` = :lng WHERE r.order_number = :on LIMIT 1");
+            $u2->execute([':lat'=>$lat, ':lng'=>$lng, ':on'=>$on]);
+        }
         echo json_encode(['success'=>true]);
     } catch (Exception $e) { echo json_encode(['success'=>false,'message'=>$e->getMessage()]); }
     exit;
@@ -57,42 +97,58 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['rider_location', 'cust
             exit;
         }
 
-        // ---- customer_location ----
-        $uid = $o['user_id'];
-
-        // 1) Saved corrected pin on THIS order - most accurate
-        try {
-            $pin = $db->prepare("SELECT customer_lat, customer_lng FROM water_refills WHERE order_number = :on LIMIT 1");
-            $pin->execute([':on' => $on]);
-            $pr = $pin->fetch(PDO::FETCH_ASSOC);
-            if ($pr && $pr['customer_lat'] !== null && $pr['customer_lng'] !== null) {
-                echo json_encode(['success'=>true,'status'=>'saved_pin','latitude'=>(float)$pr['customer_lat'],'longitude'=>(float)$pr['customer_lng'],'timestamp'=>date('Y-m-d H:i:s'),'is_recent'=>true,'age_seconds'=>0]);
+        // ---- customer_location - SAME AS CUSTOMER / RIDER ----
+        // NO loc_history for customer - that was "last GPS anywhere", not the house.
+        // 1) Exact pin on THIS order
+        if ($wrLatCol && $wrLngCol) {
+            $p = $db->prepare("SELECT `$wrLatCol` AS lat, `$wrLngCol` AS lng FROM water_refills WHERE refill_id = :id LIMIT 1");
+            $p->execute([':id' => $o['refill_id']]);
+            $pin = $p->fetch(PDO::FETCH_ASSOC);
+            if ($pin && $pin['lat'] !== null && $pin['lng'] !== null && (float)$pin['lat'] != 0) {
+                echo json_encode(['success'=>true,'status'=>'exact_pin','latitude'=>(float)$pin['lat'],'longitude'=>(float)$pin['lng'],'timestamp'=>date('Y-m-d H:i:s'),'is_recent'=>true]);
                 exit;
             }
-        } catch (Exception $e) {}
-
-        // 2) User's saved pin from last corrected order
-        try {
-            $up = $db->prepare("SELECT latitude, longitude FROM users WHERE user_id = :uid LIMIT 1");
-            $up->execute([':uid' => $uid]);
-            $ur = $up->fetch(PDO::FETCH_ASSOC);
-            if ($ur && $ur['latitude'] !== null && $ur['longitude'] !== null) {
-                echo json_encode(['success'=>true,'status'=>'saved_pin','latitude'=>(float)$ur['latitude'],'longitude'=>(float)$ur['longitude'],'timestamp'=>date('Y-m-d H:i:s'),'is_recent'=>true,'age_seconds'=>0]);
-                exit;
-            }
-        } catch (Exception $e) {}
-
-        // 3) Saved customer GPS in loc_history
-        $l = $db->prepare("SELECT latitude, longitude, created_at FROM loc_history WHERE user_id = :uid ORDER BY created_at DESC LIMIT 1");
-        $l->execute([':uid' => $uid]);
-        $loc = $l->fetch(PDO::FETCH_ASSOC);
-        if ($loc && $loc['latitude'] !== null && $loc['longitude'] !== null) {
-            $age = time() - strtotime($loc['created_at']);
-            echo json_encode(['success' => true,'status' => 'has_saved_location','latitude' => (float)$loc['latitude'],'longitude' => (float)$loc['longitude'],'timestamp' => $loc['created_at'],'is_recent' => $age <= 60,'age_seconds' => $age]);
-            exit;
         }
-
-        // 4) No saved GPS -> browser will geocode address. PHP on localhost cannot reliably reach Nominatim, so do NOT try server-side.
+        // 2) Exact pin on customer profile
+        if ($userLatCol && $userLngCol) {
+            $p = $db->prepare("SELECT `$userLatCol` AS lat, `$userLngCol` AS lng FROM users WHERE user_id = :uid LIMIT 1");
+            $p->execute([':uid' => $o['user_id']]);
+            $pin = $p->fetch(PDO::FETCH_ASSOC);
+            if ($pin && $pin['lat'] !== null && $pin['lng'] !== null && (float)$pin['lat'] != 0) {
+                echo json_encode(['success'=>true,'status'=>'exact_pin','latitude'=>(float)$pin['lat'],'longitude'=>(float)$pin['lng'],'timestamp'=>date('Y-m-d H:i:s'),'is_recent'=>true]);
+                exit;
+            }
+        }
+        // 3) GEOCODE - ORDER delivery address, NOT profile address - same attempts as Customer/Rider
+        $addr = getOrderDeliveryAddress($db, $o['refill_id'], $o['user_id'], $wrAddrCol);
+        if ($addr !== '') {
+            $full = trim($addr);
+            $attempts = [];
+            $attempts[] = $full . ', Philippines';
+            $noHouseNo = preg_replace('/^\s*\d+\s*,?\s*/', '', $full);
+            if ($noHouseNo && $noHouseNo !== $full) $attempts[] = $noHouseNo . ', Philippines';
+            $parts = array_values(array_filter(array_map('trim', explode(',', $full))));
+            if (count($parts) >= 3) {
+                $barangayCity = implode(', ', array_slice($parts, -3));
+                if (!in_array($barangayCity . ', Philippines', $attempts)) $attempts[] = $barangayCity . ', Philippines';
+            }
+            if (count($parts) >= 2) {
+                $cityOnly = implode(', ', array_slice($parts, -2));
+                if (!in_array($cityOnly . ', Philippines', $attempts)) $attempts[] = $cityOnly . ', Philippines';
+            }
+            $attempts[] = 'Lipa City, Batangas, Philippines';
+            foreach ($attempts as $q) {
+                $url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' . urlencode($q);
+                $ctx = stream_context_create(['http' => ['header' => "User-Agent: RCH-Water-Admin/1.0\r\n", 'timeout' => 5]]);
+                $json = @file_get_contents($url, false, $ctx);
+                if (!$json) continue;
+                $geo = json_decode($json, true);
+                if (!empty($geo[0]['lat'])) {
+                    echo json_encode(['success' => true, 'status' => 'geocoded', 'latitude' => (float)$geo[0]['lat'], 'longitude' => (float)$geo[0]['lon'], 'timestamp' => date('Y-m-d H:i:s'), 'is_recent' => true]);
+                    exit;
+                }
+            }
+        }
         echo json_encode(['success' => false]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -103,10 +159,17 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['rider_location', 'cust
 $orderNumber = isset($_GET['order_number']) ? $_GET['order_number'] : '';
 if (empty($orderNumber)) { header('Location: customer_orders.php'); exit; }
 
+// *** SAME AS CUSTOMER: delivery address + exact pin come from THE ORDER ***
+$addrSelect = '';
+if ($wrAddrCol) $addrSelect = ", r.`$wrAddrCol` AS order_delivery_address";
+$pinSelect = '';
+if ($wrLatCol && $wrLngCol) $pinSelect = ", r.`$wrLatCol` AS customer_lat, r.`$wrLngCol` AS customer_lng";
+elseif ($userLatCol && $userLngCol) $pinSelect = ", u.`$userLatCol` AS customer_lat, u.`$userLngCol` AS customer_lng";
+
 $orderQuery = "SELECT 
     r.refill_id, r.order_number, r.total_amount, r.pickup_datetime, r.delivery_datetime, r.order_status, r.created_at, r.user_id, r.delay_reason,
     u.name as customer_name, u.phone_number as customer_phone, u.address as customer_address,
-    rider.name as rider_name, rider.phone_number as rider_phone
+    rider.name as rider_name, rider.phone_number as rider_phone $addrSelect $pinSelect
 FROM water_refills r
 LEFT JOIN users u ON r.user_id = u.user_id
 LEFT JOIN users rider ON r.rider_id = rider.user_id
@@ -116,6 +179,8 @@ $stmt->bindParam(':order_number', $orderNumber);
 $stmt->execute();
 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$order) { header('Location: customer_orders.php'); exit; }
+// Use ORDER delivery address - same as Customer/Rider see
+$deliveryAddress = !empty($order['order_delivery_address']) ? $order['order_delivery_address'] : $order['customer_address'];
 
 $itemsQuery = "SELECT ri.product_id, ri.gallon_type, ri.gallon_size, ri.quantity, ri.unit_price, ri.subtotal, ri.gallon_owner, ri.processed_quantity, i.item_name
 FROM water_refill_items ri LEFT JOIN inventory i ON ri.product_id = i.item_id WHERE ri.refill_id = :refill_id";
@@ -167,18 +232,16 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
         ::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
         .map-wrap { position: relative; }
-        .live-pill { position: absolute; top: 10px; left: 10px; z-index: 400; background: #fff; border-radius: 9999px; padding: 6px 12px; font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,.15); display: flex; align-items: center; gap: 6px; }
-        .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #16a34a; animation: livePulse 1.6s infinite; }
-        .live-dot.stale { background: #f59e0b; }
-        .live-dot.waiting { background: #9ca3af; animation: none; }
-        @keyframes livePulse { 0%{box-shadow:0 0 0 0 rgba(22,163,74,.5)} 70%{box-shadow:0 0 0 8px rgba(22,163,74,0)} 100%{box-shadow:0 0 0 0 rgba(22,163,74,0)} }
-        .eta-pill { position: absolute; bottom: 10px; left: 10px; z-index: 400; background: #111827; color: #fff; border-radius: 12px; padding: 8px 12px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
         .leaflet-routing-container { display: none !important; }
         .leaflet-pane, .leaflet-top, .leaflet-bottom { z-index: 400 !important; }
         .leaflet-control { z-index: 400 !important; }
-        .pin-rider { background: #f59e0b; border: 3px solid #fff; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 0 6px rgba(245,158,11,.25); }
-        .pin-customer { background: #2563eb; border: 3px solid #fff; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 0 6px rgba(37,99,235,.25); }
-        .pin-station { background: #16a34a; border: 3px solid #fff; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 0 6px rgba(22,163,74,.25); }
+        /* ===== MAP MARKER STYLES - same as Customer / Rider ===== */
+        .rider-pulse { position: relative; width: 36px; height: 36px; }
+        .rider-pulse::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: rgba(16, 185, 129, 0.35); animation: riderPulse 1.8s ease-out infinite; }
+        .rider-pulse .dot { position: absolute; inset: 0; border-radius: 50%; background: #10b981; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; }
+        @keyframes riderPulse { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(2.2); opacity: 0; } }
+        .customer-pin { width: 30px; height: 30px; border-radius: 50%; background: #2563eb; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .3); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; }
+        .station-pin { background: #f59e0b; border: 3px solid #fff; border-radius: 50%; width: 18px; height: 18px; box-shadow: 0 0 0 6px rgba(245,158,11,.25); }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -218,10 +281,9 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="lg:col-span-2 space-y-6">
                             <div class="bg-white border rounded-xl shadow-sm p-5">
                                 <div class="flex items-center gap-2 text-blue-600 font-semibold mb-3"><i class="fas fa-location-arrow"></i> Real-Time Rider Location</div>
+                                <!-- MAP ONLY: clean map, no pills / no dark box / no legend - same as Customer -->
                                 <div class="map-wrap">
                                     <div id="delivery-map" class="w-full h-80 rounded-xl border border-gray-200"></div>
-                                    <div class="live-pill"><span id="liveDot" class="live-dot <?= $order['rider_name'] ? '' : 'waiting' ?>"></span><span id="liveText"><?= $order['rider_name'] ? 'Locating rider…' : 'Waiting for rider assignment' ?></span></div>
-                                    <div class="eta-pill" id="etaPill"><?= $order['rider_name'] ? 'Calculating route…' : 'No rider assigned yet — showing station to customer route' ?></div>
                                 </div>
                                 <div class="border rounded-xl p-4 bg-gray-50 mt-4">
                                     <div class="font-semibold text-gray-700 mb-1">Rider Information</div>
@@ -265,7 +327,7 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                                 <div class="space-y-3">
                                     <div><div class="text-xs text-gray-500 mb-1">Customer Name</div><div class="font-semibold text-gray-800"><?= htmlspecialchars($order['customer_name']) ?></div></div>
                                     <div><div class="text-xs text-gray-500 mb-1">Contact Number</div><div class="font-medium text-gray-700"><?= htmlspecialchars($order['customer_phone']) ?></div></div>
-                                    <div><div class="text-xs text-gray-500 mb-1">Delivery Address</div><div class="text-sm text-gray-700"><?= htmlspecialchars($order['customer_address']) ?></div></div>
+                                    <div><div class="text-xs text-gray-500 mb-1">Delivery Address</div><div class="text-sm text-gray-700"><?= htmlspecialchars($deliveryAddress) ?></div></div>
                                 </div>
                             </div>
                             <div class="bg-white border rounded-xl shadow-sm p-5">
@@ -394,11 +456,13 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
         });
     </script>
 
-    <!-- MAP ONLY -->
+    <!-- MAP ONLY: clean map - store + customer + rider live, no pills / no dark box / no legend / no blue line -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const orderNumber = "<?= htmlspecialchars($order['order_number']) ?>";
-            const customerAddress = <?= json_encode($order['customer_address'] ?? '') ?>;
+            const customerAddress = <?= json_encode($deliveryAddress) ?>;
+            const savedCustomerLat = <?= isset($order['customer_lat']) && $order['customer_lat'] !== null ? (float)$order['customer_lat'] : 'null' ?>;
+            const savedCustomerLng = <?= isset($order['customer_lng']) && $order['customer_lng'] !== null ? (float)$order['customer_lng'] : 'null' ?>;
             const hasRider = <?= $order['rider_name'] ? 'true' : 'false' ?>;
             const STATION = { lat: 13.9411, lng: 121.1628 };
             let customerPos = null, customerResolved = false, riderPos = null, riderMarker = null, routeControl = null, firstFit = true;
@@ -408,12 +472,15 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 10, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
             setTimeout(() => map.invalidateSize(), 500);
 
-            const stationIcon = L.divIcon({ className: '', html: '<div class="pin-station"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
-            const customerIcon = L.divIcon({ className: '', html: '<div class="pin-customer"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
-            const riderIcon = L.divIcon({ className: '', html: '<div class="pin-rider"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
+            // Same icons as Customer / Rider
+            const stationIcon = L.divIcon({ className: '', html: '<div class="station-pin"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
+            const customerIcon = L.divIcon({ className: '', html: '<div class="customer-pin"><i class="bi bi-house-fill"></i></div>', iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -15] });
+            const riderIcon = L.divIcon({ className: '', html: '<div class="rider-pulse"><div class="dot"><i class="bi bi-truck"></i></div></div>', iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
 
-            L.marker([STATION.lat, STATION.lng], { icon: stationIcon }).addTo(map).bindPopup(`<div style="text-align:center;min-width:150px;"><strong style="color:#2563eb;font-size:14px;">🏢 RCH Water Station</strong><br><small style="color:#6b7280;">Main Office & Warehouse</small></div>`);
-            const customerMarker = L.marker([STATION.lat, STATION.lng], { icon: customerIcon, draggable: true }).addTo(map).bindPopup(`<div style="text-align:center;min-width:180px;"><strong style="color:#16a34a;font-size:14px;">📍 Customer Location</strong><br><div style="margin-top:5px;padding:5px;background:#f3f4f6;border-radius:4px;"><small style="font-weight:600;"><?= htmlspecialchars($order['customer_name']) ?></small><br><small style="color:#6b7280;"><?= htmlspecialchars($order['customer_address']) ?></small></div><div style="margin-top:6px;"><small style="color:#2563eb;">Drag this pin to the exact house to fix it</small></div></div>`);
+            // 1) STORE - always visible
+            L.marker([STATION.lat, STATION.lng], { icon: stationIcon }).addTo(map).bindPopup(`<div style="text-align:center;min-width:150px;"><strong style="color:#2563eb;font-size:14px;">🏢 RCH Water Station</strong></div>`);
+            // 2) CUSTOMER - draggable so admin can fix exact house
+            const customerMarker = L.marker([STATION.lat, STATION.lng], { icon: customerIcon, draggable: true }).addTo(map).bindPopup(`<div style="text-align:center;min-width:180px;"><strong style="color:#16a34a;font-size:14px;">📍 Customer Location</strong><br><small style="color:#6b7280;"><?= htmlspecialchars($deliveryAddress) ?></small><br><small style="color:#2563eb;">Drag this pin to the exact house to fix it</small></div>`);
             customerMarker.setOpacity(0);
 
             // Drag to correct - saves to DB, next orders reuse it
@@ -425,75 +492,85 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
                     const fd = new FormData(); fd.append('action', 'save_customer_pin'); fd.append('order_number', orderNumber); fd.append('latitude', p.lat); fd.append('longitude', p.lng);
                     const res = await fetch('order_details.php', { method: 'POST', body: fd });
                     const d = await res.json();
-                    if (d.success) { customerPos = { lat: p.lat, lng: p.lng }; customerResolved = true; Swal.fire({ icon: 'success', title: 'Saved!', text: 'Next orders for this customer will use this exact pin.', confirmButtonColor: '#3b82f6' }); if (hasRider && riderPos) drawRoute(riderPos, customerPos, '#f59e0b', false); else drawRoute(STATION, customerPos, '#2563eb', true); }
+                    if (d.success) { customerPos = { lat: p.lat, lng: p.lng }; customerResolved = true; Swal.fire({ icon: 'success', title: 'Saved!', text: 'Next orders for this customer will use this exact pin.', confirmButtonColor: '#3b82f6' }); if (hasRider && riderPos) drawRoute(riderPos, customerPos); }
                     else Swal.fire({ icon: 'error', title: 'Error', text: d.message || 'Failed to save pin' });
                 } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: 'Real error: ' + e.message }); }
             });
 
             function samePoint(a, b) { if (!a || !b) return false; return Math.abs(a.lat - b.lat) < 0.0001 && Math.abs(a.lng - b.lng) < 0.0001; }
-            function drawRoute(from, to, color, dashed) {
-                if (!from || !to) return;
-                if (samePoint(from, to)) return;
+            // Route is ONLY rider -> customer. No station -> customer blue line.
+            function drawRoute(from, to) {
+                if (!from || !to || samePoint(from, to)) return;
                 if (routeControl) { map.removeControl(routeControl); routeControl = null; }
-                routeControl = L.Routing.control({ waypoints: [L.latLng(from.lat, from.lng), L.latLng(to.lat, to.lng)], lineOptions: { styles: [{ color: color, weight: 5, opacity: 0.9, dashArray: dashed ? '10,10' : null }] }, createMarker: function() { return null; }, addWaypoints: false, routeWhileDragging: false, show: false, fitSelectedRoutes: false }).addTo(map);
-                routeControl.on('routesfound', function(e) {
-                    const r = e.routes[0]; if ((r.summary.totalDistance / 1000) < 0.05) return;
-                    document.getElementById('etaPill').innerHTML = (hasRider && riderPos) ? `🏍 Rider is <b>${(r.summary.totalDistance / 1000).toFixed(1)} km</b> away • ETA <b>~${Math.max(1, Math.round(r.summary.totalTime / 60))} min</b>` : `📍 Station to customer: <b>${(r.summary.totalDistance / 1000).toFixed(1)} km</b> • ~${Math.max(1, Math.round(r.summary.totalTime / 60))} min`;
-                });
-                routeControl.on('routingerror', function() { if (!(hasRider && riderPos)) document.getElementById('etaPill').textContent = 'Route preview unavailable — map is still working'; });
+                routeControl = L.Routing.control({ waypoints: [L.latLng(from.lat, from.lng), L.latLng(to.lat, to.lng)], lineOptions: { styles: [{ color: '#f59e0b', weight: 5, opacity: 0.9 }] }, createMarker: () => null, addWaypoints: false, routeWhileDragging: false, show: false, fitSelectedRoutes: false }).addTo(map);
             }
             function applyCustomerPos(pos, source) {
                 if (!pos) return;
-                if (samePoint(pos, STATION) && source === 'geocoded') { console.warn('Geocode returned station, ignoring'); return; }
+                if (samePoint(pos, STATION) && source !== 'exact_pin') return;
                 customerPos = pos; customerResolved = true; customerMarker.setLatLng([pos.lat, pos.lng]); customerMarker.setOpacity(1);
-                if (hasRider && riderPos) drawRoute(riderPos, customerPos, '#f59e0b', false); else drawRoute(STATION, customerPos, '#2563eb', true);
+                // REMOVED: no station -> customer blue dashed line
+                if (hasRider && riderPos) drawRoute(riderPos, customerPos);
                 if (firstFit) { map.fitBounds(L.latLngBounds([L.latLng(STATION.lat, STATION.lng), L.latLng(customerPos.lat, customerPos.lng)]).pad(0.25)); firstFit = false; }
             }
+            // *** EXACT COPY of Customer/Rider geocode - same attempts, same order ***
             async function geocodeClientSide() {
                 if (!customerAddress) return false;
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(customerAddress + ', Philippines')}`, { headers: { 'Accept': 'application/json' } });
-                    const data = await res.json();
-                    if (data && data[0]) { applyCustomerPos({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }, 'geocoded'); return true; }
-                } catch (e) { console.warn('Client geocode failed', e); }
+                const full = customerAddress.trim();
+                const attempts = [];
+                attempts.push(full + ', Philippines');
+                const noHouseNo = full.replace(/^\s*\d+\s*,?\s*/, '');
+                if (noHouseNo && noHouseNo !== full) attempts.push(noHouseNo + ', Philippines');
+                const parts = full.split(',').map(s => s.trim()).filter(Boolean);
+                if (parts.length >= 3) {
+                    const barangayCity = parts.slice(-3).join(', ');
+                    if (!attempts.includes(barangayCity + ', Philippines')) attempts.push(barangayCity + ', Philippines');
+                }
+                if (parts.length >= 2) {
+                    const cityOnly = parts.slice(-2).join(', ');
+                    if (!attempts.includes(cityOnly + ', Philippines')) attempts.push(cityOnly + ', Philippines');
+                }
+                attempts.push('Lipa City, Batangas, Philippines');
+                for (const q of attempts) {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });
+                        const data = await res.json();
+                        if (data && data[0]) { applyCustomerPos({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }, 'geocoded'); return true; }
+                    } catch(e){ console.warn('Geocode failed for', q, e); }
+                    await new Promise(r => setTimeout(r, 300));
+                }
                 return false;
             }
             async function loadCustomer() {
+                // 1) Exact pin - instant
+                if (savedCustomerLat !== null && savedCustomerLng !== null && savedCustomerLat !== 0) {
+                    applyCustomerPos({ lat: savedCustomerLat, lng: savedCustomerLng }, 'exact_pin');
+                    return;
+                }
+                // 2) Server endpoint - exact pin or server geocode (same order address)
                 try {
                     const res = await fetch(`order_details.php?action=customer_location&order_number=${encodeURIComponent(orderNumber)}`);
                     const d = await res.json();
                     if (d.success) { applyCustomerPos({ lat: d.latitude, lng: d.longitude }, d.status || 'saved'); return; }
                 } catch (e) {}
+                // 3) Client geocode - same as Customer/Rider
                 const ok = await geocodeClientSide();
-                if (!ok) { document.getElementById('etaPill').textContent = 'Customer location not available — showing station'; if (firstFit) { map.setView([STATION.lat, STATION.lng], 13); firstFit = false; } }
+                if (!ok && firstFit) { map.setView([STATION.lat, STATION.lng], 13); firstFit = false; }
             }
             async function fetchRider() {
                 if (!hasRider) return;
                 try {
                     const res = await fetch(`order_details.php?action=rider_location&order_number=${encodeURIComponent(orderNumber)}`);
                     const d = await res.json();
-                    if (!d.success) { document.getElementById('liveText').textContent = 'Waiting for rider location…'; return; }
+                    if (!d.success) { return; }
                     riderPos = { lat: d.latitude, lng: d.longitude };
-                    document.getElementById('liveText').textContent = d.is_recent ? 'LIVE • Rider moving' : 'Last known location';
-                    document.getElementById('liveDot').classList.toggle('stale', !d.is_recent);
                     const el = document.getElementById('riderUpdated'); if (el && d.timestamp) el.textContent = 'Updated: ' + new Date(d.timestamp.replace(' ', 'T')).toLocaleTimeString();
                     if (!riderMarker) {
-                        riderMarker = L.marker([riderPos.lat, riderPos.lng], { icon: riderIcon }).addTo(map).bindPopup(`<div style="text-align:center;min-width:160px;"><strong style="color:#f59e0b;font-size:14px;">🏍 Rider</strong><br><div style="margin-top:5px;padding:5px;background:#fef3c7;border-radius:4px;"><small style="font-weight:600;"><?= htmlspecialchars($order['rider_name'] ?? 'Rider') ?></small><br><small style="color:#6b7280;"><?= htmlspecialchars($order['rider_phone'] ?? '') ?></small></div></div>`);
+                        riderMarker = L.marker([riderPos.lat, riderPos.lng], { icon: riderIcon, zIndexOffset: 1000 }).addTo(map).bindPopup(`<div style="text-align:center;min-width:160px;"><strong style="color:#f59e0b;font-size:14px;">🏍 Rider</strong><br><small style="font-weight:600;"><?= htmlspecialchars($order['rider_name'] ?? 'Rider') ?></small><br><small style="color:#6b7280;"><?= htmlspecialchars($order['rider_phone'] ?? '') ?></small></div>`);
                         if (customerResolved) map.fitBounds(L.latLngBounds([L.latLng(riderPos.lat, riderPos.lng), L.latLng(customerPos.lat, customerPos.lng)]).pad(0.25));
                     } else { const from = riderMarker.getLatLng(), to = L.latLng(riderPos.lat, riderPos.lng); let i = 0; const anim = setInterval(() => { i++; riderMarker.setLatLng([from.lat + (to.lat - from.lat) * i / 20, from.lng + (to.lng - from.lng) * i / 20]); if (i >= 20) clearInterval(anim); }, 40); }
-                    if (customerResolved) drawRoute(riderPos, customerPos, '#f59e0b', false);
+                    if (customerResolved) drawRoute(riderPos, customerPos);
                 } catch (e) { console.error(e); }
             }
-            const legend = L.control({ position: 'bottomright' });
-            legend.onAdd = function() {
-                const div = L.DomUtil.create('div', 'map-legend'); div.style.cssText = 'background:white;padding:10px 12px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-size:12px;';
-                let html = '<div style="font-weight:600;margin-bottom:8px;color:#374151;font-size:13px;">📍 Route Info</div>';
-                if (hasRider) { html += `<div style="display:flex;align-items:center;margin-bottom:5px;"><div style="width:20px;height:3px;background:#3b82f6;margin-right:8px;opacity:.6;border:1px dashed #3b82f6;"></div><span style="color:#6b7280;">Completed</span></div><div style="display:flex;align-items:center;"><div style="width:20px;height:4px;background:#f59e0b;margin-right:8px;"></div><span style="color:#6b7280;">Active Route</span></div>`; }
-                else { html += `<div style="display:flex;align-items:center;"><div style="width:20px;height:3px;background:#9ca3af;margin-right:8px;opacity:.5;border:1px dashed #9ca3af;"></div><span style="color:#6b7280;">Planned</span></div>`; }
-                div.innerHTML = html; return div;
-            };
-            legend.addTo(map);
-            L.control.scale({ imperial: false, metric: true }).addTo(map);
             loadCustomer();
             if (hasRider) { fetchRider(); setInterval(fetchRider, 5000); }
         });
