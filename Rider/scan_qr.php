@@ -672,7 +672,7 @@ function completeDelivery() {
 }
 
 function returnToDashboard() {
-    window.location.href = 'rider_dashboard.php';
+    window.location.href = 'dashboard.php';
 }
 
 // Initialize scanner on page load
