@@ -114,7 +114,6 @@ $db = $database->getConnect();
                                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 oninput="searchTable()">
 
-
                         </div>
                         <button
                             id="addGallonBtn"
@@ -161,7 +160,6 @@ $db = $database->getConnect();
 
                         </div>
 
-
                         <!-- Table with Scrollable Body -->
                         <div class="pb-6 flex flex-col overflow-hidden flex-1">
                             <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col flex-1">
@@ -170,12 +168,12 @@ $db = $database->getConnect();
                                     <table id="gallonTable" class="min-w-full text-sm text-left text-gray-700">
                                         <thead class="bg-blue-50 border-b border-gray-200 sticky top-0 z-10">
                                             <tr>
-                                                <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[80px]" onclick="sortTable(0)" title="Gallon ID">Gallon ID ⬍</th>
-                                                <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[110px]" onclick="sortTable(1)" title="Gallon Type">Gallon Type ⬍</th>
-                                                <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-[220px]" onclick="sortTable(2)" title="Owner">Current Owner ⬍</th>
-                                                <th class="px-6 py-4 font-semibold text-center min-w-[120px]" title="Code Value">Code Value</th>
-                                                <th class="px-6 py-4 font-semibold text-center min-w-[100px]" title="Status">Status</th>
-                                                <th class="px-6 py-4 font-semibold text-center min-w-[120px]" title="Actions">Actions</th>
+                                                <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-" onclick="sortTable(0)" title="Gallon ID">Gallon ID ⬍</th>
+                                                <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-" onclick="sortTable(1)" title="Gallon Type">Gallon Type ⬍</th>
+                                                <th class="px-6 py-4 font-semibold text-center cursor-pointer min-w-" onclick="sortTable(2)" title="Owner">Current Owner ⬍</th>
+                                                <th class="px-6 py-4 font-semibold text-center min-w-" title="Code Value">Code Value</th>
+                                                <th class="px-6 py-4 font-semibold text-center min-w-" title="Status">Status</th>
+                                                <th class="px-6 py-4 font-semibold text-center min-w-" title="Actions">Actions</th>
                                             </tr>   
                                         </thead>
 
@@ -222,7 +220,6 @@ $db = $database->getConnect();
                                                     $ownerName = htmlspecialchars($row['Owner'] ?? 'N/A');
                                                     $gallonType = htmlspecialchars($row['Gallon Type'] ?? 'N/A');
 
-
                                                     echo '<td class="px-6 py-4 text-center">';
                                                     echo "<i class=\"fas fa-eye mx-1 text-blue-600 hover:scale-125 transition-transform\" title=\"View\" style=\"cursor:pointer;\" onclick=\"viewQR('{$ownerName}', '{$codeValue}', '{$qrImage}', '{$gallonType}')\"></i>";
                                                     echo "<i class=\"fas fa-edit mx-1 text-orange-500 hover:scale-125 transition-transform\" title=\"Edit\" style=\"cursor:pointer;\" onclick=\"editGallon({$gallonID})\"></i>";
@@ -241,9 +238,26 @@ $db = $database->getConnect();
                     </div>
                 </div>
             </div>
-            <script src="..Admin/includes/admin_toast.js"></script>
+            <script src="../Admin/includes/admin_toast.js"></script>
 
             <script>
+                // FIX: same helper as Admin order_details - never hide server error behind "Request failed"
+                // If PHP returns HTML / warning / 500 instead of JSON, this throws with the REAL response text.
+                async function fetchJson(url, options) {
+                    const res = await fetch(url, options);
+                    const text = await res.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Non-JSON from ' + url + ' (HTTP ' + res.status + '):', text);
+                        throw new Error('Server returned HTTP ' + res.status + ' - not JSON. Response: ' + text.replace(/<[^>]+>/g, ' ').trim().substring(0, 500));
+                    }
+                }
+                function showRequestError(err) {
+                    console.error(err);
+                    Swal.fire({ icon: 'error', title: 'Error', html: '<pre style="text-align:left;white-space:pre-wrap;word-break:break-word;font-size:12px;max-height:300px;overflow:auto;">' + String(err && err.message ? err.message : err).replace(/</g, '&lt;') + '</pre>', confirmButtonColor: '#dc2626' });
+                }
+
                 // for sorting table
                 function sortTable(columnIndex) {
                     const table = document.getElementById("gallonTable");
@@ -313,7 +327,6 @@ $db = $database->getConnect();
                     document.getElementById("allTab").click();
                 });
 
-
                 // Status styling
                 document.addEventListener("DOMContentLoaded", function() {
                     const statusCells = document.querySelectorAll(".status-text");
@@ -344,7 +357,7 @@ $db = $database->getConnect();
                             if (typeof Swal !== 'undefined') {
                                 addGallon();
                             } else {
-                                console.error("[v0] Swal is not defined!");
+                                console.error(" Swal is not defined!");
                                 alert('Error: SweetAlert2 library not loaded');
                             }
                         });
@@ -352,7 +365,6 @@ $db = $database->getConnect();
                         console.error("[ addGallonBtn not found");
                     }
                 });
-
 
                 function addGallon() {
                     Swal.fire({
@@ -504,18 +516,11 @@ $db = $database->getConnect();
                                 quantity
                             } = result.value;
 
-                            fetch('add_gallon.php', {
+                            fetchJson('add_gallon.php', {
                                     method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        item_id,
-                                        gallon_type,
-                                        quantity
-                                    })
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ item_id, gallon_type, quantity })
                                 })
-                                .then(res => res.json())
                                 .then(data => {
                                     if (data.success) {
                                         Swal.fire({
@@ -534,15 +539,7 @@ $db = $database->getConnect();
                                         });
                                     }
                                 })
-                                .catch(err => {
-                                    console.error(err);
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error',
-                                        text: 'Request failed. Please check your connection.',
-                                        confirmButtonColor: '#dc2626'
-                                    });
-                                });
+                                .catch(showRequestError);
                         }
                     });
                 }
@@ -570,7 +567,6 @@ $db = $database->getConnect();
                             }
                         }
 
-
                         rows[i].style.display = match ? "" : "none";
                     }
                 }
@@ -586,16 +582,11 @@ $db = $database->getConnect();
                         confirmButtonText: 'Yes, generate it'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            fetch('generate_qr.php', {
+                            fetchJson('generate_qr.php', {
                                     method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        'gallonID': gallonID
-                                    })
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ 'gallonID': gallonID })
                                 })
-                                .then(res => res.json())
                                 .then(data => {
                                     if (data.success) {
                                         Swal.fire({
@@ -614,15 +605,11 @@ $db = $database->getConnect();
                                             location.reload();
                                         });
 
-
                                     } else {
                                         Swal.fire('Error', data.message || 'Unknown error', 'error');
                                     }
                                 })
-                                .catch(err => {
-                                    console.error(err);
-                                    Swal.fire('Error', 'Request failed. Check your connection or console.', 'error');
-                                });
+                                .catch(showRequestError);
                         }
                     });
                 }
@@ -662,9 +649,10 @@ $db = $database->getConnect();
 
                 function editGallon(id) {
                     // Fetch current gallon status + code_value
-                    fetch(`get_gallon_status.php?id=${id}`)
-                        .then(res => res.json())
+                    fetchJson(`get_gallon_status.php?id=${id}`)
                         .then(gallonData => {
+                            // FIX: guard - old code crashed here if server returned error shape
+                            if (!gallonData || !gallonData.data) throw new Error(gallonData && gallonData.message ? gallonData.message : 'get_gallon_status.php returned no data');
                             const currentStatus = gallonData.data.status;
                             const hasCode = gallonData.data.code_value && gallonData.data.code_value.trim() !== "";
 
@@ -791,17 +779,11 @@ $db = $database->getConnect();
                                 }
 
                                 // Send update request
-                                fetch("update_changes.php", {
+                                fetchJson("update_changes.php", {
                                         method: "POST",
-                                        headers: {
-                                            "Content-Type": "application/json"
-                                        },
-                                        body: JSON.stringify({
-                                            id: id,
-                                            status: newStatus
-                                        })
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ id: id, status: newStatus })
                                     })
-                                    .then(res => res.json())
                                     .then(data => {
                                         if (data.success) {
                                             Swal.fire({
@@ -819,11 +801,12 @@ $db = $database->getConnect();
                                             });
                                         }
                                     })
+                                    .catch(showRequestError)
                                     .finally(() => modal.remove());
                             });
-                        });
+                        })
+                        .catch(showRequestError);
                 }
-
 
                 // DELETE FUNCTION 
                 function deleteGallon(id) {
@@ -882,14 +865,11 @@ $db = $database->getConnect();
                         }
                     }).then(result => {
                         if (result.isConfirmed) {
-                            fetch('delete_gallon.php', {
+                            fetchJson('delete_gallon.php', {
                                     method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
+                                    headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify(result.value)
                                 })
-                                .then(res => res.json())
                                 .then(data => {
                                     if (data.success) {
                                         Swal.fire('Deleted!', 'Gallon record has been removed.', 'success')
@@ -898,7 +878,7 @@ $db = $database->getConnect();
                                         Swal.fire('Error', data.message || 'Failed to delete record.', 'error');
                                     }
                                 })
-                                .catch(() => Swal.fire('Error', 'Request failed.', 'error'));
+                                .catch(showRequestError);
                         }
                     });
                 }
