@@ -81,7 +81,7 @@ if (isset($_POST['resend'])) {
     $reg['otp'] = rand(100000, 999999);
     $reg['otp_sent_at'] = time();
 
-    $api_token = "";  // Replace with your actual sms API token
+    $api_token = "SMS API KEY";  // Replace with your actual sms API token
 
     $data = [
         'api_token'    => $api_token,

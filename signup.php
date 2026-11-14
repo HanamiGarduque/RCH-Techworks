@@ -6,6 +6,7 @@
     <title>Sign Up - RCH Water Refilling System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <style>
@@ -106,6 +107,11 @@
             .address-grid {
                 grid-template-columns: 1fr;
             }
+        }
+
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
         }
     </style>
 </head>
@@ -224,30 +230,42 @@
                             <p class="text-xs text-gray-500 mt-1">4-digit postal code</p>
                         </div>
 
-                        <div class="relative">
+                        <div>
                             <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
                                 Password <span class="text-red-500">*</span>
                             </label>
 
-                            <input type="password" id="password" name="password"
-                                placeholder="Enter your password" maxlength="128"
-                                class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
-                                required>
+                            <div class="relative">
+                                <input type="password" id="password" name="password"
+                                    placeholder="Enter your password" maxlength="128"
+                                    class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                                    required>
+                                <button type="button" onclick="togglePassword('password', this)"
+                                    class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700">
+                                    <i class="bi bi-eye text-lg"></i>
+                                </button>
+                            </div>
 
                             <p id="passwordReq" class="text-sm text-red-500 mt-2">
                                 Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character
                             </p>
                         </div>
 
-                        <div class="relative">
+                        <div>
                             <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
                                 Confirm Password <span class="text-red-500">*</span>
                             </label>
 
-                            <input type="password" id="confirmPassword" name="confirmPassword"
-                                placeholder="Re-enter your password" maxlength="128"
-                                class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
-                                required>
+                            <div class="relative">
+                                <input type="password" id="confirmPassword" name="confirmPassword"
+                                    placeholder="Re-enter your password" maxlength="128"
+                                    class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
+                                    required>
+                                <button type="button" onclick="togglePassword('confirmPassword', this)"
+                                    class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700">
+                                    <i class="bi bi-eye text-lg"></i>
+                                </button>
+                            </div>
 
                             <p id="confirmPasswordReq" class="text-sm mt-2"></p>
                         </div>
@@ -475,6 +493,18 @@ function showTab(tabId) {
 
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
+        }
+
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
         }
 
         function closeModal(id) {

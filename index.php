@@ -424,7 +424,7 @@
             sendBtn.disabled = true;
             sendBtn.textContent = 'Sending...';
 
-            fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+            fetch("/Tin_RCH-Techworks/forgot_pass_otp_backend.php", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
@@ -499,7 +499,7 @@
             formData.append('action', 'send_otp');
             formData.append('phone', phone);
 
-            fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+            fetch("/Tin_RCH-Techworks/forgot_pass_otp_backend.php", {
                     method: 'POST',
                     body: formData
                 })
@@ -546,7 +546,7 @@
             formData.append('action', 'verify_otp');
             formData.append('otp', otp);
 
-            fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+            fetch("/Tin_RCH-Techworks/forgot_pass_otp_backend.php", {
                     method: 'POST',
                     body: formData
                 })
@@ -697,7 +697,7 @@
             formData.append('password', newPassword);
             formData.append('confirmPassword', confirmPassword);
 
-            fetch("/Tin's_RCH-Techworks/forgot_pass_otp_backend.php", {
+            fetch("/Tin_RCH-Techworks/forgot_pass_otp_backend.php", {
                     method: 'POST',
                     body: formData
                 })

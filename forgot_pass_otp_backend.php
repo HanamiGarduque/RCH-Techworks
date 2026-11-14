@@ -11,7 +11,7 @@ require_once __DIR__ . '/Database/db_connection.php';
 $database = new Database();
 $db = $database->getConnect();
 
-$API_TOKEN = ""; // Replace with your actual sms API token
+$API_TOKEN = "SMS API KEY"; // Replace with your actual sms API token
 
 // Function to send SMS via iProg API (same as signup)
 function sendSMS($phone, $message, $api_token)

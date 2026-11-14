@@ -6,7 +6,7 @@ function sendEmail($toEmail, $toName, $subject, $htmlContent, $attachmentPath = 
 {
 
 
-    $apiKey = "YOUR_BREVO_API_KEY_HERE"; //Replace with your actual Brevo API key
+    $apiKey = "BREVO API KEY"; //Replace with your actual Brevo API key
 
     // Brevo endpoint
     $url = "https://api.brevo.com/v3/smtp/email";
