@@ -105,7 +105,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     ];
 
     // Send OTP using iProg SMS API
-    $api_token = ""; // Replace with your actual API token
+    $api_token = "ba9958e785ac42c22bda17b617158dac68c24165"; // Replace with your actual API token
 
     $data = [
         'api_token'    => $api_token,

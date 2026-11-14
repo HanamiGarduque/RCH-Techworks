@@ -7,6 +7,7 @@
     <title>Login - RCH Water Refilling System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-Ho1GHBBl0sZpOmgQ5Zq8JhLPWqG4k5wbXbw6PdxOTYH/jdTPO5qWix5Dp5S8aC0K0xD7aUSh2F4Q3/H5zW9m1A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -103,20 +104,21 @@
                             required>
 
                     </div>
-
-                    <div class="relative">
+                    
+                    <div>
                         <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
                             Password
                         </label>
 
+                    <div class="relative">
                         <input type="password" id="password" name="password" placeholder="Enter your password"
                             class="input-field w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-300 transition-all"
                             required>
 
-                        <!-- Eye icon inside input -->
-                        <i class="fa-solid fa-eye absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+                        <i class="bi bi-eye absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
                             onclick="togglePassword('password', this)"></i>
                     </div>
+                </div>
 
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
@@ -356,12 +358,10 @@
             const input = document.getElementById(inputId);
             if (input.type === "password") {
                 input.type = "text";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
+                icon.classList.replace("bi-eye", "bi-eye-slash");
             } else {
                 input.type = "password";
-                icon.classList.remove("fa-eye-slash");
-                icon.classList.add("fa-eye");
+                icon.classList.replace("bi-eye-slash", "bi-eye");
             }
         }
 
