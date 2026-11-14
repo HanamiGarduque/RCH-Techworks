@@ -778,7 +778,36 @@
              if (e.key === 'Escape') closeDelayModal();
          });
      </script>
+<script>
+// RIDER ONLY: send GPS every 5s to update_rider_location.php
+(function(){
+    const orderId = <?= (int)($order['refill_id'] ?? $_GET['order_id'] ?? 0) ?>;
+    const status = "<?= strtolower($order['order_status'] ?? '') ?>";
+    const active = ['assigned','pickup_in_progress','picked_up','on_delivery'].includes(status);
+    if (!orderId || !active) return;
+    if (!('geolocation' in navigator)) return;
 
+    function send(lat, lng, accuracy){
+        fetch('../Location/update_rider_location.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: orderId, latitude: lat, longitude: lng, accuracy: accuracy || 0 })
+        }).catch(e=>console.error(e));
+    }
+
+    const opts = { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 };
+
+    navigator.geolocation.watchPosition(pos => {
+        send(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+    }, err => console.error(err), opts);
+
+    setInterval(() => {
+        navigator.geolocation.getCurrentPosition(pos => {
+            send(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+        }, ()=>{}, opts);
+    }, 5000);
+})();
+</script>
      
  </body>
 
