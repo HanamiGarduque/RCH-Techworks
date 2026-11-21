@@ -34,12 +34,14 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
+            z-index: 1;
         }
 
         /* SCROLL AREA - THIS IS WHAT SCROLLS INSIDE */
         .scroll-inside {
             flex: 1 1 auto;
-            min-height: 0; /* <-- key: lets flex child actually scroll instead of stretching */
+            min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
@@ -58,13 +60,20 @@
         .timeline-item.completed::before { background-color: #10b981; }
         .timeline-connector { position: absolute; left: 15px; top: 24px; width: 2px; height: calc(100% + 24px); background-color: #e5e7eb; }
         .timeline-item.completed .timeline-connector { background-color: #10b981; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 50; align-items: center; justify-content: center; }
+
+        /* ===== FIX: DELAY MODAL MUST BE ABOVE LEAFLET MAP ===== */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
         .modal-overlay.active { display: flex; }
+        .modal-box { position: relative; z-index: 10000; width: 100%; }
+        #map { position: relative; z-index: 1; }
+        #map .leaflet-pane { z-index: 1; }
+        #map .leaflet-top, #map .leaflet-bottom { z-index: 10; }
+        #map .leaflet-control { z-index: 10; }
+
         .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 
-        /* ===== MAP MARKER STYLES - same as dashboard.php ===== */
         .leaflet-routing-container { display: none !important; }
         .rider-pulse { position: relative; width: 36px; height: 36px; }
         .rider-pulse::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: rgba(16, 185, 129, 0.35); animation: riderPulse 1.8s ease-out infinite; }
@@ -76,10 +85,8 @@
 </head>
 <body class="bg-white min-h-screen flex justify-center items-center relative">
 
-    <!-- Fixed-width container wrapper - SAME AS dashboard.php: 375 x 750, never grows -->
     <div class="phone-shell bg-white mx-auto relative rounded-3xl overflow-hidden border shadow-lg">
 
-        <!-- Header - SAME FORMAT AS dashboard.php - stays fixed -->
         <div class="bg-gradient-to-br from-blue-400 to-blue-600 text-white sticky top-0 z-50 w-full px-4 py-3 shrink-0">
             <div class="flex items-center justify-between mb-1">
                 <button onclick="history.back()" class="text-xl hover:bg-blue-500 rounded-lg transition"><i class="bi bi-chevron-left"></i></button>
@@ -91,10 +98,8 @@
             </div>
         </div>
 
-        <!-- SCROLLABLE CONTENT - only this part scrolls inside the 750px frame -->
         <div class="scroll-inside custom-scrollbar">
 
-            <!-- MAP SECTION - SAME FORMAT AS dashboard.php -->
             <div class="px-5 pt-4 pb-5">
                 <h3 class="text-md font-semibold text-blue-600 mb-3 flex items-center gap-2"><i class="bi bi-geo-alt-fill text-blue-600"></i> Live Location</h3>
                 <div class="relative mb-4">
@@ -102,7 +107,6 @@
                 </div>
             </div>
 
-            <!-- DELIVERY INFO CARD -->
             <div class="px-5 pb-5">
                 <div class="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-4">
                     <div class="grid grid-cols-2 gap-4">
@@ -112,7 +116,6 @@
                 </div>
             </div>
 
-            <!-- ADDRESS SECTION -->
             <div class="px-5 pb-5">
                 <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex items-start gap-3">
@@ -126,13 +129,11 @@
                 </div>
             </div>
 
-            <!-- PROGRESS TIMELINE -->
             <div class="px-5 pb-5">
                 <h3 class="text-md font-semibold text-blue-600 mb-4 flex items-center gap-2"><i class="bi bi-arrow-repeat text-blue-600"></i> Delivery Progress</h3>
                 <div class="relative"><div id="timeline-container"></div></div>
             </div>
 
-            <!-- ITEMS CARD -->
             <div class="px-5 pb-5">
                 <h3 class="text-md font-semibold text-blue-600 mb-3 flex items-center gap-2"><i class="bi bi-box2 text-blue-600"></i> Order Items</h3>
                 <div id="items-list" class="space-y-4"></div>
@@ -143,13 +144,11 @@
             <div class="pb-5"></div>
         </div>
 
-        <!-- FIXED ACTION BUTTONS - stays fixed at bottom of the 750px frame -->
         <div class="bg-white border-t border-gray-200 px-5 py-4 shrink-0 shadow-2xl"><div id="action-buttons" class="space-y-3"></div></div>
     </div>
 
-    <!-- DELAY NOTE MODAL -->
     <div id="delay-modal" class="modal-overlay">
-        <div class="bg-white rounded-2xl p-6 w-11/12 max-w-sm max-h-96 flex flex-col">
+        <div class="modal-box bg-white rounded-2xl p-6 w-11/12 max-w-sm max-h-96 flex flex-col">
             <div class="flex items-center justify-between mb-4"><h3 class="text-xl font-bold text-gray-900">Reason for Delay</h3><button onclick="closeDelayModal()" class="text-gray-400 hover:text-gray-600"><i class="bi bi-x-lg text-xl"></i></button></div>
             <textarea id="delay-reason" placeholder="Please enter the reason for delay..." class="flex-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 resize-none mb-4"></textarea>
             <div class="flex gap-3">
@@ -168,10 +167,9 @@
         let refillId = null;
         let delayAction = null;
 
-        // ---- MAP STATE ----
         let map = null, riderMarker = null, customerMarker = null, routeControl = null;
         let riderPos = null, riderPosValid = false, customerPos = null, customerResolved = false, firstFitDone = false;
-        const STATION = { lat: 13.9411, lng: 121.1628 }; // RCH Lipa
+        const STATION = { lat: 13.9411, lng: 121.1628 };
 
         const STATUS_CONFIG = {
             pending: { step: 1, color: "bg-gray-500", text: "Pending", icon: "bi-clock" },
@@ -185,7 +183,6 @@
             cancelled: { step: -1, color: "bg-gray-700", text: "Cancelled", icon: "bi-x-circle" }
         };
 
-        // ---------- MAP - dashboard.php icons ----------
         const riderIcon = L.divIcon({ html: '<div class="rider-pulse"><div class="dot"><i class="bi bi-truck"></i></div></div>', className: '', iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
         const customerIcon = L.divIcon({ html: '<div class="customer-pin"><i class="bi bi-house-fill"></i></div>', className: '', iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -15] });
 
@@ -298,7 +295,6 @@
             drawRoute(); fitBoth();
         }
 
-        // ---------- RIDER GPS ----------
         function startRiderGPS() {
             if (!('geolocation' in navigator)) { return; }
             const active = ['assigned','pickup_in_progress','picked_up','on_delivery'].includes((currentOrder.order_status || '').toLowerCase());
@@ -326,7 +322,6 @@
             }, 5000);
         }
 
-        // ---------- ORDER DATA ----------
         function fetchOrderData() {
             fetch(`order_details_backend.php?order_number=${orderNumber}`)
                 .then(res => res.json())
@@ -398,8 +393,8 @@
             } else if (status === 'pickup_delayed') {
                 html = `<button onclick="requestReschedule('pickup')" class="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition flex items-center justify-center gap-2 shadow-lg"><i class="bi bi-calendar-event"></i> Request Reschedule from Admin</button>`;
             } else if (status === 'picked_up') {
-                const canStartDelivery = canShowStartDeliveryButton();
-                html = `<button onclick="startDelivery()" ${!canStartDelivery ? 'disabled' : ''} class="w-full py-3 ${canStartDelivery ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'} text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-lg"><i class="bi bi-truck"></i> Start Delivery</button>${!canStartDelivery ? '<p class="text-xs text-gray-600 text-center mt-2">Available 30 minutes before delivery time</p>' : ''}`;
+                // FIXED: No more 30-minute lock - Start Delivery always enabled for testing
+                html = `<button onclick="startDelivery()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-lg"><i class="bi bi-truck"></i> Start Delivery</button>`;
             } else if (status === 'on_delivery') {
                 html = `<button onclick="goToQRScanner()" class="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition flex items-center justify-center gap-2 shadow-lg mb-2"><i class="bi bi-check-lg"></i> Complete Delivery</button><button onclick="openDelayModal('delivery')" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition flex items-center justify-center gap-2 shadow-lg"><i class="bi bi-exclamation-circle"></i> Delay</button>`;
             } else if (status === 'delivery_delayed') {
@@ -410,26 +405,31 @@
             buttonsEl.innerHTML = html;
         }
         function requestReschedule(type = 'pickup') {
-            const actionType = type === 'delivery' ? 'delivery' : 'pickup';
-            const actionText = type === 'delivery' ? 'delivery delay' : 'pickup delay';
-            if (!confirm(`Send reschedule request to admin? This will notify the admin about the ${actionText}.`)) return;
-            const btn = event.target.closest('button');
-            if (btn) { btn.disabled = true; btn.innerHTML = '<div class="loading-spinner"></div> Sending...'; }
-            const formData = new FormData();
-            formData.append('order_number', currentOrder.order_number);
-            formData.append('refill_id', currentOrder.refill_id);
-            formData.append('delay_reason', currentOrder.delay_reason || `${actionType.charAt(0).toUpperCase() + actionType.slice(1)} delayed - reschedule requested`);
-            formData.append('delay_type', actionType);
-            fetch('request_reschedule.php', { method: 'POST', body: formData })
-                .then(res => res.json())
-                .then(data => { if (data.success) alert('Reschedule request sent to admin successfully!'); else alert(data.error || 'Failed to send reschedule request'); populateActionButtons(); })
-                .catch(err => { console.error("Reschedule request error:", err); alert('Error sending reschedule request'); populateActionButtons(); });
-        }
-        function goToQRScanner() {
-            const lat = customerPos ? customerPos.lat : (currentOrder.customer_lat ?? '');
-            const lng = customerPos ? customerPos.lng : (currentOrder.customer_lng ?? '');
-            window.location.href = `scan_qr.php?refill_id=${refillId}&customer=${encodeURIComponent(currentOrder.customer_name)}&lat=${lat}&lng=${lng}`;
-        }
+    const actionType = type === 'delivery' ? 'delivery' : 'pickup';
+    const actionText = type === 'delivery' ? 'delivery delay' : 'pickup delay';
+    if (!confirm(`Send reschedule request to admin? This will notify the admin about the ${actionText}.`)) return;
+    const btn = event.target.closest('button');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<div class="loading-spinner"></div> Sending...'; }
+    const formData = new FormData();
+    formData.append('order_number', currentOrder.order_number);
+    formData.append('refill_id', currentOrder.refill_id);
+    formData.append('delay_reason', currentOrder.delay_reason || `${actionType.charAt(0).toUpperCase() + actionType.slice(1)} delayed - reschedule requested`);
+    formData.append('delay_type', actionType);
+    fetch('request_schedule.php', { method: 'POST', body: formData })
+        .then(async res => {
+            const text = await res.text();
+            console.log('Reschedule raw:', text);
+            try { return JSON.parse(text); }
+            catch(e) { throw new Error('Server returned non-JSON: ' + text.substring(0, 300)); }
+        })
+        .then(data => { if (data.success) alert('Reschedule request sent to admin successfully!'); else alert(data.error || 'Failed to send reschedule request'); populateActionButtons(); })
+        .catch(err => { console.error(err); alert('Error: ' + err.message); populateActionButtons(); });
+}
+function goToQRScanner() {
+    const lat = customerPos ? customerPos.lat : (currentOrder.customer_lat ?? '');
+    const lng = customerPos ? customerPos.lng : (currentOrder.customer_lng ?? '');
+    window.location.href = `scan_qr.php?refill_id=${refillId}&order_number=${encodeURIComponent(currentOrder.order_number)}&customer=${encodeURIComponent(currentOrder.customer_name)}&lat=${lat}&lng=${lng}`;
+}
         function populateTimeline() {
             const currentStatus = currentOrder.order_status;
             const steps = [
@@ -450,10 +450,8 @@
             document.getElementById("timeline-container").innerHTML = html;
         }
         function canShowStartDeliveryButton() {
-            const now = new Date();
-            const deliveryTime = new Date(currentOrder.delivery_datetime);
-            const thirtyMinutesBefore = new Date(deliveryTime.getTime() - 30 * 60000);
-            return now >= thirtyMinutesBefore;
+            // FIXED: 30-minute lock removed for testing - always allow Start Delivery
+            return true;
         }
         function updateOrderStatus(newStatus, delayNote = null) {
             if (!refillId) { alert('Error: Refill ID not found'); return; }
@@ -474,7 +472,7 @@
         function startPickup() { if (confirm('Start pickup for this order?')) updateOrderStatus('pickup_in_progress'); }
         function markPickedUp() { if (confirm('Mark order as picked up?')) updateOrderStatus('picked_up'); }
         function startDelivery() {
-            if (!canShowStartDeliveryButton()) { alert('Cannot start delivery yet. Available 30 minutes before delivery time.'); return; }
+            // FIXED: No time check - Start Delivery works anytime for testing
             if (confirm('Start delivery for this order?')) updateOrderStatus('on_delivery');
         }
         function completeDelivery() { if (confirm('Mark order as delivered?')) updateOrderStatus('delivered'); }

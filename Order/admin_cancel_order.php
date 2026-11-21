@@ -18,10 +18,10 @@ $data = json_decode(file_get_contents("php://input"), true);
 $orderNumber = $data['order_number'] ?? null;
 $reason = $data['reason'] ?? null;
 
-// Helper: discard ANY stray output (email echoes, warnings) and send clean JSON only
+// Helper: discard ALL stray output (email echoes, warnings) and send clean JSON only
 function sendJson(array $payload) {
-    // Throw away everything buffered so far - e.g. "<b>Email send error...</b>"
-    if (ob_get_level() > 0) ob_clean();
+    // Clear EVERY output buffer level, not just the top one
+    while (ob_get_level() > 0) { ob_end_clean(); }
     echo json_encode($payload);
     exit;
 }
@@ -79,19 +79,11 @@ try {
     $notificationLink = "Customer/order_details.php?order_number=" . $orderNumber;
     createNotification($db, $order['user_id'], $notificationTitle, $notificationMessage, $notificationLink);
 
-    // Send email to customer
-    // FIX: email must NEVER break JSON or roll back the cancel.
-    // Buffer + swallow its output, and catch its exception. If Brevo fails, order is still cancelled.
+    // Send email to customer - NEVER let it break JSON or roll back the cancel.
+    // sendEmail() now returns false silently instead of echoing, so this is safe.
     try {
-        ob_start();
         notifyCustomerDeliveryCancelled($order['email'], $order['name'], $orderNumber, $reason);
-        $emailOutput = ob_get_clean();
-        if ($emailOutput) {
-            // Log it for you to see, don't show it to the browser
-            error_log('Cancel-order email output for ' . $orderNumber . ': ' . $emailOutput);
-        }
     } catch (Throwable $emailErr) {
-        if (ob_get_level() > 0) ob_end_clean();
         error_log('Cancel-order email failed for ' . $orderNumber . ': ' . $emailErr->getMessage());
         // Do NOT roll back - cancellation already succeeded
     }

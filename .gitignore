@@ -1,2 +1,9 @@
-# 🧱 Composer dependencies
+# Composer dependencies
 /vendor/
+
+# Local env - NEVER commit, contains Brevo API key
+.env
+
+# Logs / debug
+*.log
+session_debug.log

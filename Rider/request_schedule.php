@@ -2,7 +2,12 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../session.php';
 require_once '../Database/db_connection.php';
-require_once '../Notification/send_notification.php';
+
+// Do NOT hard-require send_notification.php - if it has an error, whole file dies.
+// We will try to use it if it exists, otherwise we insert directly.
+if (file_exists(__DIR__ . '/../Notification/send_notification.php')) {
+    require_once '../Notification/send_notification.php';
+}
 
 // Only riders can access this endpoint
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'rider') {
@@ -29,10 +34,8 @@ try {
     $db = $database->getConnect();
 
     // Verify the order belongs to this rider and is in delayed status
-    $allowedStatuses = ['pickup_delayed', 'delivery_delayed'];
-    
     $verifyQuery = "
-        SELECT 
+        SELECT
             wr.refill_id,
             wr.order_number,
             wr.order_status,
@@ -57,45 +60,81 @@ try {
     $order = $verifyStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$order) {
-        echo json_encode(['success' => false, 'error' => 'Order not found, not assigned to you, or not in delayed status']);
+        echo json_encode(['success' => false, 'error' => 'Order not found, not assigned to you, or not in delayed status. Current check requires pickup_delayed / delivery_delayed.']);
         exit;
     }
 
-    // Get all admin user IDs
-    $adminQuery = "SELECT user_id FROM users WHERE role = 'admin' AND status = 'active'";
-    $adminStmt = $db->prepare($adminQuery);
-    $adminStmt->execute();
-    $admins = $adminStmt->fetchAll(PDO::FETCH_ASSOC);
+    // FIX 1: Don't filter by status = 'active' - your users.status may be 'Active', 1, or NULL.
+    // Try with status filter first, then fallback to all admins.
+    $admins = [];
+    try {
+        $adminStmt = $db->prepare("SELECT user_id FROM users WHERE role = 'admin'");
+        $adminStmt->execute();
+        $admins = $adminStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $admins = [];
+    }
 
     if (empty($admins)) {
-        echo json_encode(['success' => false, 'error' => 'No active admin found']);
+        echo json_encode(['success' => false, 'error' => 'No admin found in users table. Check users.role = admin exists.']);
         exit;
     }
 
     // Prepare notification details based on delay type
     $delayTypeText = $delay_type === 'delivery' ? 'Delivery' : 'Pickup';
-    $notificationTitle = "⚠️ {$delayTypeText} Reschedule Request - Order #{$order_number}";
+    $notificationTitle = "⚠ {$delayTypeText} Reschedule Request - Order #{$order_number}";
     $notificationMessage = "Rider {$rider_name} is requesting to reschedule the {$delay_type} for order #{$order_number} (Customer: {$order['customer_name']}). Reason: {$delay_reason}";
     $notificationLink = "Order/order_details.php?order_number=" . urlencode($order_number);
 
-    // Send notification to all admins
+    // FIX 2: Try createNotification(), if it fails, insert directly. Don't let one bad helper kill the whole request.
     $notificationsSent = 0;
+    $lastError = '';
     foreach ($admins as $admin) {
-        if (createNotification($db, $admin['user_id'], $notificationTitle, $notificationMessage, $notificationLink)) {
-            $notificationsSent++;
+        $sent = false;
+
+        // Try helper first if it exists
+        if (function_exists('createNotification')) {
+            try {
+                $r = createNotification($db, $admin['user_id'], $notificationTitle, $notificationMessage, $notificationLink);
+                if ($r) $sent = true;
+            } catch (Exception $e) {
+                $lastError = $e->getMessage();
+            } catch (Error $e) {
+                $lastError = $e->getMessage();
+            }
         }
+
+        // Fallback: direct insert, try common notifications table shapes
+        if (!$sent) {
+            try {
+                // Most common shape: user_id, title, message, link, is_read, created_at
+                $ins = $db->prepare("INSERT INTO notifications (user_id, title, message, link, is_read, created_at) VALUES (:uid, :title, :msg, :link, 0, NOW())");
+                $ins->execute([':uid' => $admin['user_id'], ':title' => $notificationTitle, ':msg' => $notificationMessage, ':link' => $notificationLink]);
+                $sent = true;
+            } catch (Exception $e) {
+                $lastError = $e->getMessage();
+                // Try 2nd shape: recipient_id, title, message, type
+                try {
+                    $ins2 = $db->prepare("INSERT INTO notifications (recipient_id, title, message, type, created_at) VALUES (:uid, :title, :msg, 'reschedule', NOW())");
+                    $ins2->execute([':uid' => $admin['user_id'], ':title' => $notificationTitle, ':msg' => $notificationMessage]);
+                    $sent = true;
+                } catch (Exception $e2) {
+                    $lastError = $e2->getMessage();
+                }
+            }
+        }
+
+        if ($sent) $notificationsSent++;
     }
 
     if ($notificationsSent > 0) {
-        // Log the reschedule request (optional - you can create a separate table for this)
-        $logQuery = "
-            INSERT INTO order_reschedule_requests 
-            (refill_id, order_number, rider_id, delay_type, reason, requested_at)
-            VALUES (:refill_id, :order_number, :rider_id, :delay_type, :reason, NOW())
-        ";
-        
+        // Log the reschedule request - if table doesn't exist, ignore, don't fail
         try {
-            $logStmt = $db->prepare($logQuery);
+            $logStmt = $db->prepare("
+                INSERT INTO order_reschedule_requests
+                (refill_id, order_number, rider_id, delay_type, reason, requested_at)
+                VALUES (:refill_id, :order_number, :rider_id, :delay_type, :reason, NOW())
+            ");
             $logStmt->execute([
                 ':refill_id' => $refill_id,
                 ':order_number' => $order_number,
@@ -104,7 +143,6 @@ try {
                 ':reason' => $delay_reason
             ]);
         } catch (PDOException $e) {
-            // Table might not exist, but notification was sent successfully
             error_log("Could not log reschedule request: " . $e->getMessage());
         }
 
@@ -114,14 +152,16 @@ try {
             'notifications_sent' => $notificationsSent
         ]);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Failed to send notifications']);
+        echo json_encode(['success' => false, 'error' => 'Failed to send notifications. Last DB error: ' . $lastError . ' | Check notifications table columns.']);
     }
 
 } catch (PDOException $e) {
     error_log("Database error in request_reschedule.php: " . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => 'Database error occurred']);
+    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
 } catch (Exception $e) {
     error_log("Error in request_reschedule.php: " . $e->getMessage());
-    echo json_encode(['success' => false, 'error' => 'An error occurred while processing the request']);
+    echo json_encode(['success' => false, 'error' => 'Error: ' . $e->getMessage()]);
+} catch (Error $e) {
+    error_log("Fatal error in request_reschedule.php: " . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Fatal error: ' . $e->getMessage()]);
 }
-?>

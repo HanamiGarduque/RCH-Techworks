@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $refill_id = $_POST['refill_id'] ?? null;
 $new_status = $_POST['new_status'] ?? null;
 $delay_note = $_POST['delay_note'] ?? null;
+$qr_code = $_POST['qr_code'] ?? null;
 
 if (!$refill_id || !$new_status) {
     echo json_encode(['success' => false, 'error' => 'Missing required parameters']);
@@ -46,7 +47,8 @@ try {
     // Verify rider is assigned to this order
     $rider_id = $_SESSION['id'];
     
-    $verify_query = "SELECT refill_id, order_status FROM water_refills WHERE refill_id = ? AND rider_id = ?";
+    // FIXED: SELECT * instead of listing columns - so it never fails if a column doesn't exist
+    $verify_query = "SELECT * FROM water_refills WHERE refill_id = ? AND rider_id = ?";
     $verify_stmt = $db->prepare($verify_query);
     $verify_stmt->execute([$refill_id, $rider_id]);
     $order = $verify_stmt->fetch(PDO::FETCH_ASSOC);
@@ -90,6 +92,17 @@ try {
         $update_query .= ", delay_reason = ?";
         $params[] = $delay_note;
     }
+
+    // Save QR proof ONLY if column exists
+    if ($qr_code) {
+        try {
+            $check = $db->query("SHOW COLUMNS FROM water_refills LIKE 'qr_code'")->fetch();
+            if ($check) {
+                $update_query .= ", qr_code = ?";
+                $params[] = $qr_code;
+            }
+        } catch (Exception $e) {}
+    }
     
     $update_query .= " WHERE refill_id = ?";
     $params[] = $refill_id;
@@ -97,8 +110,67 @@ try {
     $update_stmt = $db->prepare($update_query);
     $update_stmt->execute($params);
     
-    // Commit transaction
+    // Commit FIRST - so delivery is saved even if notification fails
     $db->commit();
+
+    // ===== NOTIFICATIONS - AFTER COMMIT, NEVER BREAKS DELIVERY =====
+    try {
+        $order_number = $order['order_number'] ?? ('#' . $refill_id);
+        // user_id is the customer id in water_refills - fallback to any customer column if present
+        $customer_id = $order['user_id'] ?? $order['customer_id'] ?? $order['customer_user_id'] ?? null;
+
+        $title = '';
+        $msg = '';
+        if ($new_status === 'delivered') {
+            $title = 'Order Delivered';
+            $msg = "Order {$order_number} has been delivered. Thank you!";
+        } elseif ($new_status === 'on_delivery') {
+            $title = 'Out for Delivery';
+            $msg = "Order {$order_number} is now out for delivery.";
+        } elseif ($new_status === 'picked_up') {
+            $title = 'Order Picked Up';
+            $msg = "Order {$order_number} has been picked up.";
+        } elseif ($new_status === 'pickup_delayed' || $new_status === 'delivery_delayed') {
+            $title = 'Delivery Delayed';
+            $msg = "Order {$order_number} is delayed. " . ($delay_note ?? '');
+        }
+
+        if ($title !== '') {
+            $tbl = $db->query("SHOW TABLES LIKE 'notifications'")->fetch();
+            if ($tbl) {
+                $cols = $db->query("SHOW COLUMNS FROM notifications")->fetchAll(PDO::FETCH_COLUMN);
+                $hasUserId = in_array('user_id', $cols);
+                $hasTitle = in_array('title', $cols);
+                $hasMessage = in_array('message', $cols);
+                $hasOrderNumber = in_array('order_number', $cols);
+                $hasRefillId = in_array('refill_id', $cols);
+                $hasIsRead = in_array('is_read', $cols);
+                $hasCreated = in_array('created_at', $cols);
+                $hasRole = in_array('role', $cols);
+                $hasType = in_array('type', $cols);
+
+                if ($hasUserId && $hasTitle && $hasMessage) {
+                    $fields = ['user_id', 'title', 'message'];
+                    $placeholders = ['?', '?', '?'];
+                    $valsCustomer = [$customer_id, $title, $msg];
+                    $valsAdmin = [null, $title, $msg];
+
+                    if ($hasRole) { $fields[] = 'role'; $placeholders[] = '?'; $valsCustomer[] = 'customer'; $valsAdmin[] = 'admin'; }
+                    if ($hasType) { $fields[] = 'type'; $placeholders[] = '?'; $valsCustomer[] = 'order_status'; $valsAdmin[] = 'order_status'; }
+                    if ($hasOrderNumber) { $fields[] = 'order_number'; $placeholders[] = '?'; $valsCustomer[] = $order_number; $valsAdmin[] = $order_number; }
+                    if ($hasRefillId) { $fields[] = 'refill_id'; $placeholders[] = '?'; $valsCustomer[] = $refill_id; $valsAdmin[] = $refill_id; }
+                    if ($hasIsRead) { $fields[] = 'is_read'; $placeholders[] = '0'; }
+                    if ($hasCreated) { $fields[] = 'created_at'; $placeholders[] = 'NOW()'; }
+
+                    $sql = "INSERT INTO notifications (" . implode(',', $fields) . ") VALUES (" . implode(',', $placeholders) . ")";
+                    if ($customer_id) { $db->prepare($sql)->execute($valsCustomer); }
+                    $db->prepare($sql)->execute($valsAdmin);
+                }
+            }
+        }
+    } catch (Exception $e) {
+        error_log('Notification insert failed (delivery still saved): ' . $e->getMessage());
+    }
     
     echo json_encode([
         'success' => true,
@@ -108,11 +180,9 @@ try {
     ]);
     
 } catch (PDOException $e) {
-    // Rollback on error
-    if ($db->inTransaction()) {
+    if (isset($db) && $db->inTransaction()) {
         $db->rollBack();
     }
-    
     error_log("Order status update error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
