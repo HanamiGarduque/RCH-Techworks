@@ -1,0 +1,4 @@
+php_value session.gc_maxlifetime 28800
+php_value session.cookie_lifetime 28800
+php_value session.gc_probability 1
+php_value session.gc_divisor 100
