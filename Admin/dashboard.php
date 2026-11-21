@@ -7,7 +7,6 @@ ob_start();
 include_once '../Cron/check_delays.php';
 if (ob_get_level() > 0) { $cronOutput = ob_get_clean(); if (trim($cronOutput) !== '') error_log('check_delays output: ' . $cronOutput); }
 
-
 $database = new Database();
 $db = $database->getConnect();
 
@@ -87,6 +86,46 @@ if (empty($ordersDailyData['labels'])) {
     }
 }
 
+// ORDERS OVER TIME - WEEKLY (last 12 weeks, grouped by week starting Monday)
+$stmt = $db->prepare("
+    SELECT DATE(DATE_SUB(created_at, INTERVAL WEEKDAY(created_at) DAY)) AS week_start, COUNT(*) AS total
+    FROM water_refills
+    WHERE created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 WEEK)
+    GROUP BY DATE(DATE_SUB(created_at, INTERVAL WEEKDAY(created_at) DAY))
+    ORDER BY week_start
+");
+$stmt->execute();
+$ordersWeeklyData = ['labels' => [], 'data' => []];
+while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $ordersWeeklyData['labels'][] = $r['week_start'];
+    $ordersWeeklyData['data'][] = (int)$r['total'];
+}
+if (empty($ordersWeeklyData['labels'])) {
+    for ($i = 11; $i >= 0; $i--) {
+        $monday = date('Y-m-d', strtotime("monday this week -$i weeks"));
+        $ordersWeeklyData['labels'][] = $monday;
+        $ordersWeeklyData['data'][] = 0;
+    }
+}
+
+// ORDERS OVER TIME - YEARLY (grouped by year)
+$stmt = $db->prepare("
+    SELECT YEAR(created_at) AS yr, COUNT(*) AS total
+    FROM water_refills
+    GROUP BY YEAR(created_at)
+    ORDER BY yr
+");
+$stmt->execute();
+$ordersYearlyData = ['labels' => [], 'data' => []];
+while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $ordersYearlyData['labels'][] = (string)$r['yr'];
+    $ordersYearlyData['data'][] = (int)$r['total'];
+}
+if (empty($ordersYearlyData['labels'])) {
+    $ordersYearlyData['labels'][] = date('Y');
+    $ordersYearlyData['data'][] = 0;
+}
+
 // ORDER TYPE BREAKDOWN: delivery (water_refills) vs pos/walk-in (order_items)
 $stmt = $db->prepare("SELECT COUNT(*) FROM water_refills");
 $stmt->execute();
@@ -129,6 +168,54 @@ if (empty($deliveryHours['labels'])) {
         $d = date('Y-m-d', strtotime("-$i days"));
         $deliveryHours['labels'][] = $d;
         $deliveryHours['data'][] = 0;
+    }
+}
+
+// AVERAGE DELIVERY HOURS - WEEKLY (last 12 weeks)
+$stmt = $db->prepare("
+    SELECT DATE(DATE_SUB(delivery_datetime, INTERVAL WEEKDAY(delivery_datetime) DAY)) AS week_start, AVG(TIMESTAMPDIFF(MINUTE, pickup_datetime, delivery_datetime))/60.0 AS avg_hours
+    FROM water_refills
+    WHERE pickup_datetime IS NOT NULL
+      AND delivery_datetime IS NOT NULL
+      AND delivery_datetime >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 WEEK)
+    GROUP BY DATE(DATE_SUB(delivery_datetime, INTERVAL WEEKDAY(delivery_datetime) DAY))
+    ORDER BY week_start
+");
+$stmt->execute();
+$deliveryHoursWeekly = ['labels' => [], 'data' => []];
+while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $deliveryHoursWeekly['labels'][] = $r['week_start'];
+    $deliveryHoursWeekly['data'][] = round((float)$r['avg_hours'], 2);
+}
+if (empty($deliveryHoursWeekly['labels'])) {
+    for ($i = 11; $i >= 0; $i--) {
+        $monday = date('Y-m-d', strtotime("monday this week -$i weeks"));
+        $deliveryHoursWeekly['labels'][] = $monday;
+        $deliveryHoursWeekly['data'][] = 0;
+    }
+}
+
+// AVERAGE DELIVERY HOURS - MONTHLY (last 12 months)
+$stmt = $db->prepare("
+    SELECT DATE_FORMAT(delivery_datetime, '%Y-%m') AS month_label, AVG(TIMESTAMPDIFF(MINUTE, pickup_datetime, delivery_datetime))/60.0 AS avg_hours
+    FROM water_refills
+    WHERE pickup_datetime IS NOT NULL
+      AND delivery_datetime IS NOT NULL
+      AND delivery_datetime >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH)
+    GROUP BY DATE_FORMAT(delivery_datetime, '%Y-%m')
+    ORDER BY month_label
+");
+$stmt->execute();
+$deliveryHoursMonthly = ['labels' => [], 'data' => []];
+while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $deliveryHoursMonthly['labels'][] = $r['month_label'];
+    $deliveryHoursMonthly['data'][] = round((float)$r['avg_hours'], 2);
+}
+if (empty($deliveryHoursMonthly['labels'])) {
+    for ($i = 11; $i >= 0; $i--) {
+        $m = date('Y-m', strtotime("-$i months"));
+        $deliveryHoursMonthly['labels'][] = $m;
+        $deliveryHoursMonthly['data'][] = 0;
     }
 }
 
@@ -176,7 +263,6 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 }
 
 $gallonTypesJSON = json_encode($gallonTypes);
-
 
 // STATION VS CUSTOMER (current_owner_id IS NULL => station)
 $stmt = $db->prepare("
@@ -233,8 +319,6 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 }
 $orderStatusJSON = json_encode($orderStatusCounts);
 
-
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -250,7 +334,6 @@ $orderStatusJSON = json_encode($orderStatusCounts);
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
 
     <style>
         body {
@@ -342,9 +425,9 @@ $orderStatusJSON = json_encode($orderStatusCounts);
                                     </h3>
                                 </div>
                                 <div class="flex gap-2 mb-4">
-                                    <button class="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700">Daily</button>
-                                    <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300">Weekly</button>
-                                    <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300">Yearly</button>
+                                    <button type="button" data-orders-range="daily" class="orders-range-btn px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700">Daily</button>
+                                    <button type="button" data-orders-range="weekly" class="orders-range-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300">Weekly</button>
+                                    <button type="button" data-orders-range="yearly" class="orders-range-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300">Yearly</button>
                                 </div>
                                 <div class="h-64">
                                     <canvas id="ordersChart"></canvas>
@@ -384,9 +467,9 @@ $orderStatusJSON = json_encode($orderStatusCounts);
                                     </h3>
                                 </div>
                                 <div class="flex gap-2 mb-4">
-                                    <button class="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700">Daily</button>
-                                    <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300">Weekly</button>
-                                    <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300">Monthly</button>
+                                    <button type="button" data-delivery-range="daily" class="delivery-range-btn px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700">Daily</button>
+                                    <button type="button" data-delivery-range="weekly" class="delivery-range-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300">Weekly</button>
+                                    <button type="button" data-delivery-range="monthly" class="delivery-range-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300">Monthly</button>
                                 </div>
                                 <div class="h-64">
                                     <canvas id="deliveryHoursChart"></canvas>
@@ -567,12 +650,16 @@ $orderStatusJSON = json_encode($orderStatusCounts);
     <script>
         /* Server-side data -> client */
         const ordersDailyData = <?= json_encode($ordersDailyData, JSON_NUMERIC_CHECK) ?>;
+        const ordersWeeklyData = <?= json_encode($ordersWeeklyData, JSON_NUMERIC_CHECK) ?>;
+        const ordersYearlyData = <?= json_encode($ordersYearlyData, JSON_NUMERIC_CHECK) ?>;
         const orderTypeData = <?= json_encode($orderTypeData, JSON_NUMERIC_CHECK) ?>;
         const completionRate = <?= json_encode($completionRate, JSON_NUMERIC_CHECK) ?>;
         const frequentCustomers = <?= json_encode($frequentCustomers, JSON_NUMERIC_CHECK) ?>;
         const gallonStatus = <?= json_encode($gallonStatus, JSON_NUMERIC_CHECK) ?>;
         const stationCustomer = <?= json_encode($stationCustomer, JSON_NUMERIC_CHECK) ?>;
         const deliveryHours = <?= json_encode($deliveryHours, JSON_NUMERIC_CHECK) ?>;
+        const deliveryHoursWeekly = <?= json_encode($deliveryHoursWeekly, JSON_NUMERIC_CHECK) ?>;
+        const deliveryHoursMonthly = <?= json_encode($deliveryHoursMonthly, JSON_NUMERIC_CHECK) ?>;
     </script>
 
     <script>
@@ -580,9 +667,23 @@ $orderStatusJSON = json_encode($orderStatusCounts);
             // Helper: ensure element exists
             const exists = id => document.getElementById(id) !== null;
 
-            // ORDERS OVER TIME (line)
+            // Helper: paint active button blue, others gray
+            function setActiveButton(buttons, activeBtn) {
+                buttons.forEach(function(btn) {
+                    if (btn === activeBtn) {
+                        btn.classList.remove('bg-gray-200', 'text-gray-700');
+                        btn.classList.add('bg-blue-600', 'text-white');
+                    } else {
+                        btn.classList.remove('bg-blue-600', 'text-white');
+                        btn.classList.add('bg-gray-200', 'text-gray-700');
+                    }
+                });
+            }
+
+            // ORDERS OVER TIME (line) - kept in a variable so Daily/Weekly/Yearly can swap its data
+            let ordersChartInstance = null;
             if (exists('ordersChart')) {
-                new Chart(document.getElementById('ordersChart'), {
+                ordersChartInstance = new Chart(document.getElementById('ordersChart'), {
                     type: 'line',
                     data: {
                         labels: ordersDailyData.labels,
@@ -622,6 +723,23 @@ $orderStatusJSON = json_encode($orderStatusCounts);
                     }
                 });
             }
+
+            // Orders Over Time toggle: Daily / Weekly / Yearly
+            const ordersButtons = Array.from(document.querySelectorAll('.orders-range-btn'));
+            ordersButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (!ordersChartInstance) return;
+                    const range = btn.getAttribute('data-orders-range');
+                    let picked = ordersDailyData;
+                    if (range === 'weekly') picked = ordersWeeklyData;
+                    if (range === 'yearly') picked = ordersYearlyData;
+                    ordersChartInstance.data.labels = picked.labels;
+                    ordersChartInstance.data.datasets[0].data = picked.data;
+                    ordersChartInstance.update();
+                    setActiveButton(ordersButtons, btn);
+                });
+            });
+
             const gallonTypes = <?= $gallonTypesJSON ?>;
             new Chart(document.getElementById('gallonTypeChart'), {
                 type: 'doughnut',
@@ -700,9 +818,10 @@ $orderStatusJSON = json_encode($orderStatusCounts);
                 });
             }
 
-            // AVERAGE DELIVERY HOURS (line)
+            // AVERAGE DELIVERY HOURS (line) - kept in a variable so Daily/Weekly/Monthly can swap its data
+            let deliveryHoursChartInstance = null;
             if (exists('deliveryHoursChart')) {
-                new Chart(document.getElementById('deliveryHoursChart'), {
+                deliveryHoursChartInstance = new Chart(document.getElementById('deliveryHoursChart'), {
                     type: 'line',
                     data: {
                         labels: deliveryHours.labels,
@@ -733,6 +852,22 @@ $orderStatusJSON = json_encode($orderStatusCounts);
                     }
                 });
             }
+
+            // Average Delivery Hours toggle: Daily / Weekly / Monthly
+            const deliveryButtons = Array.from(document.querySelectorAll('.delivery-range-btn'));
+            deliveryButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (!deliveryHoursChartInstance) return;
+                    const range = btn.getAttribute('data-delivery-range');
+                    let picked = deliveryHours;
+                    if (range === 'weekly') picked = deliveryHoursWeekly;
+                    if (range === 'monthly') picked = deliveryHoursMonthly;
+                    deliveryHoursChartInstance.data.labels = picked.labels;
+                    deliveryHoursChartInstance.data.datasets[0].data = picked.data;
+                    deliveryHoursChartInstance.update();
+                    setActiveButton(deliveryButtons, btn);
+                });
+            });
 
             // MOST FREQUENT CUSTOMERS (horizontal bar)
             if (exists('frequentCustomersChart')) {
@@ -840,7 +975,6 @@ new Chart(document.getElementById('refillStatusChart'), {
         }
     }
 });
-
 
             // STATION VS CUSTOMER (pie)
             if (exists('stationCustomerChart')) {
