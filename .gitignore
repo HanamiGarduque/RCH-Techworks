@@ -7,3 +7,6 @@
 # Logs / debug
 *.log
 session_debug.log
+
+# Generated QR codes - keep locally, don't push
+GallonOwnership/qr_codes/
