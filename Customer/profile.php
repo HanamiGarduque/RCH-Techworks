@@ -7,8 +7,14 @@ require_once '../Database/db_connection.php';
 $database = new Database();
 $db = $database->getConnect();
 
-
 $user_id = $_SESSION['id'];
+
+// ===== LIPA ONLY =====
+function isInLipaPHP($lat, $lng) {
+    $lat = (float)$lat;
+    $lng = (float)$lng;
+    return $lat >= 13.85 && $lat <= 14.05 && $lng >= 121.05 && $lng <= 121.28;
+}
 
 // Fetch user data
 $stmt = $db->prepare("
@@ -19,7 +25,6 @@ $stmt = $db->prepare("
 ");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -38,6 +43,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $city = trim($_POST['city']);
             $province = trim($_POST['province']);
             $postal_code = trim($_POST['postal_code']);
+
+            // ===== LIPA ONLY: block address outside Lipa =====
+            $cityLower = strtolower($city);
+            $provLower = strtolower($province);
+            if ($cityLower !== 'lipa city' && $cityLower !== 'lipa') {
+                echo json_encode(['success' => false, 'message' => 'We only deliver in Lipa City']);
+                exit();
+            }
+            if ($provLower !== 'batangas') {
+                echo json_encode(['success' => false, 'message' => 'We only deliver in Lipa City']);
+                exit();
+            }
+            if ($postal_code !== '' && $postal_code !== '4217') {
+                echo json_encode(['success' => false, 'message' => 'We only deliver in Lipa City']);
+                exit();
+            }
 
             $address = "$house_no, $street, $barangay, $city, $province $postal_code";
 
@@ -78,6 +99,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'update_location') {
             $latitude = floatval($_POST['latitude']);
             $longitude = floatval($_POST['longitude']);
+
+            // ===== LIPA ONLY: block pin outside Lipa =====
+            if (!isInLipaPHP($latitude, $longitude)) {
+                echo json_encode(['success' => false, 'message' => 'We only deliver in Lipa City']);
+                exit();
+            }
 
             // Check if location exists
             $stmt = $db->prepare("SELECT loc_id FROM map_location WHERE user_id = ?");
@@ -135,7 +162,6 @@ $address_parts = explode(', ', $user['address']);
 
         .custom-scroll::-webkit-scrollbar {
             width: 3px;
-            /* scrollbar thickness */
         }
 
         .custom-scroll::-webkit-scrollbar-track {
@@ -144,13 +170,11 @@ $address_parts = explode(', ', $user['address']);
 
         .custom-scroll::-webkit-scrollbar-thumb {
             background: #cbd5e1;
-            /* Tailwind slate-300 */
             border-radius: 10px;
         }
 
         .custom-scroll::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
-            /* slate-400 */
         }
 
         .requirement {
@@ -210,6 +234,12 @@ $address_parts = explode(', ', $user['address']);
         }
 
         #map {
+            height: 400px;
+            border-radius: 12px;
+            z-index: 1;
+        }
+
+        #viewMap {
             height: 400px;
             border-radius: 12px;
             z-index: 1;
@@ -316,6 +346,7 @@ $address_parts = explode(', ', $user['address']);
                                     <?= htmlspecialchars($user['address']) ?>
                                 </p>
                             </div>
+                            <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">We only deliver in Lipa City.</p>
                         </div>
                     </div>
 
@@ -402,6 +433,7 @@ $address_parts = explode(', ', $user['address']);
                                 <label class="block text-sm font-semibold text-gray-700 mb-3">
                                     <i class="bi bi-house-door"></i> Complete Address <span class="text-red-500">*</span>
                                 </label>
+                                <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">We only deliver in Lipa City. City, Province, and Postal Code are locked.</p>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <input type="text" name="house_no" placeholder="House No." required
                                         value="<?= htmlspecialchars($address_parts[0] ?? '') ?>"
@@ -415,17 +447,17 @@ $address_parts = explode(', ', $user['address']);
                                         value="<?= htmlspecialchars($address_parts[2] ?? '') ?>"
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
 
-                                    <input type="text" name="city" placeholder="City / Municipality" required
-                                        value="<?= htmlspecialchars($address_parts[3] ?? '') ?>"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <input type="text" name="city" placeholder="City / Municipality" required readonly
+                                        value="Lipa City"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
 
-                                    <input type="text" name="province" placeholder="Province" required
-                                        value="<?= htmlspecialchars($address_parts[4] ?? '') ?>"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <input type="text" name="province" placeholder="Province" required readonly
+                                        value="Batangas"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
 
-                                    <input type="text" name="postal_code" placeholder="Postal Code" required
-                                        value="<?= htmlspecialchars($address_parts[5] ?? '') ?>"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                                    <input type="text" name="postal_code" placeholder="Postal Code" required readonly
+                                        value="4217"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
                                 </div>
                             </div>
 
@@ -556,7 +588,8 @@ $address_parts = explode(', ', $user['address']);
                         </button>
                     </div>
 
-                    <p class="text-gray-600 mb-4">Click on the map to pin your exact delivery location</p>
+                    <p class="text-gray-600 mb-2">Click on the map to pin your exact delivery location</p>
+                    <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">We only deliver in Lipa City. Please pin inside Lipa City only.</p>
 
                     <div id="map"></div>
 
@@ -590,16 +623,36 @@ $address_parts = explode(', ', $user['address']);
         let selectedLng = <?= $user['longitude'] ?? 'null' ?>;
         let viewMap;
 
+        // ===== LIPA ONLY =====
+        const LIPA_MIN_LAT = 13.85;
+        const LIPA_MAX_LAT = 14.05;
+        const LIPA_MIN_LNG = 121.05;
+        const LIPA_MAX_LNG = 121.28;
+        const LIPA_CENTER_LAT = 13.9411;
+        const LIPA_CENTER_LNG = 121.1628;
+        function isInLipa(lat, lng) {
+            return lat >= LIPA_MIN_LAT && lat <= LIPA_MAX_LAT && lng >= LIPA_MIN_LNG && lng <= LIPA_MAX_LNG;
+        }
+        // If old saved pin is outside Lipa, ignore it and start in Lipa
+        if (selectedLat !== null && selectedLng !== null && !isInLipa(selectedLat, selectedLng)) {
+            selectedLat = null;
+            selectedLng = null;
+        }
+
         // Initialize view map
         function initViewMap() {
             if (viewMap) {
                 viewMap.remove();
             }
 
-            const defaultLat = selectedLat || 13.7565;
-            const defaultLng = selectedLng || 121.0583;
+            const defaultLat = selectedLat || LIPA_CENTER_LAT;
+            const defaultLng = selectedLng || LIPA_CENTER_LNG;
 
-            viewMap = L.map('viewMap').setView([defaultLat, defaultLng], 15);
+            viewMap = L.map('viewMap', {
+                maxBounds: L.latLngBounds([LIPA_MIN_LAT, LIPA_MIN_LNG], [LIPA_MAX_LAT, LIPA_MAX_LNG]),
+                maxBoundsViscosity: 1.0,
+                minZoom: 11
+            }).setView([defaultLat, defaultLng], 15);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
@@ -662,10 +715,14 @@ $address_parts = explode(', ', $user['address']);
                 map.remove();
             }
 
-            const defaultLat = selectedLat || 13.7565;
-            const defaultLng = selectedLng || 121.0583;
+            const defaultLat = selectedLat || LIPA_CENTER_LAT;
+            const defaultLng = selectedLng || LIPA_CENTER_LNG;
 
-            map = L.map('map').setView([defaultLat, defaultLng], 15);
+            map = L.map('map', {
+                maxBounds: L.latLngBounds([LIPA_MIN_LAT, LIPA_MIN_LNG], [LIPA_MAX_LAT, LIPA_MAX_LNG]),
+                maxBoundsViscosity: 1.0,
+                minZoom: 11
+            }).setView([defaultLat, defaultLng], 15);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
@@ -678,6 +735,16 @@ $address_parts = explode(', ', $user['address']);
             }
 
             map.on('click', function(e) {
+                // LIPA ONLY: block click outside Lipa
+                if (!isInLipa(e.latlng.lat, e.latlng.lng)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Outside Lipa City',
+                        text: 'We only deliver in Lipa City',
+                        confirmButtonColor: '#6366f1'
+                    });
+                    return;
+                }
                 selectedLat = e.latlng.lat;
                 selectedLng = e.latlng.lng;
 
@@ -698,6 +765,17 @@ $address_parts = explode(', ', $user['address']);
                     icon: 'warning',
                     title: 'No Location Selected',
                     text: 'Please click on the map to select your location',
+                    confirmButtonColor: '#6366f1'
+                });
+                return;
+            }
+
+            // LIPA ONLY: block save outside Lipa
+            if (!isInLipa(selectedLat, selectedLng)) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Outside Lipa City',
+                    text: 'We only deliver in Lipa City',
                     confirmButtonColor: '#6366f1'
                 });
                 return;

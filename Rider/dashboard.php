@@ -734,6 +734,10 @@
          let followRider = true; // map follows the rider until the map is dragged
          let trackUserId = null; // customer user_id used by the "open full map" button
 
+                  // ===== LIPA ONLY =====
+                  const LIPA_MIN_LAT = 13.85, LIPA_MAX_LAT = 14.05, LIPA_MIN_LNG = 121.05, LIPA_MAX_LNG = 121.28;
+         function isInLipa(lat, lng) { return lat >= LIPA_MIN_LAT && lat <= LIPA_MAX_LAT && lng >= LIPA_MIN_LNG && lng <= LIPA_MAX_LNG; }
+
          const riderIcon = L.divIcon({
              html: '<div class="rider-pulse"><div class="dot"><i class="bi bi-truck"></i></div></div>',
              className: '',
@@ -752,7 +756,7 @@
 
          function initMap() {
              // Temporary view (Lipa City) until the first GPS fix arrives
-             map = L.map('active-map').setView([13.9411, 121.1635], 13);
+             map = L.map('active-map', { maxBounds: L.latLngBounds([LIPA_MIN_LAT, LIPA_MIN_LNG], [LIPA_MAX_LAT, LIPA_MAX_LNG]), maxBoundsViscosity: 1.0, minZoom: 11 }).setView([13.9411, 121.1635], 13);
              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                  maxZoom: 19,
                  attribution: '&copy; OpenStreetMap contributors'
@@ -784,6 +788,7 @@
              const lat = pos.coords.latitude;
              const lng = pos.coords.longitude;
              const acc = pos.coords.accuracy || 0;
+             if (!isInLipa(lat, lng)) { setGpsStatus('Location outside Lipa City - ignored', 'warn'); return; }
 
              if (!riderMarker) {
                  riderMarker = L.marker([lat, lng], {
@@ -893,6 +898,7 @@
                  if (order.user.latitude && order.user.longitude) {
                      const lat = parseFloat(order.user.latitude);
                      const lng = parseFloat(order.user.longitude);
+                     if (!isInLipa(lat, lng)) return;
                      const marker = L.marker([lat, lng], {
                              icon: customerIcon
                          }).addTo(map)
@@ -993,6 +999,7 @@
          if ('geolocation' in navigator) {
              // send position every 20-30s (or use watchPosition)
              function sendPosition(pos) {
+                if (!isInLipa(pos.coords.latitude, pos.coords.longitude)) { return; }
                  const payload = {
                      latitude: pos.coords.latitude,
                      longitude: pos.coords.longitude,

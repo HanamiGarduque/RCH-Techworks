@@ -4,7 +4,6 @@ redirectIfRoleMismatch('customer'); // only admins can access
 
 require_once '../Database/db_connection.php';
 
-
 $database = new Database();
 $db = $database->getConnect();
 $user_id = $_SESSION['id'] ?? null;
@@ -225,8 +224,8 @@ $user_id = $_SESSION['id'] ?? null;
                                     <input id="addrHouse" placeholder="House/Unit No." class="border rounded px-2 py-2" />
                                     <input id="addrStreet" placeholder="Street Name" class="border rounded px-2 py-2" />
                                     <input id="addrBarangay" placeholder="Barangay" class="border rounded px-2 py-2" />
-                                    <input id="addrCity" placeholder="City" class="border rounded px-2 py-2" />
-                                    <input id="addrProvince" placeholder="Province" class="border rounded px-2 py-2" />
+                                    <input id="addrCity" value="Lipa City" readonly class="border rounded px-2 py-2 bg-gray-100" />
+                                    <input id="addrProvince" value="Batangas" readonly class="border rounded px-2 py-2 bg-gray-100" />
                                     <input id="addrPostal" placeholder="Postal Code" class="border rounded px-2 py-2" />
                                 </div>
                                 <div class="flex space-x-3 mt-3">
@@ -241,7 +240,7 @@ $user_id = $_SESSION['id'] ?? null;
 
                             <!-- Full map modal -->
                             <div id="mapModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                                <div class="bg-white w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col">
+                                <div class="bg-white w-full max-w-4xl h- rounded-2xl shadow-2xl flex flex-col">
                                     <div class="flex justify-between items-center p-4 border-b">
                                         <h3 class="text-xl font-bold">Update Location</h3>
                                         <button onclick="closeMapModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
@@ -357,7 +356,7 @@ $user_id = $_SESSION['id'] ?? null;
 
         // ---------- State (preserved across steps) ----------
         const state = {
-            userId: <?php echo json_encode($user_id); ?>, // TEMPORARY: hardcoded user ID for testing 
+            userId: <?php echo json_encode($user_id); ?>,
             chosenType: null, // 'slim' | 'round'
             chosenSize: null, // 'large' | 'small' | '18.9L'
             chosenPrice: 0,
@@ -509,7 +508,7 @@ $user_id = $_SESSION['id'] ?? null;
             // Force delivery date to be >= pickup date
             deliveryDate.min = pickupDate.value;
 
-            // If user previously selected an invalid delivery date → reset it
+            // If user previously selected an invalid delivery date -> reset it
             if (deliveryDate.value < pickupDate.value) {
                 deliveryDate.value = pickupDate.value;
                 state.chosenDeliveryTime = null; // reset time also
@@ -581,9 +580,7 @@ $user_id = $_SESSION['id'] ?? null;
             </div>`;
             }
 
-
             controlsContainer.innerHTML = html;
-
 
             // Step 2 Back (always goes to step 1)
             if (step === 2) {
@@ -602,7 +599,6 @@ $user_id = $_SESSION['id'] ?? null;
 
                 if (backBtn3) {
                     backBtn3.addEventListener("click", () => {
-                        //  NEW LOGIC INSERTED HERE
                         if (state.chosenType === "round") {
                             goToStep(1); // skip slim step
                         } else if (state.chosenType === "slim") {
@@ -678,11 +674,9 @@ $user_id = $_SESSION['id'] ?? null;
                     });
                 });
 
-
             }
 
         }
-
 
         // ---------- Step navigation & restore logic ----------
         function goToStep(n) {
@@ -702,9 +696,9 @@ $user_id = $_SESSION['id'] ?? null;
             // restore previously selected values / visuals for this step
             restoreStep(n);
 
-            // ⭐ FIX: Reset step 1 UI when going back from later steps
+            // Reset step 1 UI when going back from later steps
             if (n === 1) {
-                resetStep1UI(); // you must define this (see below)
+                resetStep1UI();
             }
 
             // Step-specific logic
@@ -730,14 +724,12 @@ $user_id = $_SESSION['id'] ?? null;
                 renderOrdersInStep6();
             }
 
-            //  Apply conditional navigation shortcuts
-            // example: if round gallon → skip step 2
+            // Apply conditional navigation shortcuts
             if (n === 2 && state.chosenType === "round") {
                 // step 2 should never appear for round gallons
                 return goToStep(3);
             }
         }
-
 
         function getStepTitle(n) {
             switch (n) {
@@ -852,16 +844,14 @@ $user_id = $_SESSION['id'] ?? null;
             }
         }
 
-
         // ---------- Selection actions that update state ----------
 
         function selectGallon(type) {
             state.chosenType = type;
-            // next step logic…
             if (type === "round") {
                 goToStep(3); // skip step 2
             } else {
-                goToStep(2); // slim → step 2 exists
+                goToStep(2); // slim -> step 2 exists
             }
         }
 
@@ -878,7 +868,6 @@ $user_id = $_SESSION['id'] ?? null;
             const roundLabel = round.querySelector('p');
             if (roundLabel) roundLabel.textContent = 'Round Gallon';
 
-            // ⭐ Show SweetAlert AFTER selecting Slim
             Swal.fire({
                 title: "Do you have your own gallon?",
                 text: "Or would you like to borrow a gallon from the station?",
@@ -900,7 +889,6 @@ $user_id = $_SESSION['id'] ?? null;
             state.chosenType = 'round';
             state.productId = 1;
 
-
             round.classList.add('border-blue-500', 'border-4');
             slim.classList.remove('border-blue-500', 'border-4');
             slim.classList.add('hidden');
@@ -914,7 +902,6 @@ $user_id = $_SESSION['id'] ?? null;
             state.chosenSize = '18.9L';
             state.chosenPrice = parseFloat(round.dataset.price) || 0;
 
-            // ⭐ Show SweetAlert AFTER selecting Round
             Swal.fire({
                 title: "Do you have your own gallon?",
                 text: "Or would you like to borrow a gallon from the station?",
@@ -1078,7 +1065,6 @@ $user_id = $_SESSION['id'] ?? null;
         }
 
         // ---------- Orders & Step 6 rendering ----------
-        // ---------- Orders & Step 6 rendering ----------
         function saveCurrentOrder(commit = true) {
             if (!state.chosenType || !state.chosenPrice || !state.quantity) return null;
 
@@ -1099,7 +1085,7 @@ $user_id = $_SESSION['id'] ?? null;
                 quantity: state.quantity,
                 unitPrice: unit,
                 subtotal: subtotal,
-                gallonOwner: state.hasOwnGallon ? 'customer' : 'station' // ADD THIS LINE
+                gallonOwner: state.hasOwnGallon ? 'customer' : 'station'
             };
 
             if (commit) state.orders.push(order);
@@ -1182,18 +1168,15 @@ $user_id = $_SESSION['id'] ?? null;
             if (deliverySummary) deliverySummary.textContent = `${deliveryDate?.value || ''} ${state.chosenDeliveryTime || ''}`;
         }
 
-
-
-        // ---------- Address edit handlers inside step6 (delegation after rendering step6) ----------
-        // We'll attach listeners once (they exist on the page) and toggle visibility
+        // ---------- Address edit handlers inside step6 ----------
         document.getElementById('editAddressBtn').addEventListener('click', () => {
             document.getElementById('addressFormContainer').classList.remove('hidden');
             document.getElementById('addressDisplay').classList.add('hidden');
             document.getElementById('addrHouse').value = state.userAddress.house || '';
             document.getElementById('addrStreet').value = state.userAddress.street || '';
             document.getElementById('addrBarangay').value = state.userAddress.barangay || '';
-            document.getElementById('addrCity').value = state.userAddress.city || '';
-            document.getElementById('addrProvince').value = state.userAddress.province || '';
+            document.getElementById('addrCity').value = 'Lipa City';
+            document.getElementById('addrProvince').value = 'Batangas';
             document.getElementById('addrPostal').value = state.userAddress.postal || '';
         });
 
@@ -1215,29 +1198,39 @@ $user_id = $_SESSION['id'] ?? null;
                 return;
             }
 
+            // LIPA ONLY - typed address check
+            const cityLow = c.toLowerCase().trim();
+            if (cityLow !== 'lipa' && cityLow !== 'lipa city') {
+                Swal.fire('We only deliver in Lipa City', 'Please enter an address inside Lipa City, Batangas.', 'warning');
+                return;
+            }
+            if (p.toLowerCase().trim() !== 'batangas') {
+                Swal.fire('We only deliver in Lipa City', 'Province must be Batangas.', 'warning');
+                return;
+            }
+
             // update local state
             state.userAddress.house = h;
             state.userAddress.street = s;
             state.userAddress.barangay = b;
-            state.userAddress.city = c;
-            state.userAddress.province = p;
+            state.userAddress.city = 'Lipa City';
+            state.userAddress.province = 'Batangas';
             state.userAddress.postal = pc;
 
             // Update display
             document.getElementById('addressDisplay').innerHTML =
-                `${h}, ${s}, ${b}, ${c}, ${p} ${pc}`;
+                `${h}, ${s}, ${b}, Lipa City, Batangas ${pc}`;
             document.getElementById('addressFormContainer').classList.add('hidden');
             document.getElementById('addressDisplay').classList.remove('hidden');
 
-
-            // ----------------- NEW: POST ADDRESS UPDATE -----------------
+            // POST ADDRESS UPDATE
             const payload = {
                 user_id: state.userId,
                 house: h,
                 street: s,
                 barangay: b,
-                city: c,
-                province: p,
+                city: 'Lipa City',
+                province: 'Batangas',
                 postal: pc
             };
 
@@ -1263,7 +1256,6 @@ $user_id = $_SESSION['id'] ?? null;
             }
         });
 
-
         // ---------- Place order ----------
         function onPlaceOrder() {
             const addr = state.userAddress;
@@ -1275,6 +1267,20 @@ $user_id = $_SESSION['id'] ?? null;
             }
             if (!addrFilled) {
                 Swal.fire('Please provide a full delivery address before placing the order', '', 'warning');
+                if (placeBtn) { placeBtn.disabled = false; placeBtn.classList.remove("opacity-60", "cursor-not-allowed"); }
+                return;
+            }
+
+            // LIPA ONLY - final check before sending to backend
+            const oc = (addr.city || '').toLowerCase().trim();
+            if (oc !== 'lipa' && oc !== 'lipa city') {
+                Swal.fire('We only deliver in Lipa City', 'Please choose an address inside Lipa City.', 'warning');
+                if (placeBtn) { placeBtn.disabled = false; placeBtn.classList.remove("opacity-60", "cursor-not-allowed"); }
+                return;
+            }
+            if (typeof currentLat !== 'undefined' && currentLat && currentLng && !isInLipa(currentLat, currentLng)) {
+                Swal.fire('We only deliver in Lipa City', 'Your map pin is outside Lipa City. Please move it inside Lipa.', 'warning');
+                if (placeBtn) { placeBtn.disabled = false; placeBtn.classList.remove("opacity-60", "cursor-not-allowed"); }
                 return;
             }
 
@@ -1301,13 +1307,14 @@ $user_id = $_SESSION['id'] ?? null;
             // Ensure we have at least one order
             if (!allOrders || allOrders.length === 0) {
                 Swal.fire('Error', 'No items to order', 'error');
+                if (placeBtn) { placeBtn.disabled = false; placeBtn.classList.remove("opacity-60", "cursor-not-allowed"); }
                 return;
             }
 
             // Calculate total amount from ALL orders
             const totalAmount = allOrders.reduce((sum, order) => sum + order.subtotal, 0);
 
-            // Generate order number (you might want to get this from backend)
+            // Generate order number
             const orderNumber = 'ORD' + Date.now() + state.userId;
 
             // Format datetime strings for MySQL (YYYY-MM-DD HH:MM:SS)
@@ -1317,11 +1324,12 @@ $user_id = $_SESSION['id'] ?? null;
             // Determine gallon owner
             const gallonOwner = state.hasOwnGallon ? 'customer' : 'station';
 
-            // Get user_id from the fetched user data (assuming it's available)
+            // Get user_id from the fetched user data
             const userId = state.userId || null;
 
             if (!userId) {
                 Swal.fire('Error', 'User information not found. Please refresh the page.', 'error');
+                if (placeBtn) { placeBtn.disabled = false; placeBtn.classList.remove("opacity-60", "cursor-not-allowed"); }
                 return;
             }
 
@@ -1334,12 +1342,14 @@ $user_id = $_SESSION['id'] ?? null;
                 delivery_datetime: deliveryDatetime,
                 order_status: 'pending',
                 gallon_owner: gallonOwner,
-                delivery_address: `${addr.house} ${addr.street}, ${addr.barangay}, ${addr.city}, ${addr.province} ${addr.postal}`,
+                delivery_address: `${addr.house} ${addr.street}, ${addr.barangay}, Lipa City, Batangas ${addr.postal}`,
+                customer_lat: (typeof currentLat !== 'undefined' ? currentLat : null),
+                customer_lng: (typeof currentLng !== 'undefined' ? currentLng : null),
                 orders: allOrders // Send ALL orders
             };
 
-            console.log('Sending order:', orderData); // Debug log
-            console.log('Total orders:', allOrders.length); // Debug log
+            console.log('Sending order:', orderData);
+            console.log('Total orders:', allOrders.length);
 
             // Send order to backend
             fetch('../Order/water_refill_backend.php', {
@@ -1377,7 +1387,6 @@ $user_id = $_SESSION['id'] ?? null;
             confirmButtonText: 'View My Order',
             confirmButtonColor: '#2563eb'
         }).then(() => {
-            // Change this URL if your actual order page has a different path.
             window.location.href =
                 'order_details.php?order_id=' +
                 encodeURIComponent(data.order_id);
@@ -1388,6 +1397,7 @@ $user_id = $_SESSION['id'] ?? null;
             title: 'Order Failed',
             text: data.message || 'Unable to place your order.'
         });
+        if (placeBtn) { placeBtn.disabled = false; placeBtn.classList.remove("opacity-60", "cursor-not-allowed"); }
     }
 })
 .catch(error => {
@@ -1398,6 +1408,7 @@ $user_id = $_SESSION['id'] ?? null;
         title: 'Something Went Wrong',
         text: error.message || 'Unable to process your order.'
     });
+    if (placeBtn) { placeBtn.disabled = false; placeBtn.classList.remove("opacity-60", "cursor-not-allowed"); }
 });
         }
 
@@ -1457,7 +1468,6 @@ $user_id = $_SESSION['id'] ?? null;
 
         // set default quantity/price if needed
         state.quantity = 1;
-        // If user selected something before page load, it would be restored; otherwise defaults apply
         updateSubtotal();
 
         // Start at step 1
@@ -1466,7 +1476,18 @@ $user_id = $_SESSION['id'] ?? null;
     <script>
         let map, marker;
         let fullMap, fullMarker;
-        let currentLat, currentLng;
+        let currentLat = 13.9411, currentLng = 121.1628;
+        let lastValidLat = 13.9411, lastValidLng = 121.1628;
+
+        // --- LIPA ONLY ---
+        const LIPA_CENTER = [13.9411, 121.1628];
+        const LIPA_BOUNDS = L.latLngBounds([13.86, 121.08], [14.02, 121.24]);
+        function isInLipa(lat, lng){
+          return lat >= 13.86 && lat <= 14.02 && lng >= 121.08 && lng <= 121.24;
+        }
+        function showLipaError(){
+          Swal.fire('We only deliver in Lipa City', 'Please choose an address inside Lipa City, Batangas.', 'warning');
+        }
 
         // Open modal when small map is clicked
         document.getElementById("mapContainer").addEventListener("click", openMapModal);
@@ -1475,33 +1496,68 @@ $user_id = $_SESSION['id'] ?? null;
         fetch("../Location/get_user_location.php")
             .then(res => res.json())
             .then(data => {
-                currentLat = data.latitude;
-                currentLng = data.longitude;
+                let lat = parseFloat(data.latitude);
+                let lng = parseFloat(data.longitude);
+                // If saved location is outside Lipa (VPN / old address), snap to Lipa center
+                if (!lat || !lng || !isInLipa(lat, lng)) { lat = LIPA_CENTER[0]; lng = LIPA_CENTER[1]; }
+                currentLat = lat; currentLng = lng;
+                lastValidLat = lat; lastValidLng = lng;
 
                 // Initialize small map (preview)
                 map = L.map("mapContainer", {
                     zoomControl: false,
-                    dragging: false
+                    dragging: false,
+                    maxBounds: LIPA_BOUNDS,
+                    maxBoundsViscosity: 1.0,
+                    minZoom: 12
                 }).setView([currentLat, currentLng], 15);
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                     attribution: "Map data © OpenStreetMap contributors"
                 }).addTo(map);
                 marker = L.marker([currentLat, currentLng]).addTo(map);
+            })
+            .catch(() => {
+                map = L.map("mapContainer", { zoomControl: false, dragging: false, maxBounds: LIPA_BOUNDS, maxBoundsViscosity: 1.0 }).setView(LIPA_CENTER, 13);
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "Map data © OpenStreetMap contributors" }).addTo(map);
+                marker = L.marker(LIPA_CENTER).addTo(map);
             });
 
         // Functions to open/close modal
         function openMapModal() {
             document.getElementById("mapModal").classList.remove("hidden");
+            setTimeout(() => { if (fullMap) fullMap.invalidateSize(); }, 100);
 
             // Initialize full map if not already
             if (!fullMap) {
-                fullMap = L.map("fullMap").setView([currentLat, currentLng], 17);
+                fullMap = L.map("fullMap", {
+                    maxBounds: LIPA_BOUNDS,
+                    maxBoundsViscosity: 1.0,
+                    minZoom: 12,
+                    maxZoom: 19
+                }).setView([currentLat, currentLng], 17);
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                     attribution: "Map data © OpenStreetMap contributors"
                 }).addTo(fullMap);
                 fullMarker = L.marker([currentLat, currentLng], {
                     draggable: true
                 }).addTo(fullMap);
+
+                // If user drags pin outside Lipa, snap it back
+                fullMarker.on('dragend', function(){
+                    const p = fullMarker.getLatLng();
+                    if (!isInLipa(p.lat, p.lng)) {
+                        fullMarker.setLatLng([lastValidLat, lastValidLng]);
+                        showLipaError();
+                    } else {
+                        lastValidLat = p.lat; lastValidLng = p.lng;
+                    }
+                });
+                // If user clicks outside Lipa, do not move pin
+                fullMap.on('click', function(e){
+                    if (!isInLipa(e.latlng.lat, e.latlng.lng)) { showLipaError(); return; }
+                    fullMarker.setLatLng(e.latlng);
+                    lastValidLat = e.latlng.lat; lastValidLng = e.latlng.lng;
+                });
             } else {
                 fullMap.setView([currentLat, currentLng], 17);
                 fullMarker.setLatLng([currentLat, currentLng]);
@@ -1515,8 +1571,14 @@ $user_id = $_SESSION['id'] ?? null;
         // Save updated location from full map
         function saveFullMapLocation() {
             const latLng = fullMarker.getLatLng();
+            if (!isInLipa(latLng.lat, latLng.lng)) {
+                showLipaError();
+                fullMarker.setLatLng([lastValidLat, lastValidLng]);
+                return;
+            }
             currentLat = latLng.lat;
             currentLng = latLng.lng;
+            lastValidLat = currentLat; lastValidLng = currentLng;
 
             // Update small map marker
             marker.setLatLng([currentLat, currentLng]);
@@ -1539,10 +1601,6 @@ $user_id = $_SESSION['id'] ?? null;
             closeMapModal();
         }
     </script>
-
-
-
-
 
 </body>
 

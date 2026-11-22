@@ -102,6 +102,7 @@
 
             <div class="px-5 pt-4 pb-5">
                 <h3 class="text-md font-semibold text-blue-600 mb-3 flex items-center gap-2"><i class="bi bi-geo-alt-fill text-blue-600"></i> Live Location</h3>
+                <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-2">We only deliver in Lipa City.</p>
                 <div class="relative mb-4">
                     <div id="map" class="rounded-xl h-40 border border-gray-300 overflow-hidden"></div>
                 </div>
@@ -171,6 +172,10 @@
         let riderPos = null, riderPosValid = false, customerPos = null, customerResolved = false, firstFitDone = false;
         const STATION = { lat: 13.9411, lng: 121.1628 };
 
+        // ===== LIPA ONLY =====
+        const LIPA_MIN_LAT = 13.85, LIPA_MAX_LAT = 14.05, LIPA_MIN_LNG = 121.05, LIPA_MAX_LNG = 121.28;
+        function isInLipa(lat, lng) { return lat >= LIPA_MIN_LAT && lat <= LIPA_MAX_LAT && lng >= LIPA_MIN_LNG && lng <= LIPA_MAX_LNG; }
+
         const STATUS_CONFIG = {
             pending: { step: 1, color: "bg-gray-500", text: "Pending", icon: "bi-clock" },
             assigned: { step: 1, color: "bg-yellow-500", text: "Assigned", icon: "bi-person-check" },
@@ -188,10 +193,14 @@
 
         function initMap() {
             if (map) return;
-            map = L.map('map').setView([STATION.lat, STATION.lng], 13);
+            map = L.map('map', {
+                maxBounds: L.latLngBounds([LIPA_MIN_LAT, LIPA_MIN_LNG], [LIPA_MAX_LAT, LIPA_MAX_LNG]),
+                maxBoundsViscosity: 1.0,
+                minZoom: 11
+            }).setView([STATION.lat, STATION.lng], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
             const stationIcon = L.divIcon({ className: '', html: '<div class="station-pin"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
-            L.marker([STATION.lat, STATION.lng], { icon: stationIcon }).addTo(map).bindPopup('<b>RCH Water Station</b>');
+            L.marker([STATION.lat, STATION.lng], { icon: stationIcon }).addTo(map).bindPopup('<b>RCH Water Station</b><br><small>Lipa City</small>');
             setTimeout(() => map.invalidateSize(), 400);
         }
 
@@ -205,15 +214,16 @@
 
         function isPlausibleRiderPos(pos) {
             if (!pos) return false;
-            if (pos.lat < 4.5 || pos.lat > 21.5 || pos.lng < 116.0 || pos.lng > 127.5) return false;
-            if (customerPos && distanceKm(pos, customerPos) > 100) return false;
-            if (distanceKm(pos, STATION) > 100) return false;
+            // LIPA ONLY: reject anything outside Lipa (kills VPN / Manila GPS)
+            if (!isInLipa(pos.lat, pos.lng)) return false;
+            if (customerPos && distanceKm(pos, customerPos) > 50) return false;
+            if (distanceKm(pos, STATION) > 50) return false;
             return true;
         }
 
         function drawRoute() {
             if (!map || !riderPosValid || !riderPos || !customerPos || samePoint(riderPos, customerPos)) return;
-            if (distanceKm(riderPos, customerPos) > 100) return;
+            if (distanceKm(riderPos, customerPos) > 50) return;
             if (routeControl) { map.removeControl(routeControl); routeControl = null; }
             routeControl = L.Routing.control({
                 waypoints: [L.latLng(riderPos.lat, riderPos.lng), L.latLng(customerPos.lat, customerPos.lng)],
@@ -225,7 +235,7 @@
 
         function fitBoth() {
             if (!map || firstFitDone) return;
-            if (riderPosValid && riderPos && customerPos && distanceKm(riderPos, customerPos) <= 100) {
+            if (riderPosValid && riderPos && customerPos && distanceKm(riderPos, customerPos) <= 50) {
                 map.fitBounds(L.latLngBounds([L.latLng(riderPos.lat, riderPos.lng), L.latLng(customerPos.lat, customerPos.lng)]).pad(0.3));
                 firstFitDone = true;
             } else if (customerPos) {
@@ -237,6 +247,8 @@
         function applyCustomerPos(pos, label) {
             if (!pos) return;
             if (samePoint(pos, STATION)) { console.warn('Customer pos == station, ignoring'); return; }
+            // LIPA ONLY: ignore customer pin outside Lipa
+            if (!isInLipa(pos.lat, pos.lng)) { console.warn('Customer pos outside Lipa, ignoring', pos); return; }
             customerPos = pos; customerResolved = true;
             if (!customerMarker) {
                 customerMarker = L.marker([pos.lat, pos.lng], { icon: customerIcon }).addTo(map)
@@ -248,27 +260,31 @@
         async function geocodeCustomerAddress() {
             if (!currentOrder || !currentOrder.customer_address) return;
             const full = currentOrder.customer_address.trim();
+            // LIPA ONLY: all attempts force Lipa City, Batangas
             const attempts = [];
-            attempts.push(full + ', Philippines');
+            attempts.push(full + ', Lipa City, Batangas, Philippines');
             const noHouseNo = full.replace(/^\s*\d+\s*,?\s*/, '');
-            if (noHouseNo && noHouseNo !== full) attempts.push(noHouseNo + ', Philippines');
+            if (noHouseNo && noHouseNo !== full) attempts.push(noHouseNo + ', Lipa City, Batangas, Philippines');
             const parts = full.split(',').map(s => s.trim()).filter(Boolean);
             if (parts.length >= 3) {
                 const barangayCity = parts.slice(-3).join(', ');
-                if (!attempts.includes(barangayCity + ', Philippines')) attempts.push(barangayCity + ', Philippines');
+                if (!attempts.includes(barangayCity + ', Lipa City, Batangas, Philippines')) attempts.push(barangayCity + ', Lipa City, Batangas, Philippines');
             }
             if (parts.length >= 2) {
                 const cityOnly = parts.slice(-2).join(', ');
-                if (!attempts.includes(cityOnly + ', Philippines')) attempts.push(cityOnly + ', Philippines');
+                if (!attempts.includes(cityOnly + ', Lipa City, Batangas, Philippines')) attempts.push(cityOnly + ', Lipa City, Batangas, Philippines');
             }
             attempts.push('Lipa City, Batangas, Philippines');
             for (const q of attempts) {
                 try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&viewbox=${LIPA_MIN_LNG},${LIPA_MAX_LAT},${LIPA_MAX_LNG},${LIPA_MIN_LAT}&bounded=1&q=${encodeURIComponent(q)}`, { headers: { 'Accept': 'application/json' } });
                     const data = await res.json();
                     if (data && data[0]) {
+                        const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+                        // LIPA ONLY: reject geocode result outside Lipa
+                        if (!isInLipa(lat, lng)) { console.warn('Geocode outside Lipa, skipping', q, lat, lng); continue; }
                         const isFallback = q !== attempts[0];
-                        applyCustomerPos({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }, isFallback ? data[0].display_name : null);
+                        applyCustomerPos({ lat: lat, lng: lng }, isFallback ? data[0].display_name : null);
                         return;
                     }
                 } catch (e) { console.warn('Geocode failed for', q, e); }
@@ -280,7 +296,7 @@
             const pos = { lat, lng };
             if (accuracy && accuracy > 2000) { console.warn('GPS accuracy too low:', accuracy); return; }
             if (!isPlausibleRiderPos(pos)) {
-                console.warn('Implausible rider GPS (VPN?):', pos);
+                console.warn('Implausible rider GPS (VPN / outside Lipa?):', pos);
                 riderPosValid = false;
                 if (customerPos) map.setView([customerPos.lat, customerPos.lng], 15);
                 return;
@@ -393,7 +409,6 @@
             } else if (status === 'pickup_delayed') {
                 html = `<button onclick="requestReschedule('pickup')" class="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition flex items-center justify-center gap-2 shadow-lg"><i class="bi bi-calendar-event"></i> Request Reschedule from Admin</button>`;
             } else if (status === 'picked_up') {
-                // FIXED: No more 30-minute lock - Start Delivery always enabled for testing
                 html = `<button onclick="startDelivery()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-2 shadow-lg"><i class="bi bi-truck"></i> Start Delivery</button>`;
             } else if (status === 'on_delivery') {
                 html = `<button onclick="goToQRScanner()" class="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition flex items-center justify-center gap-2 shadow-lg mb-2"><i class="bi bi-check-lg"></i> Complete Delivery</button><button onclick="openDelayModal('delivery')" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition flex items-center justify-center gap-2 shadow-lg"><i class="bi bi-exclamation-circle"></i> Delay</button>`;
@@ -450,7 +465,6 @@ function goToQRScanner() {
             document.getElementById("timeline-container").innerHTML = html;
         }
         function canShowStartDeliveryButton() {
-            // FIXED: 30-minute lock removed for testing - always allow Start Delivery
             return true;
         }
         function updateOrderStatus(newStatus, delayNote = null) {
@@ -472,7 +486,6 @@ function goToQRScanner() {
         function startPickup() { if (confirm('Start pickup for this order?')) updateOrderStatus('pickup_in_progress'); }
         function markPickedUp() { if (confirm('Mark order as picked up?')) updateOrderStatus('picked_up'); }
         function startDelivery() {
-            // FIXED: No time check - Start Delivery works anytime for testing
             if (confirm('Start delivery for this order?')) updateOrderStatus('on_delivery');
         }
         function completeDelivery() { if (confirm('Mark order as delivered?')) updateOrderStatus('delivered'); }

@@ -20,6 +20,15 @@ if (!$use_user_id || !$lat || !$lng) {
     exit;
 }
 
+// LIPA ONLY - ADDED
+$lat_f = floatval($lat);
+$lng_f = floatval($lng);
+if ($lat_f < 13.85 || $lat_f > 14.05 || $lng_f < 121.05 || $lng_f > 121.28) {
+    http_response_code(400);
+    echo json_encode(['error' => 'We only deliver in Lipa City']);
+    exit;
+}
+
 try {
     // 1. Keep old table (for customer location / history)
     $stmt = $conn->prepare("INSERT INTO loc_history (user_id, latitude, longitude, created_at) VALUES (:uid, :lat, :lng, NOW())");

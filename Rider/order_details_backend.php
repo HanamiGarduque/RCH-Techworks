@@ -18,12 +18,17 @@ if (!isset($_GET['order_number']) || empty($_GET['order_number'])) {
 
 $order_number = trim($_GET['order_number']);
 
+// ===== LIPA ONLY =====
+function isInLipaPHP($lat, $lng) {
+    if ($lat === null || $lng === null || $lat === '' || $lng === '') return false;
+    $lat = (float)$lat; $lng = (float)$lng;
+    return $lat >= 13.85 && $lat <= 14.05 && $lng >= 121.05 && $lng <= 121.28;
+}
+
 try {
     $database = new Database();
     $db = $database->getConnect();
 
-    // Fetch order details with customer information
-    // customer_lat / customer_lng on water_refills = admin-corrected pin (most accurate)
     $query = "
         SELECT
             wr.refill_id,
@@ -66,27 +71,28 @@ try {
     }
 
     // ---- Resolve REAL customer lat/lng, in order of accuracy ----
+    // LIPA ONLY: any candidate outside Lipa is skipped, never returned
     $custLat = null; $custLng = null; $custSource = null;
 
     // 1) Admin-corrected pin on THIS order
-    if ($order['customer_lat'] !== null && $order['customer_lng'] !== null) {
+    if ($order['customer_lat'] !== null && $order['customer_lng'] !== null && isInLipaPHP($order['customer_lat'], $order['customer_lng'])) {
         $custLat = (float)$order['customer_lat']; $custLng = (float)$order['customer_lng']; $custSource = 'saved_pin';
     }
     // 2) User's saved pin
-    elseif ($order['user_latitude'] !== null && $order['user_longitude'] !== null) {
+    elseif ($order['user_latitude'] !== null && $order['user_longitude'] !== null && isInLipaPHP($order['user_latitude'], $order['user_longitude'])) {
         $custLat = (float)$order['user_latitude']; $custLng = (float)$order['user_longitude']; $custSource = 'saved_pin';
     }
     // 3) map_location table
-    elseif ($order['customer_latitude'] !== null && $order['customer_longitude'] !== null) {
+    elseif ($order['customer_latitude'] !== null && $order['customer_longitude'] !== null && isInLipaPHP($order['customer_latitude'], $order['customer_longitude'])) {
         $custLat = (float)$order['customer_latitude']; $custLng = (float)$order['customer_longitude']; $custSource = 'map_location';
     }
-    // 4) Last known customer GPS in loc_history
+    // 4) Last known customer GPS in loc_history - only if inside Lipa
     else {
         try {
             $lh = $db->prepare("SELECT latitude, longitude FROM loc_history WHERE user_id = :uid ORDER BY created_at DESC LIMIT 1");
             $lh->execute([':uid' => $order['user_id']]);
             $lr = $lh->fetch(PDO::FETCH_ASSOC);
-            if ($lr && $lr['latitude'] !== null && $lr['longitude'] !== null) {
+            if ($lr && $lr['latitude'] !== null && $lr['longitude'] !== null && isInLipaPHP($lr['latitude'], $lr['longitude'])) {
                 $custLat = (float)$lr['latitude']; $custLng = (float)$lr['longitude']; $custSource = 'loc_history';
             }
         } catch (Exception $e) {}
@@ -94,9 +100,8 @@ try {
 
     $order['customer_lat'] = $custLat;
     $order['customer_lng'] = $custLng;
-    $order['customer_location_source'] = $custSource; // null = frontend must geocode address
+    $order['customer_location_source'] = $custSource; // null = frontend must geocode address (Lipa only)
 
-    // Fetch order items with inventory details
     $itemsQuery = "
         SELECT
             wri.item_id,

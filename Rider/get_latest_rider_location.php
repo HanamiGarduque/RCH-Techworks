@@ -47,6 +47,14 @@ if (!$loc || $loc['latitude'] === null) {
     exit;
 }
 
+// LIPA ONLY - ADDED
+$lat_f = floatval($loc['latitude']);
+$lng_f = floatval($loc['longitude']);
+if ($lat_f < 13.85 || $lat_f > 14.05 || $lng_f < 121.05 || $lng_f > 121.28) {
+    echo json_encode(['success' => false, 'error' => 'No rider location yet']);
+    exit;
+}
+
 $age = time() - strtotime($loc['timestamp']);
 echo json_encode([
     'success'   => true,

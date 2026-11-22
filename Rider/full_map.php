@@ -47,9 +47,9 @@ $stmt->bindParam(':rider_id', $rider_id);
 $stmt->execute();
 $deliveries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Default center (Philippines)
-$centerLat = 13.8800;
-$centerLng = 121.1100;
+// Default center (Lipa City) - CHANGED
+$centerLat = 13.9411;
+$centerLng = 121.1628;
 
 // Calculate center based on all delivery locations
 if (!empty($deliveries)) {
@@ -59,8 +59,12 @@ if (!empty($deliveries)) {
     
     foreach ($deliveries as $delivery) {
         if (!empty($delivery['latitude']) && !empty($delivery['longitude'])) {
-            $totalLat += floatval($delivery['latitude']);
-            $totalLng += floatval($delivery['longitude']);
+            // LIPA ONLY - ADDED: ignore pins outside Lipa when computing center
+            $dLat = floatval($delivery['latitude']);
+            $dLng = floatval($delivery['longitude']);
+            if ($dLat < 13.85 || $dLat > 14.05 || $dLng < 121.05 || $dLng > 121.28) continue;
+            $totalLat += $dLat;
+            $totalLng += $dLng;
             $count++;
         }
     }
@@ -405,8 +409,11 @@ body {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-// Initialize map
-let map = L.map('map').setView([<?= $centerLat ?>, <?= $centerLng ?>], 13);
+// LIPA ONLY - ADDED
+function isInLipa(lat, lng) { return lat >= 13.85 && lat <= 14.05 && lng >= 121.05 && lng <= 121.28; }
+
+// Initialize map - CHANGED: locked to Lipa bounds
+let map = L.map('map', { maxBounds: L.latLngBounds([13.85, 121.05], [14.05, 121.28]), maxBoundsViscosity: 1.0, minZoom: 11 }).setView([<?= $centerLat ?>, <?= $centerLng ?>], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
@@ -438,6 +445,7 @@ deliveries.forEach((delivery) => {
     if (delivery.latitude && delivery.longitude) {
         const lat = parseFloat(delivery.latitude);
         const lng = parseFloat(delivery.longitude);
+        if (!isInLipa(lat, lng)) return; // LIPA ONLY - ADDED
         
         const icon = createCustomIcon(delivery.order_status);
         const statusClass = delivery.order_status === 'pickup_in_progress' ? 'status-pickup' : 'status-delivery';
@@ -483,6 +491,7 @@ function showMyLocation() {
         navigator.geolocation.getCurrentPosition((pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
+            if (!isInLipa(lat, lng)) { alert("We only deliver in Lipa City"); return; } // LIPA ONLY - ADDED
             
             if (!riderMarker) {
                 riderMarker = L.marker([lat, lng], {icon: riderIcon})
@@ -515,6 +524,7 @@ if (navigator.geolocation) {
     navigator.geolocation.watchPosition((pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
+        if (!isInLipa(lat, lng)) return; // LIPA ONLY - ADDED
         
         if (!riderMarker) {
             riderMarker = L.marker([lat, lng], {icon: riderIcon})
