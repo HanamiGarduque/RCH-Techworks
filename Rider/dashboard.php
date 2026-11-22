@@ -732,9 +732,14 @@
          let gpsWatchId = null;
          let firstFix = true; // first GPS fix centers the map on the rider
          let followRider = true; // map follows the rider until the map is dragged
-         let trackUserId = null; // customer user_id used by the "open full map" button
+         let trackUserId = null;
+         let routeLine = null;
+let customerDest = null;
+let lastRouteFetch = 0; // customer user_id used by the "open full map" button
 
-                  // ===== LIPA ONLY =====
+                  // ===== LIPA ONLY - CUSTOMER PINS ONLY, NOT RIDER =====
+                  // Rider GPS is allowed anywhere (San Jose, Tanauan, etc.)
+                  // Only customer delivery pins below still use isInLipa().
                   const LIPA_MIN_LAT = 13.85, LIPA_MAX_LAT = 14.05, LIPA_MIN_LNG = 121.05, LIPA_MAX_LNG = 121.28;
          function isInLipa(lat, lng) { return lat >= LIPA_MIN_LAT && lat <= LIPA_MAX_LAT && lng >= LIPA_MIN_LNG && lng <= LIPA_MAX_LNG; }
 
@@ -756,7 +761,8 @@
 
          function initMap() {
              // Temporary view (Lipa City) until the first GPS fix arrives
-             map = L.map('active-map', { maxBounds: L.latLngBounds([LIPA_MIN_LAT, LIPA_MIN_LNG], [LIPA_MAX_LAT, LIPA_MAX_LNG]), maxBoundsViscosity: 1.0, minZoom: 11 }).setView([13.9411, 121.1635], 13);
+             // FIXED: removed maxBounds / maxBoundsViscosity so rider in San Jose can be seen / panned to.
+             map = L.map('active-map', { minZoom: 11 }).setView([13.9411, 121.1635], 13);
              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                  maxZoom: 19,
                  attribution: '&copy; OpenStreetMap contributors'
@@ -788,7 +794,9 @@
              const lat = pos.coords.latitude;
              const lng = pos.coords.longitude;
              const acc = pos.coords.accuracy || 0;
-             if (!isInLipa(lat, lng)) { setGpsStatus('Location outside Lipa City - ignored', 'warn'); return; }
+             // FIXED: Rider allowed anywhere. Do NOT return here if outside Lipa.
+             // Only note it in the status. Before, this line blocked San Jose: if (!isInLipa(lat, lng)) { setGpsStatus('Location outside Lipa City - ignored', 'warn'); return; }
+             const outsideLipa = !isInLipa(lat, lng);
 
              if (!riderMarker) {
                  riderMarker = L.marker([lat, lng], {
@@ -810,7 +818,7 @@
                  accuracyCircle.setRadius(acc);
              }
 
-             riderMarker.setPopupContent('<b>You are here</b><br>Accuracy: ±' + Math.round(acc) + ' m');
+             riderMarker.setPopupContent('<b>You are here</b><br>Accuracy: ±' + Math.round(acc) + ' m' + (outsideLipa ? '<br>Outside Lipa - on the way' : ''));
 
              if (firstFix) {
                  map.setView([lat, lng], acc > 1000 ? 13 : 16);
@@ -818,9 +826,12 @@
              } else if (followRider) {
                  map.panTo([lat, lng]);
              }
+             updateRouteLine();
 
              if (acc > 500) {
                  setGpsStatus('Weak GPS (±' + Math.round(acc) + ' m) - approximate only', 'warn');
+             } else if (outsideLipa) {
+                 setGpsStatus('Live • ±' + Math.round(acc) + ' m • Outside Lipa - on the way', 'warn');
              } else {
                  setGpsStatus('Live • ±' + Math.round(acc) + ' m', 'ok');
              }
@@ -860,6 +871,28 @@
              navigator.geolocation.getCurrentPosition(handlePosition, handleGeoError, options);
              gpsWatchId = navigator.geolocation.watchPosition(handlePosition, handleGeoError, options);
          }
+         function updateRouteLine() {
+    if (!map || !riderMarker || !customerDest) return;
+    const now = Date.now();
+    if (now - lastRouteFetch < 10000) return;
+    lastRouteFetch = now;
+    const r = riderMarker.getLatLng();
+    const url = 'https://router.project-osrm.org/route/v1/driving/' + r.lng + ',' + r.lat + ';' + customerDest.lng + ',' + customerDest.lat + '?overview=full&geometries=geojson';
+    fetch(url).then(res => res.json()).then(data => {
+        let latlngs = null;
+        if (data && data.routes && data.routes[0] && data.routes[0].geometry) {
+            latlngs = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        } else {
+            latlngs = [[r.lat, r.lng], [customerDest.lat, customerDest.lng]];
+        }
+        if (routeLine) map.removeLayer(routeLine);
+        routeLine = L.polyline(latlngs, { color: '#2563eb', weight: 3, opacity: 0.85, dashArray: '6, 8' }).addTo(map);
+    }).catch(() => {
+        const latlngs = [[r.lat, r.lng], [customerDest.lat, customerDest.lng]];
+        if (routeLine) map.removeLayer(routeLine);
+        routeLine = L.polyline(latlngs, { color: '#2563eb', weight: 3, opacity: 0.85, dashArray: '6, 8' }).addTo(map);
+    });
+}
 
          function recenterOnRider() {
              followRider = true;
@@ -899,6 +932,7 @@
                      const lat = parseFloat(order.user.latitude);
                      const lng = parseFloat(order.user.longitude);
                      if (!isInLipa(lat, lng)) return;
+                     if (!customerDest) customerDest = { lat: lat, lng: lng };
                      const marker = L.marker([lat, lng], {
                              icon: customerIcon
                          }).addTo(map)
@@ -911,6 +945,7 @@
              if (markers.length > 0 && !riderMarker) {
                  const group = new L.featureGroup(markers);
                  map.fitBounds(group.getBounds().pad(0.2));
+                 updateRouteLine();
              }
          }
          // ===== END MAP CODE =====
@@ -999,7 +1034,7 @@
          if ('geolocation' in navigator) {
              // send position every 20-30s (or use watchPosition)
              function sendPosition(pos) {
-                if (!isInLipa(pos.coords.latitude, pos.coords.longitude)) { return; }
+                 // FIXED: Rider allowed anywhere. Removed: if (!isInLipa(pos.coords.latitude, pos.coords.longitude)) { return; }
                  const payload = {
                      latitude: pos.coords.latitude,
                      longitude: pos.coords.longitude,
