@@ -16,10 +16,22 @@ $stmt->execute([$user_id]);
 $location = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($location) {
+    // Lipa City only: ignore saved location if it is outside Lipa
+    $lat = floatval($location['latitude']);
+    $lng = floatval($location['longitude']);
+    if ($lat >= 13.8500 && $lat <= 14.0300 && $lng >= 121.0500 && $lng <= 121.3000) {
+        echo json_encode([
+            "status" => "has_saved_location",
+            "latitude" => $lat,
+            "longitude" => $lng
+        ]);
+        exit;
+    }
+    // Outside Lipa, fall through to Lipa fallback below
     echo json_encode([
-        "status" => "has_saved_location",
-        "latitude" => floatval($location['latitude']),
-        "longitude" => floatval($location['longitude'])
+        "status" => "fallback",
+        "latitude" => 13.9410,
+        "longitude" => 121.1640
     ]);
     exit;
 }
@@ -34,24 +46,29 @@ if (!$user) {
     exit;
 }
 
-// Approximate address → call OpenStreetMap Nominatim
-$address = urlencode($user['address']);
-$url = "https://nominatim.openstreetmap.org/search?format=json&q={$address}";
+// Approximate address → call OpenStreetMap Nominatim, limited to Lipa City
+$address = urlencode($user['address'] . ', Lipa City, Batangas, Philippines');
+$url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q={$address}";
 $response = file_get_contents($url);
 $data = json_decode($response, true);
 
-// If geocode works, use first result
+// If geocode works and result is inside Lipa, use it
 if (!empty($data)) {
-    echo json_encode([
-        "status" => "approx_location",
-        "latitude" => floatval($data[0]['lat']),
-        "longitude" => floatval($data[0]['lon'])
-    ]);
-} else {
-    // fallback: center on Philippines
-    echo json_encode([
-        "status" => "fallback",
-        "latitude" => 12.8797,
-        "longitude" => 121.7740
-    ]);
+    $lat = floatval($data[0]['lat']);
+    $lng = floatval($data[0]['lon']);
+    if ($lat >= 13.8500 && $lat <= 14.0300 && $lng >= 121.0500 && $lng <= 121.3000) {
+        echo json_encode([
+            "status" => "approx_location",
+            "latitude" => $lat,
+            "longitude" => $lng
+        ]);
+        exit;
+    }
 }
+
+// Fallback: center on Lipa City
+echo json_encode([
+    "status" => "fallback",
+    "latitude" => 13.9410,
+    "longitude" => 121.1640
+]);

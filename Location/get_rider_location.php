@@ -48,6 +48,20 @@ try {
     $location = $locationStmt->fetch(PDO::FETCH_ASSOC);
     
     if ($location) {
+        // Lipa City only: ignore saved location if it is outside Lipa
+        $lat = floatval($location['latitude']);
+        $lng = floatval($location['longitude']);
+        $inLipa = ($lat >= 13.8500 && $lat <= 14.0300 && $lng >= 121.0500 && $lng <= 121.3000);
+        if (!$inLipa) {
+            echo json_encode([
+                "status" => "no_location",
+                "message" => "We only deliver in Lipa City.",
+                "latitude" => 13.9411,
+                "longitude" => 121.1628
+            ]);
+            exit;
+        }
+
         // Check if location is recent (within last 30 minutes)
         $lastUpdate = strtotime($location['updated_at']);
         $thirtyMinutesAgo = time() - (30 * 60);
