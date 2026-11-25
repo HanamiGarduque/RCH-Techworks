@@ -50,8 +50,6 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
             animation: pulse-border 2s ease-in-out infinite;
         }
 
-
-
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -70,6 +68,16 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* Preview popup - match your page style */
+        .notif-preview-icon {
+            width: 64px; height: 64px; border-radius: 9999px;
+            background: #3b82f6; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 12px auto; font-size: 26px;
+        }
+        .notif-preview-time { font-size: 12px; color: #94a3b8; margin-top: 10px; }
+        .notif-preview-msg { font-size: 14px; color: #334155; line-height: 1.6; text-align: left; white-space: pre-line; }
     </style>
 </head>
 
@@ -119,15 +127,75 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
         const baseUrl = "<?= $baseUrl ?>"; // PHP-generated base URL
         let currentFilter = 'all';
 
+        // Escape HTML so message shows as text, not as broken HTML
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // Instantly turn ONE item to the READ look (white, gray, no NEW, opacity-70)
+        function markItemAsReadUI(item) {
+            if (!item) return;
+            item.dataset.status = 'read';
+            item.classList.remove('border-blue-600', 'bg-blue-50', 'hover:bg-blue-100', 'shadow-md', 'notification-unread');
+            item.classList.add('border-gray-300', 'bg-white', 'hover:bg-gray-50', 'shadow-sm', 'opacity-70');
+            const iconBox = item.querySelector('.notif-icon');
+            if (iconBox) { iconBox.classList.remove('bg-blue-500'); iconBox.classList.add('bg-gray-400'); }
+            const title = item.querySelector('.notif-title');
+            if (title) { title.classList.remove('text-blue-700'); title.classList.add('text-gray-600'); }
+            const msg = item.querySelector('.notif-msg');
+            if (msg) { msg.classList.remove('text-gray-800', 'font-medium'); msg.classList.add('text-gray-600'); }
+            const time = item.querySelector('.notif-time');
+            if (time) { time.classList.remove('text-gray-600'); time.classList.add('text-gray-400'); }
+            const badge = item.querySelector('.notif-new-badge');
+            if (badge) badge.remove();
+        }
+
+        function markAllAsReadUI() {
+            document.querySelectorAll('.notification-item').forEach(markItemAsReadUI);
+        }
+
+        // NEW: Preview popup - shows full details before going to the order
+        function showNotifPreview(notif, fullLink) {
+            const title = escapeHtml(notif.title || 'Notification');
+            const msg = escapeHtml(notif.message || '');
+            const time = escapeHtml(notif.created_at || '');
+
+            // If it has a link: [View Order] + [Close]
+            // If no link: [Close] only
+            Swal.fire({
+                title: title,
+                html: `
+                    <div class="notif-preview-icon"><i class="fas fa-bell"></i></div>
+                    <div class="notif-preview-msg">${msg}</div>
+                    <div class="notif-preview-time"><i class="fas fa-clock"></i> ${time}</div>
+                `,
+                showCancelButton: !!fullLink,
+                confirmButtonText: fullLink ? 'View Order' : 'Close',
+                cancelButtonText: 'Close',
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#6b7280',
+                reverseButtons: true,
+                allowOutsideClick: true
+            }).then((result) => {
+                if (result.isConfirmed && fullLink) {
+                    window.location.href = fullLink;
+                } else if (result.isConfirmed && !fullLink) {
+                    // Just closing - if on Unread tab, refresh so read item disappears
+                    if (currentFilter === 'unread') fetchNotifications();
+                } else {
+                    // Closed via Close / X / outside - same: refresh only on Unread tab
+                    if (currentFilter === 'unread') fetchNotifications();
+                }
+            });
+        }
+
         function fetchNotifications() {
             $.ajax({
                 url: 'get_notifications.php',
                 method: 'GET',
                 dataType: 'json',
                 success: function(response) {
-                    console.log('Response:', response); // Debug
-                    
-                    // Check if there's an error in the response
+                    console.log('Response:', response);
                     if (response.error) {
                         console.error('Error from server:', response.error);
                         console.log('Session keys:', response.session_keys);
@@ -140,12 +208,11 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
                         `);
                         return;
                     }
-                    
                     renderNotifications(response.notifications || response);
                 },
                 error: function(err) {
                     console.error('Error fetching notifications:', err);
-                    console.log('Full error:', err.responseText); // Debug
+                    console.log('Full error:', err.responseText);
                     $('#notifications-list').html(`
                         <div class="text-center py-8">
                             <p class="text-red-500 font-semibold">Failed to load notifications</p>
@@ -170,7 +237,6 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
                 return;
             }
 
-            // Filter notifications
             let filteredNotifications = notifications;
             if (currentFilter === 'unread') {
                 filteredNotifications = notifications.filter(n => n.status === 'unread');
@@ -190,12 +256,12 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
 
             filteredNotifications.forEach(notif => {
                 const isUnread = notif.status === 'unread';
-                
+
                 const item = document.createElement('div');
                 item.className = `
                     notification-item relative border-l-4 p-5 rounded-lg transition-all duration-300 cursor-pointer
-                    ${isUnread 
-                        ? 'border-blue-600 bg-blue-50 hover:bg-blue-100 shadow-md notification-unread' 
+                    ${isUnread
+                        ? 'border-blue-600 bg-blue-50 hover:bg-blue-100 shadow-md notification-unread'
                         : 'border-gray-300 bg-white hover:bg-gray-50 shadow-sm opacity-70'
                     }
                 `;
@@ -205,63 +271,56 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
                 item.innerHTML = `
                     <div class="flex items-start justify-between">
                         <div class="flex items-start space-x-4 flex-1">
-                            <!-- Icon -->
                             <div class="flex-shrink-0">
-                                <div class="${isUnread ? 'bg-blue-500' : 'bg-gray-400'} w-12 h-12 rounded-full flex items-center justify-center">
+                                <div class="notif-icon ${isUnread ? 'bg-blue-500' : 'bg-gray-400'} w-12 h-12 rounded-full flex items-center justify-center">
                                     <i class="fas fa-bell text-white text-lg"></i>
                                 </div>
                             </div>
-                            
-                            <!-- Content -->
                             <div class="flex-1">
                                 <div class="flex items-center gap-3 mb-1">
-                                    <h3 class="font-bold text-lg ${isUnread ? 'text-blue-700' : 'text-gray-600'}">
+                                    <h3 class="notif-title font-bold text-lg ${isUnread ? 'text-blue-700' : 'text-gray-600'}">
                                         ${notif.title}
                                     </h3>
-                                    ${isUnread ? '<span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">NEW</span>' : ''}
+                                    ${isUnread ? '<span class="notif-new-badge bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">NEW</span>' : ''}
                                 </div>
-                                <p class="${isUnread ? 'text-gray-800 font-medium' : 'text-gray-600'} text-sm mb-2">
+                                <p class="notif-msg ${isUnread ? 'text-gray-800 font-medium' : 'text-gray-600'} text-sm mb-2">
                                     ${notif.message}
                                 </p>
-                                <div class="flex items-center gap-2 text-xs ${isUnread ? 'text-gray-600' : 'text-gray-400'}">
+                                <div class="notif-time flex items-center gap-2 text-xs ${isUnread ? 'text-gray-600' : 'text-gray-400'}">
                                     <i class="fas fa-clock"></i>
                                     <span>${notif.created_at}</span>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Delete button -->
                         <button class="delete-btn ml-4 text-gray-400 hover:text-red-600 transition-colors p-2" title="Delete">
                             <i class="fas fa-trash text-lg"></i>
                         </button>
                     </div>
                 `;
 
-                // Click: mark as read then redirect if link exists
+                // Click: mark as read + show PREVIEW, do NOT redirect immediately
                 item.addEventListener('click', (e) => {
                     if (e.target.closest('.delete-btn')) return;
-                    
+
                     const fullLink = notif.link ? baseUrl + notif.link.replace(/^\/+/, '') : null;
 
                     if (isUnread) {
+                        markItemAsReadUI(item);
                         $.post('mark_notification.php', { notification_id: notif.notification_id })
-                            .done(() => {
-                                if (fullLink) {
-                                    window.location.href = fullLink;
-                                } else {
-                                    fetchNotifications();
-                                }
+                            .done((res) => {
+                                if (res && res.success === false) { fetchNotifications(); return; }
+                                showNotifPreview(notif, fullLink);
                             })
-                            .fail(err => console.error('Error marking notification as read:', err));
+                            .fail(err => { console.error('Error marking notification as read:', err); fetchNotifications(); });
                     } else {
-                        if (fullLink) window.location.href = fullLink;
+                        // Already read: still show preview
+                        showNotifPreview(notif, fullLink);
                     }
                 });
 
                 // Delete button
                 item.querySelector('.delete-btn').addEventListener('click', e => {
                     e.stopPropagation();
-                    
                     Swal.fire({
                         title: 'Delete Notification?',
                         text: 'This action cannot be undone.',
@@ -317,8 +376,10 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    markAllAsReadUI();
                     $.post('mark_all_read.php')
-                        .done(() => {
+                        .done((res) => {
+                            if (res && res.success === false) { fetchNotifications(); Swal.fire('Error', res.message || 'Failed to mark all as read', 'error'); return; }
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Done!',
@@ -331,6 +392,7 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
                         .fail(err => {
                             console.error('Error marking all as read:', err);
                             Swal.fire('Error', 'Failed to mark all as read', 'error');
+                            fetchNotifications();
                         });
                 }
             });
@@ -344,19 +406,19 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
         (function() {
             const originalSwalFire = Swal.fire;
             let scrollPosition = 0;
-            
+
             Swal.fire = function(...args) {
                 scrollPosition = window.pageYOffset;
                 const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-                
+
                 document.body.style.overflow = 'hidden';
                 document.body.style.position = 'fixed';
                 document.body.style.top = `-${scrollPosition}px`;
                 document.body.style.width = '100%';
                 document.body.style.paddingRight = scrollbarWidth + 'px';
-                
+
                 const result = originalSwalFire.apply(this, args);
-                
+
                 result.finally(() => {
                     document.body.style.overflow = '';
                     document.body.style.position = '';
@@ -365,7 +427,7 @@ $baseUrl = $protocol . "://" . $host . $projectRoot . '/';
                     document.body.style.paddingRight = '';
                     window.scrollTo(0, scrollPosition);
                 });
-                
+
                 return result;
             };
         })();
