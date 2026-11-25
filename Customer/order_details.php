@@ -66,20 +66,28 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['rider_location', 'cust
         if ($_GET['action'] === 'rider_location') {
             if (empty($o['rider_id'])) { echo json_encode(['success' => false, 'error' => 'No rider assigned']); exit; }
             $loc = null;
+            // FIX 1: map_location FIRST - Rider/dashboard.php saves here
             try {
-                $r = $conn->prepare("SELECT latitude, longitude, timestamp AS created_at FROM rider_location_history WHERE order_id = :oid ORDER BY timestamp DESC LIMIT 1");
-                $r->execute([':oid' => $o['refill_id']]);
+                $r = $conn->prepare("SELECT latitude, longitude, updated_at AS created_at FROM map_location WHERE user_id = :uid ORDER BY updated_at DESC LIMIT 1");
+                $r->execute([':uid' => $o['rider_id']]);
                 $loc = $r->fetch(PDO::FETCH_ASSOC);
             } catch (Exception $e) { $loc = null; }
+            // 2nd: rider_location_history
+            if (!$loc || $loc['latitude'] === null) {
+                try {
+                    $r = $conn->prepare("SELECT latitude, longitude, timestamp AS created_at FROM rider_location_history WHERE order_id = :oid ORDER BY timestamp DESC LIMIT 1");
+                    $r->execute([':oid' => $o['refill_id']]);
+                    $loc = $r->fetch(PDO::FETCH_ASSOC);
+                } catch (Exception $e) { $loc = null; }
+            }
+            // 3rd: loc_history fallback
             if (!$loc || $loc['latitude'] === null) {
                 $l = $conn->prepare("SELECT latitude, longitude, created_at FROM loc_history WHERE user_id = :uid ORDER BY created_at DESC LIMIT 1");
                 $l->execute([':uid' => $o['rider_id']]);
                 $loc = $l->fetch(PDO::FETCH_ASSOC);
             }
-            // LIPA ONLY: reject rider pin outside Lipa, do not show Europe / VPN pin
-            if ($loc && $loc['latitude'] !== null && !isInLipa($loc['latitude'], $loc['longitude'])) {
-                echo json_encode(['success' => false, 'error' => 'Rider outside Lipa']); exit;
-            }
+            // NO LIPA CHECK FOR RIDER - rider can be in San Jose / anywhere
+            
             if ($loc && $loc['latitude'] !== null) {
                 $age = time() - strtotime($loc['created_at']);
                 echo json_encode(['success' => true, 'status' => 'real_time', 'latitude' => (float)$loc['latitude'], 'longitude' => (float)$loc['longitude'], 'timestamp' => $loc['created_at'], 'is_recent' => $age <= 60, 'age_seconds' => $age]);
@@ -421,7 +429,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let customerPos = null, customerResolved = false;
     let riderPos = null, riderMarker = null, routeControl = null, firstFit = true;
 
-    const map = L.map('delivery-map', { maxBounds: LIPA_BOUNDS, maxBoundsViscosity: 1.0, minZoom: 11 }).setView([STATION.lat, STATION.lng], 13);
+    const map = L.map('delivery-map', { minZoom: 11 }).setView([STATION.lat, STATION.lng], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 10, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
     setTimeout(() => map.invalidateSize(), 500);
     const sidebar = document.querySelector('.group');
@@ -432,15 +440,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const stationIcon = L.divIcon({ className: '', html: '<div class="station-pin"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
     const customerIcon = L.divIcon({ className: '', html: '<div class="customer-pin"><i class="bi bi-house-fill"></i></div>', iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -15] });
     const riderIcon = L.divIcon({ className: '', html: '<div class="rider-pulse"><div class="dot"><i class="bi bi-truck"></i></div></div>', iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] });
-    L.marker([STATION.lat, STATION.lng], { icon: stationIcon }).addTo(map).bindPopup(`<div style="text-align:center;min-width:150px;"><strong style="color:#2563eb;font-size:14px;">🏢 RCH Water Station</strong></div>`);
     const customerMarker = L.marker([STATION.lat, STATION.lng], { icon: customerIcon }).addTo(map).bindPopup(`<div style="text-align:center;min-width:180px;"><strong style="color:#16a34a;font-size:14px;">📍 Your Location</strong><br><small style="color:#6b7280;"><?= htmlspecialchars($deliveryAddress) ?></small></div>`);
     customerMarker.setOpacity(0);
     function samePoint(a,b){ if(!a||!b) return false; return Math.abs(a.lat-b.lat)<0.0001 && Math.abs(a.lng-b.lng)<0.0001; }
-    function drawRoute(from,to){
-        if(!from||!to||samePoint(from,to)) return;
-        if(routeControl){ map.removeControl(routeControl); routeControl=null; }
-        routeControl = L.Routing.control({ waypoints:[L.latLng(from.lat,from.lng), L.latLng(to.lat,to.lng)], lineOptions:{ styles:[{color:'#f59e0b', weight:5, opacity:0.9}] }, createMarker:()=>null, addWaypoints:false, routeWhileDragging:false, show:false, fitSelectedRoutes:false }).addTo(map);
-    }
+    let routeLine = null;
+let lastRouteFetch = 0;
+function drawRoute(from,to){
+    if(!from||!to||samePoint(from,to)) return;
+    const now = Date.now();
+    if(now - lastRouteFetch < 10000) return;
+    lastRouteFetch = now;
+    const url = 'https://router.project-osrm.org/route/v1/driving/' + from.lng + ',' + from.lat + ';' + to.lng + ',' + to.lat + '?overview=full&geometries=geojson';
+    fetch(url).then(res => res.json()).then(data => {
+        let latlngs = null;
+        if(data && data.routes && data.routes[0] && data.routes[0].geometry){
+            latlngs = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        } else {
+            latlngs = [[from.lat, from.lng], [to.lat, to.lng]];
+        }
+        if(routeLine) map.removeLayer(routeLine);
+        routeLine = L.polyline(latlngs, { color: '#2563eb', weight: 3, opacity: 0.85, dashArray: '6, 8' }).addTo(map);
+    }).catch(() => {
+        const latlngs = [[from.lat, from.lng], [to.lat, to.lng]];
+        if(routeLine) map.removeLayer(routeLine);
+        routeLine = L.polyline(latlngs, { color: '#2563eb', weight: 3, opacity: 0.85, dashArray: '6, 8' }).addTo(map);
+    });
+}
     function applyCustomerPos(pos, source){
         if(!pos) return;
         if(!isInLipaJS(pos.lat, pos.lng)) return; // LIPA ONLY
@@ -494,7 +519,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(`order_details.php?action=rider_location&order_number=${encodeURIComponent(orderNumber)}`);
             const d = await res.json();
             if(!d.success){ return; }
-            if(!isInLipaJS(d.latitude, d.longitude)) return; // LIPA ONLY - ignore VPN / Europe pin
             riderPos = {lat:d.latitude, lng:d.longitude};
             const el = document.getElementById('riderUpdated');
             if(el && d.timestamp) el.textContent = 'Updated: ' + new Date(d.timestamp.replace(' ','T')).toLocaleTimeString();

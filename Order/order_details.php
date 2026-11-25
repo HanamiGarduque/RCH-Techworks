@@ -80,16 +80,27 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['rider_location', 'cust
         if ($_GET['action'] === 'rider_location') {
             if (empty($o['rider_id'])) { echo json_encode(['success' => false, 'error' => 'No rider assigned']); exit; }
             $loc = null;
+            // FIX 1: map_location FIRST - Rider/dashboard.php saves here
             try {
-                $r = $db->prepare("SELECT latitude, longitude, timestamp AS created_at FROM rider_location_history WHERE order_id = :oid ORDER BY timestamp DESC LIMIT 1");
-                $r->execute([':oid' => $o['refill_id']]);
+                $r = $db->prepare("SELECT latitude, longitude, updated_at AS created_at FROM map_location WHERE user_id = :uid ORDER BY updated_at DESC LIMIT 1");
+                $r->execute([':uid' => $o['rider_id']]);
                 $loc = $r->fetch(PDO::FETCH_ASSOC);
             } catch (Exception $e) { $loc = null; }
+            // 2nd: rider_location_history
+            if (!$loc || $loc['latitude'] === null) {
+                try {
+                    $r = $db->prepare("SELECT latitude, longitude, timestamp AS created_at FROM rider_location_history WHERE order_id = :oid ORDER BY timestamp DESC LIMIT 1");
+                    $r->execute([':oid' => $o['refill_id']]);
+                    $loc = $r->fetch(PDO::FETCH_ASSOC);
+                } catch (Exception $e) { $loc = null; }
+            }
+            // 3rd: loc_history fallback
             if (!$loc || $loc['latitude'] === null) {
                 $l = $db->prepare("SELECT latitude, longitude, created_at FROM loc_history WHERE user_id = :uid ORDER BY created_at DESC LIMIT 1");
                 $l->execute([':uid' => $o['rider_id']]);
                 $loc = $l->fetch(PDO::FETCH_ASSOC);
             }
+            // NO LIPA CHECK FOR RIDER - rider can be in San Jose / anywhere
             if ($loc && $loc['latitude'] !== null && $loc['longitude'] !== null) {
                 $age = time() - strtotime($loc['created_at']);
                 echo json_encode(['success' => true,'status' => 'real_time','latitude' => (float)$loc['latitude'],'longitude' => (float)$loc['longitude'],'timestamp' => $loc['created_at'],'is_recent' => $age <= 60,'age_seconds' => $age]);
@@ -465,7 +476,9 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
             const savedCustomerLng = <?= isset($order['customer_lng']) && $order['customer_lng'] !== null ? (float)$order['customer_lng'] : 'null' ?>;
             const hasRider = <?= $order['rider_name'] ? 'true' : 'false' ?>;
             const STATION = { lat: 13.9411, lng: 121.1628 };
-            let customerPos = null, customerResolved = false, riderPos = null, riderMarker = null, routeControl = null, firstFit = true;
+            let customerPos = null, customerResolved = false, riderPos = null, riderMarker = null, firstFit = true;
+            let routeLine = null;
+            let lastRouteFetch = 0;
 
             const map = L.map('delivery-map').setView([STATION.lat, STATION.lng], 13);
             window.adminMap = map;
@@ -498,11 +511,27 @@ $availableRiders = $ridersStmt->fetchAll(PDO::FETCH_ASSOC);
             });
 
             function samePoint(a, b) { if (!a || !b) return false; return Math.abs(a.lat - b.lat) < 0.0001 && Math.abs(a.lng - b.lng) < 0.0001; }
-            // Route is ONLY rider -> customer. No station -> customer blue line.
+            // FIX 2: Same dotted blue OSRM route as Rider / Customer - was solid orange Routing Machine
             function drawRoute(from, to) {
                 if (!from || !to || samePoint(from, to)) return;
-                if (routeControl) { map.removeControl(routeControl); routeControl = null; }
-                routeControl = L.Routing.control({ waypoints: [L.latLng(from.lat, from.lng), L.latLng(to.lat, to.lng)], lineOptions: { styles: [{ color: '#f59e0b', weight: 5, opacity: 0.9 }] }, createMarker: () => null, addWaypoints: false, routeWhileDragging: false, show: false, fitSelectedRoutes: false }).addTo(map);
+                const now = Date.now();
+                if (now - lastRouteFetch < 10000) return;
+                lastRouteFetch = now;
+                const url = 'https://router.project-osrm.org/route/v1/driving/' + from.lng + ',' + from.lat + ';' + to.lng + ',' + to.lat + '?overview=full&geometries=geojson';
+                fetch(url).then(res => res.json()).then(data => {
+                    let latlngs = null;
+                    if (data && data.routes && data.routes[0] && data.routes[0].geometry) {
+                        latlngs = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    } else {
+                        latlngs = [[from.lat, from.lng], [to.lat, to.lng]];
+                    }
+                    if (routeLine) map.removeLayer(routeLine);
+                    routeLine = L.polyline(latlngs, { color: '#2563eb', weight: 3, opacity: 0.85, dashArray: '6, 8' }).addTo(map);
+                }).catch(() => {
+                    const latlngs = [[from.lat, from.lng], [to.lat, to.lng]];
+                    if (routeLine) map.removeLayer(routeLine);
+                    routeLine = L.polyline(latlngs, { color: '#2563eb', weight: 3, opacity: 0.85, dashArray: '6, 8' }).addTo(map);
+                });
             }
             function applyCustomerPos(pos, source) {
                 if (!pos) return;
